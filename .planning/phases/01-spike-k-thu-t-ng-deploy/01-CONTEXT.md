@@ -50,7 +50,7 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 - **D-10:** Căn phòng là **open-space 4 bàn làm việc + góc pantry**, bố cục dùng lại được cho Phase 2–3 (NPC đi bàn ↔ pantry, prank cà phê).
 - **D-11:** **3 NPC khi chơi thường**, đi vòng qua các điểm **đặt tay** (bàn ↔ pantry), không navmesh, không lịch trình (đó là DETECT-07, Phase 2). **Benchmark tăng lên 8 NPC** (trần của Tầng 1) và cho ngã ragdoll cùng lúc để đo trần thật.
 - **D-12:** Cú tát/đẩy kiểu **slapstick phóng đại**: NPC bay xa, xoay, tiếng "bốp", hit-stop khoảng 60ms, rung màn hình nhẹ, ngã ragdoll rồi **tự đứng dậy** đi tiếp. Không máu (PEGI 12).
-- **D-13:** Đồ vật: **phần lớn văng/đổ theo vật lý** (ghế, thùng rác, giấy tờ…). **Cốc, màn hình, chậu cây vỡ thành mảnh cắt sẵn**; mảnh tự dọn sau vài giây, số mảnh tối đa có trần.
+- **D-13:** Đồ vật: **phần lớn văng/đổ theo vật lý** (ghế, thùng rác, giấy tờ…). **Cốc, màn hình, chậu cây vỡ thành mảnh**: dùng **một bộ 5–8 mảnh low-poly chung**, đổi màu/tỉ lệ theo vật bị vỡ (không cắt riêng từng vật bằng Blender — operator chốt sau research, 14/09/2026). Mảnh tự dọn sau vài giây, số mảnh tối đa có trần.
 - **D-14:** Ánh sáng **màu phẳng + bóng tròn giả (blob shadow) dưới chân** nhân vật/đồ vật. **Không dùng shadow map thời gian thực.**
 - **D-15:** Có **vài SFX CC0** (tát, đồ vỡ, đồ rơi) để đánh giá cảm giác slapstick, và để kiểm tra sớm việc iOS chỉ phát âm thanh sau lần chạm đầu. Nhạc nền để Phase 7.
 
@@ -58,7 +58,7 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 - **D-16:** Mobile **ưu tiên màn ngang**. Cầm dọc vẫn chơi được: camera lùi xa hơn, nút dồn xuống đáy. **Không** bắt người chơi xoay máy.
 - **D-17:** Joystick ảo **nổi theo ngón tay**: chạm đâu ở nửa trái màn hình thì joystick hiện ngay đó.
 - **D-18:** Tát bằng **nút ngữ cảnh (mobile) / phím E (desktop)** khi đứng gần NPC; icon nút đổi theo vật gần nhất. Kéo/vuốt để vung đòn dành cho Rage Mode (Phase 4).
-- **D-19:** Camera góc nghiêng cố định, **bám mượt theo nhân vật**, tầm nhìn khoảng 1/2 phòng. Xoay 90° bằng **Q/E trên desktop** và **nút ⟲ ⟳ góc trên phải trên mobile**.
+- **D-19:** Camera góc nghiêng cố định, **bám mượt theo nhân vật**, tầm nhìn khoảng 1/2 phòng. Xoay 90° bằng **Z / C trên desktop** và **nút ⟲ ⟳ góc trên phải trên mobile**. (Sửa 14/09/2026 sau research: Q/E ban đầu trùng phím E tương tác của CTRL-01/D-18; operator chọn Z/C.)
 - **D-20:** Desktop di chuyển bằng WASD, tương tác bằng E hoặc click chuột trái vào vật đang sáng (CTRL-01). Pause bằng ESC/Space; mobile có nút ⏸ (CTRL-04).
 
 ### Máy yếu / không có WebGL
@@ -70,6 +70,10 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 
 ### Màn vào game
 - **D-23:** Có **màn tải với thanh tiến trình thật**, xong hiện **một nút "Chơi"**. Lần chạm này mở khoá âm thanh iOS và xin toàn màn hình. Góc màn hình luôn hiện tên tạm **"Break Time"** + **commit sha ngắn** để ảnh chụp bench biết là bản nào.
+
+### Chốt bổ sung sau research (14/09/2026)
+- **D-25:** SFX Kenney (OGG) được chuyển sang **MP3** cho Safari iOS bằng **`ffmpeg-static` trong devDependencies**, chạy qua script npm (ví dụ `npm run assets`). Không cài ffmpeg vào Windows.
+- **D-26:** iPhone Safari không hỗ trợ fullscreen cho phần tử (chỉ iPad). Nút "Chơi" (D-23) xin fullscreen khi trình duyệt hỗ trợ; trên iPhone thì chơi ở chế độ phủ kín viewport, không báo lỗi.
 
 ### Claude's Discretion
 - Cấu trúc thư mục, cách tách module render / physics / logic / input, ECS hay không
