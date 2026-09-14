@@ -845,7 +845,15 @@ export default defineConfig({
 | A11 | Weighted-step loading progress is acceptable as "thanh tiến trình thật" (D-23) | Architecture | Operator may want byte-level progress; compressed responses make byte totals unreliable |
 | A12 | whattoeat deploy method is an overwrite of `/opt/doibung` (per CONTEXT); the mechanism itself is unverified | Pitfall 2 | Drift check is mechanism-agnostic, so low risk |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> **Resolved 2026-09-14 by operator after research — these resolutions override the recommendations written below:**
+> - **Q1 → D-19:** rotate camera with **Z / C** (arrows as aliases); E stays interact.
+> - **Q2 → D-13:** generic shared shard kit (5–8 pieces), tinted/scaled per object. No per-object Blender cuts, no ConvexObjectBreaker.
+> - **Q3 → plan 01-19 Task 1:** operator records device model/OS/browser/Low Power Mode in the device log before any measurement.
+> - **Q4 → plan 01-12 Task 1:** DNS A record is an operator human-action checkpoint before first HTTPS activation.
+> - **Q5 → D-25:** use the **`ffmpeg-static` devDependency** via `npm run assets`. **Do NOT run `winget install Gyan.FFmpeg`** — no system installs on the operator machine.
+> - **Q6 → plans 01-05 / 01-10:** printer and water cooler built from Box/Cylinder primitives in Furniture Kit palette colours (CC0 by construction). No CC-BY assets.
 
 1. **Camera-rotate keys (C1)**
    - What we know: E is required for interact by CTRL-01.
