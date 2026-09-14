@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+# asset gốc tải về (zip pack CC0) — chỉ commit bản đã tối ưu trong public/assets
+assets-src/downloads/
