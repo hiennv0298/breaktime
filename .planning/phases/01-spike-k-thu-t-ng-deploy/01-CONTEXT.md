@@ -1,0 +1,155 @@
+# Phase 1: Spike kỹ thuật & đường deploy - Context
+
+**Gathered:** 2026-09-14
+**Status:** Ready for planning
+
+<domain>
+## Phase Boundary
+
+Chứng minh stack **Three.js + Rapier (WASM) + TypeScript/Vite** chạy đạt ngân sách size/fps trên **điện thoại thật**
+và dựng đường deploy một lệnh lên VPS. Sau phase này, mọi commit đều chơi thử được qua `https://breaktime.doibung.com`.
+
+Nội dung chơi được: một căn phòng open-space, nhân vật điều khiển được trên desktop và mobile, tát/đẩy NPC ngã
+ragdoll kiểu slapstick, ≥ 20 đồ vật văng/vỡ, 3 NPC đi theo đường cố định, SFX cơ bản, chế độ benchmark.
+
+**KHÔNG thuộc phase này**: navmesh/lịch trình NPC, nón nhìn, nghi ngờ (Phase 2); prank, to-do (Phase 3);
+vung đòn bằng kéo/vuốt, Rage Mode (Phase 4); nhạc nền, i18n, tutorial (Phase 7).
+
+Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
+
+</domain>
+
+<decisions>
+## Implementation Decisions
+
+### Domain & deploy VPS
+- **D-01:** Bản chơi thử chạy ở **`breaktime.doibung.com`**. Operator phải thêm bản ghi DNS `A breaktime → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS.
+- **D-02:** Gắn game vào Caddy của stack `doibung` bằng **cơ chế import thư mục sites**, sửa **một lần** trong repo `d:\whattoeat` (không sửa tay trên server):
+  - `Caddyfile.nodb` (và `Caddyfile` bản đầy đủ cho nhất quán) thêm `import /etc/caddy/sites/*.caddy`
+  - `docker-compose.nodb.yml` (và `docker-compose.withdb.yml`/`docker-compose.yml` đang có trên server) mount thư mục host (ví dụ `/srv/sites`) vào caddy **read-only**: file site `*.caddy` + thư mục web tĩnh của từng dự án
+  - Recreate container caddy **một lần** (doibung.com gián đoạn vài giây; volume `caddy_data` giữ nguyên cert)
+  - Sau đó break-time chỉ ghi vào phần của mình dưới `/srv/sites` → **deploy whattoeat (`rsync --delete` vào `/opt/doibung`) không xoá được game**
+- **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://breaktime.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
+- **D-04:** Server giữ **bản mới nhất ở `/`** và **bản theo commit ở `/b/<sha>/`**, giữ khoảng 10 bản gần nhất, tự dọn bản cũ. Vite dùng base tương đối để một build chạy được ở cả hai đường dẫn. Mục đích: mở 2 bản trên cùng điện thoại để so fps, và quay lại bản cũ khi bản mới lỗi.
+- **D-05:** Bản chơi thử **công khai hoàn toàn**: không mật khẩu, không chặn index (operator chọn).
+
+### Máy đo & cổng chặn
+- **D-06:** Operator có sẵn **một Android tầm trung + một iPhone** làm máy chuẩn. **Model chưa ghi.** Plan phải có bước ghi model/OS/trình duyệt vào kết quả đo **trước lần đo đầu tiên**, và dùng đúng hai máy đó cho mọi phase sau.
+- **D-07:** Build đầu chưa đạt (< 30 fps trên Android chuẩn, hoặc crash Safari iOS trong 15 phút) thì làm **đúng một vòng tối ưu có danh sách sẵn**:
+  1. hạ `devicePixelRatio` render
+  2. tắt mọi bóng động còn sót
+  3. instancing / gộp mesh tĩnh
+  4. giới hạn số mảnh vỡ + tự dọn nhanh hơn
+  5. cho body ngủ sớm hơn
+
+  Đo lại. **Vẫn không đạt thì DỪNG**, viết đánh giá PlayCanvas trước khi sang Phase 2. Không đi tiếp trên stack chưa đạt.
+- **D-08:** Đo fps bằng **chế độ benchmark `?bench=1`**: kịch bản cố định 60s tự chạy (nhân vật đi quanh phòng, tát NPC, đập ≥ 20 đồ, 8 NPC ngã ragdoll cùng lúc — xem D-11). Kết thúc hiện: fps trung bình, fps 1% thấp nhất, draw call, số physics body đỉnh, commit sha, mức chất lượng đang dùng. Ảnh chụp màn hình kết quả là bằng chứng nghiệm thu. Mọi lần đo dùng cùng kịch bản (seed cố định).
+
+### Nội dung căn phòng spike
+- **D-09:** Nhân vật dùng **Kenney Blocky Characters** (CC0, 18 nhân vật, 27 animation, có glTF). Đồ nội thất ưu tiên **Kenney Furniture Kit** (CC0, 140 model, có glTF) cho đồng bộ style. ⚠️ **Chưa kiểm** Furniture Kit có máy tính/màn hình/máy in/cây nước không; researcher phải liệt kê được đồ thật, thiếu thì bù bằng pack CC0 khác của Kenney hoặc khối low-poly tự dựng cùng style.
+- **D-10:** Căn phòng là **open-space 4 bàn làm việc + góc pantry**, bố cục dùng lại được cho Phase 2–3 (NPC đi bàn ↔ pantry, prank cà phê).
+- **D-11:** **3 NPC khi chơi thường**, đi vòng qua các điểm **đặt tay** (bàn ↔ pantry), không navmesh, không lịch trình (đó là DETECT-07, Phase 2). **Benchmark tăng lên 8 NPC** (trần của Tầng 1) và cho ngã ragdoll cùng lúc để đo trần thật.
+- **D-12:** Cú tát/đẩy kiểu **slapstick phóng đại**: NPC bay xa, xoay, tiếng "bốp", hit-stop khoảng 60ms, rung màn hình nhẹ, ngã ragdoll rồi **tự đứng dậy** đi tiếp. Không máu (PEGI 12).
+- **D-13:** Đồ vật: **phần lớn văng/đổ theo vật lý** (ghế, thùng rác, giấy tờ…). **Cốc, màn hình, chậu cây vỡ thành mảnh cắt sẵn**; mảnh tự dọn sau vài giây, số mảnh tối đa có trần.
+- **D-14:** Ánh sáng **màu phẳng + bóng tròn giả (blob shadow) dưới chân** nhân vật/đồ vật. **Không dùng shadow map thời gian thực.**
+- **D-15:** Có **vài SFX CC0** (tát, đồ vỡ, đồ rơi) để đánh giá cảm giác slapstick, và để kiểm tra sớm việc iOS chỉ phát âm thanh sau lần chạm đầu. Nhạc nền để Phase 7.
+
+### Điều khiển & hướng màn hình
+- **D-16:** Mobile **ưu tiên màn ngang**. Cầm dọc vẫn chơi được: camera lùi xa hơn, nút dồn xuống đáy. **Không** bắt người chơi xoay máy.
+- **D-17:** Joystick ảo **nổi theo ngón tay**: chạm đâu ở nửa trái màn hình thì joystick hiện ngay đó.
+- **D-18:** Tát bằng **nút ngữ cảnh (mobile) / phím E (desktop)** khi đứng gần NPC; icon nút đổi theo vật gần nhất. Kéo/vuốt để vung đòn dành cho Rage Mode (Phase 4).
+- **D-19:** Camera góc nghiêng cố định, **bám mượt theo nhân vật**, tầm nhìn khoảng 1/2 phòng. Xoay 90° bằng **Q/E trên desktop** và **nút ⟲ ⟳ góc trên phải trên mobile**.
+- **D-20:** Desktop di chuyển bằng WASD, tương tác bằng E hoặc click chuột trái vào vật đang sáng (CTRL-01). Pause bằng ESC/Space; mobile có nút ⏸ (CTRL-04).
+
+### Máy yếu / không có WebGL
+- **D-21:** Có **3 mức chất lượng Thấp / Vừa / Cao**, chỉnh pixel ratio, trần mảnh vỡ và khoảng cách vẽ. Game đo fps vài giây đầu rồi **tự chọn mức**, và **có nút đổi tay** trong menu pause. Benchmark ghi rõ đang chạy mức nào.
+- **D-22:** Trình duyệt không có WebGL2 thì hiện **màn báo rõ ràng** (không màn đen), gợi ý trình duyệt khác.
+
+### Test tự động
+- **D-24:** **Vitest** cho logic thuần. **Playwright headless** mở bản build và kiểm: game load không lỗi console, `?bench=1` chạy tới cuối và in kết quả, **không có request nào ra ngoài origin** (TECH-05). Bất kỳ kiểm tra nào hỏng thì `npm run deploy` dừng. FPS **không** đo bằng headless (không có GPU thật); chỉ tin số đo trên máy thật (D-08).
+
+### Màn vào game
+- **D-23:** Có **màn tải với thanh tiến trình thật**, xong hiện **một nút "Chơi"**. Lần chạm này mở khoá âm thanh iOS và xin toàn màn hình. Góc màn hình luôn hiện tên tạm **"Break Time"** + **commit sha ngắn** để ảnh chụp bench biết là bản nào.
+
+### Claude's Discretion
+- Cấu trúc thư mục, cách tách module render / physics / logic / input, ECS hay không
+- Phiên bản thư viện cụ thể (lấy bản ổn định hiện hành), cấu hình Vite, cách nén asset (glTF + meshopt/Draco, KTX2) và cách chia chunk để đạt ≤ 8 MB tải đầu
+- Thông số vật lý (lực tát, khối lượng, số khớp ragdoll của Blocky Characters), thời gian dọn mảnh
+- Thuật toán tự chọn mức chất lượng (ngưỡng fps, số giây đo)
+- Cách dựng ragdoll cho nhân vật khối (hộp/capsule cho từng khúc)
+- Bố cục chi tiết căn phòng và vị trí 20 đồ vật
+- Nguồn SFX CC0 cụ thể (ghi vào CREDITS.md)
+- Tên file site Caddy, đường dẫn thư mục dưới `/srv/sites`, chiến lược dọn bản `/b/<sha>/`
+
+</decisions>
+
+<canonical_refs>
+## Canonical References
+
+**Downstream agents MUST read these before planning or implementing.**
+
+### Dự án
+- `.planning/PROJECT.md` — Core value, constraints (size ≤ 8/20 MB, ≥ 30 fps, không request ngoài, PEGI 12, không dữ liệu cá nhân), key decisions
+- `.planning/REQUIREMENTS.md` — TECH-01..07, CTRL-01..05, PLAT-01..02 (câu chữ requirement)
+- `.planning/ROADMAP.md` §Phase 1 — success criteria + cổng chặn
+- `docs/research-game-design.md` §4 (ràng buộc cổng web, lý do chọn engine, stack, điều khiển, ngân sách hiệu năng), §5 (rủi ro nội dung)
+
+### Hạ tầng deploy (repo khác, phải sửa một lần theo D-02)
+- `d:/whattoeat/Caddyfile.nodb` — Caddyfile đang chạy trên server (bind mount 1 file vào `/etc/caddy/Caddyfile`); site `doibung.com` + redirect `www`
+- `d:/whattoeat/Caddyfile` — bản đầy đủ, phải sửa cho nhất quán
+- `d:/whattoeat/docker-compose.nodb.yml` — service `caddy` (80/443, volume `caddy_data`/`caddy_config`, `mem_limit: 128m`)
+- `d:/whattoeat/docker-compose.withdb.yml`, `d:/whattoeat/docker-compose.yml` — trên server còn project `doibung` chạy postgres từ file withdb; mount mới phải có ở bản đang thực sự tạo container caddy
+- `d:/whattoeat/docs/08-selfhost-vps-admin.md` §8.5 — bẫy đã gặp: named volume cho state, `mem_limit` mọi container, không publish cổng DB, kiểm lại bằng đo chứ không tin config
+
+### Luật cổng game web
+- https://docs.crazygames.com/requirements/intro/ — giới hạn size/file, PEGI 12
+- https://docs.crazygames.com/resources/basic-launch-metrics/ — tải ≤ 10s, build < 20 MB
+- https://developers.poki.com/guide/requirements-quality — không request ngoài, localStorage try/catch, pause ESC/Space
+
+### Asset
+- https://kenney.nl/assets/blocky-characters — nhân vật (CC0)
+- https://kenney.nl/assets/furniture-kit — nội thất (CC0), chưa kiểm đủ đồ văn phòng
+
+</canonical_refs>
+
+<code_context>
+## Existing Code Insights
+
+### Reusable Assets
+- Chưa có code. Repo `d:\break-time` mới khởi tạo, chỉ có docs và `.planning`.
+
+### Established Patterns
+- Chưa có. Phase này đặt nền pattern cho mọi phase sau: tách logic gameplay thuần (test được bằng Vitest, TECH-06) khỏi render/physics; PlatformAdapter sẽ đến ở Phase 7.
+
+### Integration Points
+- **VPS `ssh doibung`** (root@187.53.128.67, Hostinger, AlmaLinux 10). Đo 14/09/2026: **1 vCPU / 3,6 GB RAM**, đĩa còn 42 GB. Đang chạy `doibung-caddy-1` (80/443), `doibung-app-1`, `doibung-postgres-1` (compose project `doibung` ở `/opt/doibung`).
+- Caddyfile đang là **bind mount một file**: `/opt/doibung/Caddyfile.nodb -> /etc/caddy/Caddyfile`. Editor thay inode thì container không thấy thay đổi; sửa xong phải `caddy reload` và **đọc lại cấu hình đang chạy** để xác nhận.
+- Không build trên VPS: build ở máy local, chỉ đẩy file tĩnh lên.
+- Không có `firewall-cmd` trên server; 80/443 đã mở (doibung.com đang chạy).
+
+</code_context>
+
+<specifics>
+## Specific Ideas
+
+- Cảm giác tát giống Crazy Office / Kick the Buddy: phóng đại, buồn cười, không máu.
+- Style nhân vật khối "bloxy". Crazy Office trên CrazyGames cũng gắn tag này.
+- Ảnh chụp màn hình kết quả `?bench=1` trên hai máy chuẩn là bằng chứng nghiệm thu phase. Không chấp nhận "chạy mượt" bằng lời.
+- Mỗi lần deploy phải chứng minh doibung.com vẫn sống, vì hai dự án dùng chung Caddy.
+
+</specifics>
+
+<deferred>
+## Deferred Ideas
+
+- Bảo vệ bản chơi thử bằng mật khẩu / noindex: operator chọn công khai hoàn toàn. Nên xem lại trước khi nộp CrazyGames (Phase 8) nếu muốn tránh bản dở bị index dưới tên game.
+- Navmesh + lịch trình NPC: Phase 2 (DETECT-07).
+- Vung đòn bằng kéo/vuốt: Phase 4 (RAGE-03).
+- Nhạc nền, bật/tắt âm thanh đầy đủ: Phase 7 (UX-03).
+
+</deferred>
+
+---
+
+*Phase: 01-spike-k-thu-t-ng-deploy*
+*Context gathered: 2026-09-14*
