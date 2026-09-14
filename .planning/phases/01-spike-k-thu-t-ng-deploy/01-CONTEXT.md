@@ -24,11 +24,11 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 
 ### Domain & deploy VPS
 - **D-01:** Bản chơi thử chạy ở **`breaktime.doibung.com`**. Operator phải thêm bản ghi DNS `A breaktime → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS.
-- **D-02:** Gắn game vào Caddy của stack `doibung` bằng **cơ chế import thư mục sites**, sửa **một lần** trong repo `d:\whattoeat` (không sửa tay trên server):
-  - `Caddyfile.nodb` (và `Caddyfile` bản đầy đủ cho nhất quán) thêm `import /etc/caddy/sites/*.caddy`
-  - `docker-compose.nodb.yml` (và `docker-compose.withdb.yml`/`docker-compose.yml` đang có trên server) mount thư mục host (ví dụ `/srv/sites`) vào caddy **read-only**: file site `*.caddy` + thư mục web tĩnh của từng dự án
-  - Recreate container caddy **một lần** (doibung.com gián đoạn vài giây; volume `caddy_data` giữ nguyên cert)
-  - Sau đó break-time chỉ ghi vào phần của mình dưới `/srv/sites` → **deploy whattoeat (`rsync --delete` vào `/opt/doibung`) không xoá được game**
+- **D-02:** Gắn game vào Caddy của stack `doibung` bằng **cơ chế import thư mục sites**, cấu hình **trực tiếp trên VPS qua `ssh doibung`** (operator chốt 14/09/2026). **KHÔNG sửa repo `d:\whattoeat` ở máy local**; máy local chỉ dùng để chạy và test game.
+  - Trên server: Caddyfile đang chạy (`/opt/doibung/Caddyfile.nodb`) thêm `import /etc/caddy/sites/*.caddy`; compose đang tạo container caddy mount thư mục host (ví dụ `/srv/sites`) vào caddy **read-only**, gồm file site `*.caddy` + thư mục web tĩnh của từng dự án
+  - Recreate container caddy **một lần** (doibung.com gián đoạn vài giây; volume `caddy_data` giữ nguyên cert). Trước khi sửa: sao lưu file gốc trên server; sau khi sửa: kiểm doibung.com trả 200
+  - Mọi file của break-time nằm **ngoài `/opt/doibung`** (dưới `/srv/sites`) để deploy whattoeat không xoá được game
+  - ⚠️ **Rủi ro còn lại (đã chấp nhận):** deploy whattoeat tiếp theo (`rsync --delete` từ `d:\whattoeat` vào `/opt/doibung`) sẽ **ghi đè 2 dòng sửa trong Caddyfile/compose** → game mất khỏi Caddy. Plan phải có: (a) một script/lệnh kiểm tra idempotent "Caddy còn import sites không" chạy trong `npm run deploy` của break-time, tự báo lỗi rõ ràng nếu dòng import biến mất; (b) ghi chú bàn giao cho operator về việc này. Không tự sửa repo whattoeat.
 - **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://breaktime.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
 - **D-04:** Server giữ **bản mới nhất ở `/`** và **bản theo commit ở `/b/<sha>/`**, giữ khoảng 10 bản gần nhất, tự dọn bản cũ. Vite dùng base tương đối để một build chạy được ở cả hai đường dẫn. Mục đích: mở 2 bản trên cùng điện thoại để so fps, và quay lại bản cũ khi bản mới lỗi.
 - **D-05:** Bản chơi thử **công khai hoàn toàn**: không mật khẩu, không chặn index (operator chọn).
@@ -94,11 +94,11 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 - `.planning/ROADMAP.md` §Phase 1 — success criteria + cổng chặn
 - `docs/research-game-design.md` §4 (ràng buộc cổng web, lý do chọn engine, stack, điều khiển, ngân sách hiệu năng), §5 (rủi ro nội dung)
 
-### Hạ tầng deploy (repo khác, phải sửa một lần theo D-02)
-- `d:/whattoeat/Caddyfile.nodb` — Caddyfile đang chạy trên server (bind mount 1 file vào `/etc/caddy/Caddyfile`); site `doibung.com` + redirect `www`
-- `d:/whattoeat/Caddyfile` — bản đầy đủ, phải sửa cho nhất quán
+### Hạ tầng deploy (CHỈ ĐỌC để hiểu cấu trúc — sửa trên server theo D-02, không sửa repo này)
+- `d:/whattoeat/Caddyfile.nodb` — bản nguồn của Caddyfile đang chạy trên server (`/opt/doibung/Caddyfile.nodb` bind mount 1 file vào `/etc/caddy/Caddyfile`); site `doibung.com` + redirect `www`
 - `d:/whattoeat/docker-compose.nodb.yml` — service `caddy` (80/443, volume `caddy_data`/`caddy_config`, `mem_limit: 128m`)
-- `d:/whattoeat/docker-compose.withdb.yml`, `d:/whattoeat/docker-compose.yml` — trên server còn project `doibung` chạy postgres từ file withdb; mount mới phải có ở bản đang thực sự tạo container caddy
+- `d:/whattoeat/docker-compose.withdb.yml` — trên server project `doibung` còn chạy postgres từ file này; phải xác định trên server file compose nào thực sự tạo container caddy trước khi thêm mount
+- Nguồn sự thật là **file trên server** (`ssh doibung`), không phải bản local
 - `d:/whattoeat/docs/08-selfhost-vps-admin.md` §8.5 — bẫy đã gặp: named volume cho state, `mem_limit` mọi container, không publish cổng DB, kiểm lại bằng đo chứ không tin config
 
 ### Luật cổng game web

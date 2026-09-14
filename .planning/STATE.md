@@ -65,11 +65,10 @@ None yet.
 
 ### Blockers/Concerns
 
-Cần operator chốt ở `/gsd-discuss-phase 1`:
-
-- **Domain bản chơi thử**: subdomain của doibung.com (ví dụ `breaktime.doibung.com`, chỉ cần thêm bản ghi A) hay mua domain riêng?
-- **Cách phục vụ static sau Caddy doibung**: (a) thêm volume thư mục game vào service caddy của `/opt/doibung` rồi recreate caddy, hoặc (b) container nginx nhỏ trong mạng `doibung_default` + `reverse_proxy`. Cả hai đều phải sửa compose của doibung → phải kiểm doibung.com vẫn sống sau thao tác
-- **Máy đo**: model Android tầm trung + iPhone cụ thể operator có để làm cổng chặn TECH-03/04
+- [Phase 1] **Model máy đo chưa ghi**: operator có Android tầm trung + iPhone (01-CONTEXT D-06) — phải ghi model/OS/trình duyệt trước lần đo đầu
+- [Phase 1] **DNS `A breaktime → 187.53.128.67`** là việc tay của operator, phải xong trước khi deploy lần đầu (D-01)
+- [Phase 1] Gắn game vào Caddy: sửa **trực tiếp trên VPS qua `ssh doibung`**, không sửa repo `d:\whattoeat` (D-02) + recreate caddy doibung 1 lần — kiểm doibung.com trả 200 trước/sau
+- [Phase 1] Deploy whattoeat kế tiếp (`rsync --delete`) sẽ ghi đè dòng `import` trong Caddyfile trên server → `npm run deploy` của break-time phải tự phát hiện và báo
 - VPS chỉ **1 vCPU / 3,6 GB RAM** (đo 14/09/2026) và đang chạy cả Postgres của doibung. Static site thì không sao, nhưng **không build game trên VPS**: build ở máy local rồi đẩy `dist/` lên
 
 ## Deferred Items
