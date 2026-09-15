@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-14-PLAN.md
-last_updated: "2026-09-15T08:43:25.265Z"
-last_activity: "2026-09-15 -- Completed 01-14 (Blocky player + 3 NPCs on hand-placed desk-pantry routes from one shared character.glb with per-letter 512² textures; pure waypoint walker; ?npcs=0..8 clamped; draw calls 104 with 3 NPCs, 134 with 8 at yaw 0 (over the 120 bench budget, D-07 step 3 lever), bodies 38/43; Vitest 252/252, Playwright 49 passed 0 failed, size gate OK 7.25 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); TECH-03/TECH-06 stay open)"
+stopped_at: Completed 01-15-PLAN.md
+last_updated: "2026-09-15T09:22:46.071Z"
+last_activity: "2026-09-15 -- Completed 01-15 (slap E/click/context -> 60 ms hit-stop, shake 0.12 m/180 ms, seeded slap-* SFX, pooled 6-body Rapier ragdoll with 5 spherical joints flies ~8.8 m, settles and blends upright in 0.45 s, walks on from nearest route point; kick deferred until Rapier computes the re-enabled torso mass; draw calls 104/134 with 3/8 NPCs unchanged during ragdoll, HUD bodies 56/91 incl. 6 pooled per NPC; Vitest 280/280, Playwright 52 passed 0 failed, size gate OK 7.26 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); CTRL-01/CTRL-02/TECH-06 stay open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 13
-  percent: 62
+  completed_plans: 14
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 15 of 21 (01-12 go-live still pending, deferred by the operator until DNS resolves)
+Plan: 16 of 21 (01-12 go-live still pending, deferred by the operator until DNS resolves)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-14 (Blocky player + 3 NPCs on hand-placed desk-pantry routes from one shared character.glb with per-letter 512² textures; pure waypoint walker; ?npcs=0..8 clamped; draw calls 104 with 3 NPCs, 134 with 8 at yaw 0 (over the 120 bench budget, D-07 step 3 lever), bodies 38/43; Vitest 252/252, Playwright 49 passed 0 failed, size gate OK 7.25 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); TECH-03/TECH-06 stay open)
+Last activity: 2026-09-15 -- Completed 01-15 (slap E/click/context -> 60 ms hit-stop, shake 0.12 m/180 ms, seeded slap-* SFX, pooled 6-body Rapier ragdoll with 5 spherical joints flies ~8.8 m, settles and blends upright in 0.45 s, walks on from nearest route point; kick deferred until Rapier computes the re-enabled torso mass; draw calls 104/134 with 3/8 NPCs unchanged during ragdoll, HUD bodies 56/91 incl. 6 pooled per NPC; Vitest 280/280, Playwright 52 passed 0 failed, size gate OK 7.26 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); CTRL-01/CTRL-02/TECH-06 stay open)
 
-Progress: [██████░░░░] 62%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [██████░░░░] 62%
 | Phase 01 P11 | 50min | 2 tasks | 12 files |
 | Phase 01 P13 | 15min | 2 tasks | 5 files |
 | Phase 01 P14 | 33min | 3 tasks | 10 files |
+| Phase 01 P15 | 32min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,11 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-14: Character textures mirror the GLB sampler (RepeatWrapping, LinearFilter, no mipmaps); Blocky UVs lie outside [0,1] and TextureLoader's default clamp painted edge texels
 - [Phase 01]: 01-14: NPC routes run via a west column + north lane derived from DESKS, desk stop +1.6 and fridge stop (-0.4,0.75); plan points clipped desk d2, the counter corner, chair backs and crossed the spawn/test-box corridor; waypoints.test.ts enforces 0.35 m clearance
 - [Phase 01]: 01-14: 8 NPCs = 134 draw calls at yaw 0 (121-127 at yaw 90), over the 120 bench budget; each Blocky character is 6 draws, fix is D-07 step 3 (one SkinnedMesh per character) in 01-20
+- [Phase 01]: 01-15: Slap kick deferred until torso.mass() > 0 — a Rapier 0.20 body created disabled has mass 0 until the first world step after setEnabled(true), so a same-call impulse is silently lost
+- [Phase 01]: 01-15: Slap impulse = total ragdoll mass x (9 dir + 5 up) on the torso; ragdoll lands ~8.8 m away from the e2e spot, gets up ~3 s later
+- [Phase 01]: 01-15: __bt.audio.requested lists requested SFX names (audio is locked under ?autoplay, so played stays empty)
+- [Phase 01]: 01-15: Hit-stop freezes sim steps and animation dt on performance.now(); camera shake runs through the freeze but waits while paused
+- [Phase 01]: 01-15: 6 pooled ragdoll bodies per NPC count in world.bodies.len() (HUD bodies 56 with 3 NPCs, 91 with 8); draw calls unchanged during ragdoll (104 / 134)
 
 ### Pending Todos
 
@@ -134,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T08:43:25.247Z
-Stopped at: Completed 01-14-PLAN.md
+Last session: 2026-09-15T09:22:46.045Z
+Stopped at: Completed 01-15-PLAN.md
 Resume file: None

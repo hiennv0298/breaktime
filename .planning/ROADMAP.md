@@ -79,7 +79,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 01-15-PLAN.md — Slap → slapstick ragdoll → get-up, hit-stop, shake, punch SFX (W7)
+- [x] 01-15-PLAN.md — Slap → slapstick ragdoll → get-up, hit-stop, shake, punch SFX (W7)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 13/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 14/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
