@@ -156,7 +156,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 02-04-PLAN.md — Logic thuần: roster 30 người (`bt.roster`, migrate một chiều `bt.npcs`), thêm/bớt nhanh, 32 tên ngẫu nhiên, phím +/−, luật công tắc nhãn `bt.npcLabels` (W2)
-- [ ] 02-05-PLAN.md — Logic thuần: FSM chiến đấu + combat director, test deterministic 600 step (W2)
+- [x] 02-05-PLAN.md — Logic thuần: FSM chiến đấu + combat director, test deterministic 600 step (W2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Spike kỹ thuật & đường deploy | 24/27 | In Progress|  |
-| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 4/13 | In Progress | - |
+| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 5/13 | In Progress | - |
 | 3. Hệ phát hiện | 0/TBD | Not started | - |
 | 4. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 5. Stress & Rage Mode | 0/TBD | Not started | - |

@@ -75,6 +75,7 @@ Progress: [█████████░] 89%
 | Phase 02 P02 | 9min | 3 tasks | 10 files |
 | Phase 02 P03 | 8min | 2 tasks | 5 files |
 | Phase 02 P04 | 10min | 3 tasks | 10 files |
+| Phase 02 P05 | 11min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -175,6 +176,8 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-04 (pure logic, before the Phase 1 device gate per D-12): roster in `bt.roster` v1 = ≤ 30 members (id ^m[0-9]{1,3}$, sanitised name, look one of 'bcdefghijklmnopqr', temper), present ≤ 15 in member order, on floor = first `count` present; raw > 8192 ignored before JSON.parse, 200-entry scan, whitelist copy into fresh literals (prototype-pollution test); `bt.npcs` v1 migrates one way (legacy names on m1..m10, looks b..k, count kept, 15 present) and is never written
 - [Phase 02]: 02-04: resolveStartRoster members bench -> default, else stored > migrated > default; count finite forcedCount > ?npcs= > roster count, forced/query clamped to present and reported 'query'; quickAdd = presentMembers[count] while count < min(15, present), quickRemove = LIFO; addMember takes the smallest free id and first unused look (rng only when all 17 are used); withSlotEdits maps names onto present members in order until plan 02-09 removes it
 - [Phase 02]: 02-04: Equal/NumpadAdd -> 'npc-add', Minus/NumpadSubtract -> 'npc-remove' (null with Ctrl/Meta/Alt, so Ctrl± zoom stays); keyboard.ts and KEY_HINTS untouched until 02-08; `bt.npcLabels` on unless exactly '0'; 32 frozen NFC preset nicknames, randomPresetName compares taken names after sanitizeNpcName
+- [Phase 02]: 02-05 (pure logic, before the Phase 1 device gate per D-12): combat FSM routine/down/fume/pursue/windup/cooldown/return; ragdoll/recover -> down (windup -> 'interrupted'); fume waits a seeded 0.2-0.5 s then pursues only with a token; windup 0.6 s (36 steps) -> strike -> cooldown 1.5 s -> return if landed or calm, pursue with token, else fume; give-up (anger cleared) on 8 s total pursuit, > 9 m held 1.0 s, stuck x2 (< 0.3 m per 1.0 s window, 0.5 s sidestep), calm; return -> routine within 0.5 m
+- [Phase 02]: 02-05: createCombatDirector({ seed, fight }) step order = forget/rebind -> tickAnger holdDecay physics !== 'animated' -> arbitrate on the previous step's wants (sorted ids) -> FSM in id order -> landed = targetable && strikeHits, satisfyAnger on landed/give-up -> drop unwanted tokens same step -> commands (pursue 2.2 m/s stopping at edge 0.95 m, sidestep left-hand (uz, -ux) 1.6 m/s, return 1.4 m/s not past the route point, marker only in windup); per-member rng mulberry32(seedFor(seed, memberId)) with seedFor = FNV-1a xor base; reset() re-seeds streams; 600-step same-seed trace deep-equal, seed + 1 differs
 
 ### Roadmap Evolution
 
