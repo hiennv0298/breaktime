@@ -163,6 +163,8 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
+- 16/09/2026: Phase 2 (NPC đồng nghiệp) ĐÃ LẬP PLAN — 13 plan / 10 wave, plan-checker PASSED vòng 2; 02-01..02-05 logic thuần chạy được ngay; 02-06..02-13 có entry guard chờ 01-GATE.md (PASS hoặc PASS sau D-07). Phase 1 vẫn là phase hiện tại (chờ đo máy thật 01-19).
+
 - 16/09/2026: chèn Phase 2 mới "NPC đồng nghiệp — tên, số lượng, đánh trả" (operator); phase cũ 2–8 lùi thành 3–9. Phase 01.1 (chèn nhầm 15/09) đã revert; research + 12 quyết định discuss chuyển sang Phase 2. Phase 1 vẫn EXECUTING (chờ đo máy thật 01-19).
 
 ### Pending Todos
