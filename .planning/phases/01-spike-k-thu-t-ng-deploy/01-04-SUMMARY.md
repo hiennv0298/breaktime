@@ -107,7 +107,7 @@ Post-check on the server, read-only:
 - app is `469bd89c7440` and postgres is `adf639c497c6`, the same as preflight.
 - The three `/opt/doibung` files keep their 2026-09-11 mtimes. `Caddyfile.nodb` md5 `4b5890ff…` still equals the local whattoeat copy.
 
-These commands were never run: `docker compose up/down/restart`, `caddy reload`, `docker run`, `infra:rollback` against the server. No `--approve=` value that could be valid was passed. The verify script aborted before sending `APPROVE-CADDY-00000000` in case the real code happened to be `00000000`.
+These commands were never run: `docker compose up/down/restart`, `caddy reload`, `docker run`, `infra:rollback` against the server. No `--approve=` value that could be valid was passed. Before sending `APPROVE-CADDY-00000000`, the verify script checked the real code from the no-token run and would have aborted if it were `00000000`. The real code was `4ebe4eba`, so the wrong-token run went ahead.
 
 ## Task Commits
 
