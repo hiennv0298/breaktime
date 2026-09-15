@@ -12,6 +12,7 @@ import { parseNpcAt } from '../logic/npcAt';
 import {
   DEFAULT_NPCS,
   MAX_NPCS,
+  normalizeNpcSettings,
   resolveStartNpcSettings,
   type NpcSettings,
   type NpcSettingsSource,
@@ -58,6 +59,12 @@ export interface Game {
   readonly player: Player;
   /** Settings the office started with (plan 01-26): count, sanitised names, where the count came from, storage health. */
   npcSettings(): { settings: NpcSettings; source: NpcSettingsSource; storageOk: boolean };
+  /**
+   * Applies a count and names chosen in the settings menu at once (plan 01-27, D-29): normalises again, despawns NPCs
+   * above the count, respawns or creates the missing ones (grow-only pool, never more than MAX_NPCS), renames the rest
+   * in place and reports source 'manual'. Storage is the caller's job (writeNpcSettings).
+   */
+  applyNpcSettings(s: NpcSettings): void;
 }
 
 export interface CreateGameOptions {
@@ -102,7 +109,8 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
  * the glowing coworker into a ragdoll (plan 01-15, D-12) only when that target is in range (and, for a click, only when
  * the click landed on it — D-18 / D-20 revised).
  * NPC count and names (plan 01-26, D-29): opts.forcedNpcCount > ?npcs= > saved 'bt.npcs' > 3; saved names show as
- * textContent tags above the NPCs and never leave the device (D-31).
+ * textContent tags above the NPCs and never leave the device (D-31). The settings menu applies a new count and names in
+ * place through applyNpcSettings (plan 01-27) on a grow-only pool of at most MAX_NPCS NPCs.
  */
 export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Promise<Game> {
   const [assets, characterAsset] = await Promise.all([
@@ -127,40 +135,65 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const cameraView = createCameraView(ctx.camera);
 
   // Coworkers on hand-placed routes (D-11). Texture letters follow the player's: b, c, d, …
-  const npcs: Npc[] = [];
+  // Grow-only pool (plan 01-27, D-29, T-01-27-02): slot i is created the first time the count reaches it; afterwards it
+  // is only despawned / respawned, so Apply never creates or removes Rapier bodies beyond MAX_NPCS NPCs.
+  const pool: Npc[] = [];
+  /** Active NPCs, always slots 0..count-1 in order (what the loops, name tags and __bt.npcs see). */
+  let npcs: Npc[] = [];
+  const npcTexture = new Map<Npc, string>();
+  /** Blob shadow handle per pool slot; -1 while the NPC is despawned (or before shadows exist). */
+  const npcShadow: number[] = [];
   const storedNpcSettings = readNpcSettingsRaw();
   const startNpcSettings = resolveStartNpcSettings(location.search, storedNpcSettings.raw, opts.forcedNpcCount);
-  const npcCount = startNpcSettings.settings.count;
-  const npcNames = startNpcSettings.settings.names;
+  let npcCount = startNpcSettings.settings.count;
+  let npcNames: string[] = [...startNpcSettings.settings.names];
+  let npcSource: NpcSettingsSource = startNpcSettings.source;
   // ?npcAt=x,z pins NPC 0, frozen until slapped, for the slap e2e and the benchmark (T-01-15-01: parsed and clamped).
   const npcAt = parseNpcAt(location.search, { halfX: ROOM.width / 2, halfZ: ROOM.depth / 2, margin: 0.5 });
   const firstNpcLetter = PLAYER_TEXTURE.charCodeAt(0) + 1;
-  for (let i = 0; i < npcCount; i++) {
-    // NPCs 1-8 keep their 01-14 routes and offsets; 9 and 10 walk the hand-placed routes 3 and 4 (D-29, plan 01-23).
+  /** The ?npcAt pin applies only while the office is first built; an NPC 0 created by a later Apply walks its route. */
+  let pinAllowed = true;
+  /** Set once shadows and targeting exist: NPCs created later by Apply register their blob and candidate through it. */
+  let wireNpc: ((i: number) => void) | null = null;
+
+  /** Route start of slot i plus its shared-route offset; NPCs 1-8 keep their 01-14 routes, 9-10 use routes 3-4 (01-23). */
+  function spawnPointFor(i: number): { x: number; z: number } {
     const route = NPC_ROUTES[routeIndexForNpc(i)];
-    const startIndex = i % route.length;
-    const shared = sharedIndexForNpc(i);
-    const start = route[startIndex];
-    const pinned = i === 0 && npcAt !== null;
-    npcs.push(
-      createNpc(ctx, {
-        id: 'npc-' + i,
-        asset: characterAsset,
-        texture: String.fromCharCode(firstNpcLetter + i),
-        route,
-        startIndex,
-        spawn: pinned && npcAt ? npcAt : { x: start.x + shared * SHARED_ROUTE_OFFSET, z: start.z },
-        frozen: pinned,
-        groupIndex: i,
-      }),
-    );
+    const start = route[i % route.length];
+    return { x: start.x + sharedIndexForNpc(i) * SHARED_ROUTE_OFFSET, z: start.z };
   }
-  const npcTexture = new Map(npcs.map((n, i) => [n, String.fromCharCode(firstNpcLetter + i)]));
+
+  /** Creates pool slots up to and including i (capped at MAX_NPCS); a created NPC starts active. */
+  function ensureNpc(i: number): void {
+    while (pool.length <= i && pool.length < MAX_NPCS) {
+      const k = pool.length;
+      const route = NPC_ROUTES[routeIndexForNpc(k)];
+      const pinned = pinAllowed && k === 0 && npcAt !== null;
+      const texture = String.fromCharCode(firstNpcLetter + k);
+      const npc = createNpc(ctx, {
+        id: 'npc-' + k,
+        asset: characterAsset,
+        texture,
+        route,
+        startIndex: k % route.length,
+        spawn: pinned && npcAt ? npcAt : spawnPointFor(k),
+        frozen: pinned,
+        groupIndex: k,
+      });
+      pool.push(npc);
+      npcTexture.set(npc, texture);
+      npcShadow.push(-1);
+      wireNpc?.(k);
+    }
+  }
+  for (let i = 0; i < npcCount; i++) ensureNpc(i);
+  pinAllowed = false;
+  npcs = pool.slice();
   // Name tags (D-29): one DOM layer, textContent only; unnamed NPCs never show a tag.
   const labels = createNpcLabels(uiRoot, MAX_NPCS);
   for (let i = 0; i < npcs.length; i++) labels.setText(i, npcNames[i] ?? '');
   const labelNdc = new Vector3();
-  const hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
+  let hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
 
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
   const shadows = createBlobShadows(ctx.scene);
@@ -175,10 +208,12 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const shadowOf = new Map<PropRecord, number>();
   const addPropShadow = (rec: PropRecord) => shadowOf.set(rec, shadows.addCaster(() => rec.object.position, rec.radius * 1.2));
   for (const rec of props.list()) addPropShadow(rec);
-  for (const npc of npcs) {
+  const addNpcShadow = (i: number): void => {
+    const npc = pool[i];
     // Follows the capsule while walking and the torso while the NPC is a ragdoll.
-    shadows.addCaster(() => npc.foot(), CAPSULE_RADIUS * 1.5);
-  }
+    npcShadow[i] = shadows.addCaster(() => npc.foot(), CAPSULE_RADIUS * 1.5);
+  };
+  for (let i = 0; i < pool.length; i++) addNpcShadow(i);
 
   // D-13 debris: shared shard kit (5 InstancedMesh), pooled shard bodies, cap from the quality tier (D-21).
   const shardKit = createShardKit(ctx.scene, DEFAULT_DEBRIS_CAPACITY);
@@ -220,11 +255,17 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     allCandidates.push(c);
     entryOf.set(c, { object: rec.object, prop: rec });
   }
-  for (const npc of npcs) {
+  // One candidate per pool slot, registered once; a despawned NPC is skipped by refreshTarget (not slappable).
+  const addNpcCandidate = (npc: Npc): void => {
     const c: Candidate = { id: npc.id, x: 0, z: 0, radius: NPC_TARGET_RADIUS, kind: 'npc' };
     allCandidates.push(c);
     entryOf.set(c, { object: npc.character.root, npc });
-  }
+  };
+  for (const npc of pool) addNpcCandidate(npc);
+  wireNpc = (i) => {
+    addNpcShadow(i);
+    addNpcCandidate(pool[i]);
+  };
   const hitStop = createHitStop();
   const centreWorld = new Vector3();
   const npcScreen = new Vector3();
@@ -249,6 +290,46 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     },
     () => getPauseState().isPaused(),
   );
+
+  function activateNpc(i: number): void {
+    const npc = pool[i];
+    if (!npc || npc.active()) return;
+    npc.respawn(spawnPointFor(i));
+    if (npcShadow[i] < 0) addNpcShadow(i);
+  }
+
+  function deactivateNpc(i: number): void {
+    const npc = pool[i];
+    if (!npc || !npc.active()) return;
+    npc.despawn();
+    if (npcShadow[i] >= 0) shadows.remove(npcShadow[i]);
+    npcShadow[i] = -1;
+    labels.hide(i);
+  }
+
+  /**
+   * In-place respawn (D-29, T-01-27-02/03): NPCs that stay keep their state (a flying ragdoll keeps flying) and only get
+   * the new name; props, broken objects, shards and the other blob shadows are untouched.
+   */
+  function applySettings(input: NpcSettings, source: NpcSettingsSource): void {
+    const s = normalizeNpcSettings(input);
+    for (let i = 0; i < MAX_NPCS; i++) {
+      if (i >= s.count) deactivateNpc(i);
+      else if (i < pool.length) activateNpc(i);
+      else ensureNpc(i);
+    }
+    npcs = pool.filter((n) => n.active());
+    npcCount = s.count;
+    npcNames = s.names;
+    npcSource = source;
+    for (let i = 0; i < MAX_NPCS; i++) {
+      if (i < npcs.length) labels.setText(i, npcNames[i] ?? '');
+      else labels.hide(i);
+    }
+    hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
+    // A despawned NPC that was glowing stops glowing at once, even while the game is paused.
+    refreshTarget();
+  }
 
   /** Projects every named NPC's head anchor and moves its tag; tags outside the view hide (runs every rendered frame). */
   function updateLabels(): void {
@@ -371,9 +452,9 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     }),
   );
   registerDebug('npcSettings', () => ({
-    count: startNpcSettings.settings.count,
+    count: npcCount,
     names: [...npcNames],
-    source: startNpcSettings.source,
+    source: npcSource,
     storageOk: storedNpcSettings.storageOk,
   }));
   registerDebug('npcLabels', () => labels.snapshot());
@@ -461,10 +542,13 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     },
     npcSettings() {
       return {
-        settings: { count: startNpcSettings.settings.count, names: [...npcNames] },
-        source: startNpcSettings.source,
+        settings: { count: npcCount, names: [...npcNames] },
+        source: npcSource,
         storageOk: storedNpcSettings.storageOk,
       };
+    },
+    applyNpcSettings(input) {
+      applySettings(input, 'manual');
     },
   };
   return game;

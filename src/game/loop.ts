@@ -7,8 +7,10 @@ import { createPauseState, type PauseState } from '../logic/pauseState';
 import { TIER_LABEL_VI } from '../logic/quality';
 import { createDebugHud } from '../ui/debugHud';
 import { createKeyHints, createKeyHintsSection } from '../ui/keyHints';
+import { createNpcSettingsSection } from '../ui/npcSettingsSection';
 import { createPauseMenu, createQualityControls } from '../ui/pauseMenu';
 import type { Game, GameCtx } from './game';
+import { writeNpcSettings } from './npcSettingsStore';
 import { createQualityManager } from './qualityManager';
 
 const FIXED_DT = 1 / 60;
@@ -43,6 +45,17 @@ export function startLoop(ctx: GameCtx, game: Game): void {
   // Key hint panel + touch hint (D-28, CTRL-06), toggled from the same menu.
   const hints = createKeyHints();
   menu.addSection(createKeyHintsSection(hints));
+  // NPC count + names (D-29, CTRL-07): saved on this device, then applied in place; a failed save still applies.
+  menu.addSection(
+    createNpcSettingsSection({
+      initial: game.npcSettings().settings,
+      onApply: (s) => {
+        const saved = writeNpcSettings(s);
+        game.applyNpcSettings(s);
+        return { saved };
+      },
+    }),
+  );
   let menuShown = false;
 
   registerDebug('simStep', () => simStep);

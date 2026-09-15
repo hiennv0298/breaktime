@@ -43,6 +43,15 @@ export interface Npc {
   pos(): { x: number; y: number; z: number };
   /** Point on (or just above) the floor under the NPC, for the blob shadow. */
   foot(): { x: number; y: number; z: number };
+  /** False after despawn() until respawn() (plan 01-27): an inactive NPC is hidden, not simulated and not slappable. */
+  active(): boolean;
+  /**
+   * Takes the NPC out of the office without destroying anything in Rapier (plan 01-27, D-29, T-01-27-03): a flying
+   * ragdoll is synced, disabled and its parts re-attached first; the capsule is disabled and the character hidden.
+   */
+  despawn(): void;
+  /** Brings an inactive NPC back, standing idle at `spawn` and walking its route again from its start point. */
+  respawn(spawn: { x: number; z: number }): void;
 }
 
 export interface NpcOptions {
@@ -121,6 +130,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
     .sort((a, b) => a.depth - b.depth)
     .map((e) => e.i);
 
+  let isActive = true;
   let walker = createWalker(opts.route, spawn, startIndex);
   if (opts.frozen) walker = { ...walker, frozen: true };
   let getUp: GetUpState = createGetUp();
@@ -186,13 +196,14 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       return walker.mode;
     },
     slappable() {
-      return getUp.mode === 'animated';
+      return isActive && getUp.mode === 'animated';
     },
     slap() {
       getUp = slapGetUp(getUp);
       walker = { ...walker, frozen: true };
     },
     fixedUpdate(dt) {
+      if (!isActive) return;
       if (getUp.mode === 'ragdoll') {
         ragdoll.fixedUpdate();
         const torso = ragdoll.torso();
@@ -222,6 +233,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       body.setNextKinematicTranslation(next);
     },
     frameUpdate(dt) {
+      if (!isActive) return;
       if (getUp.mode === 'ragdoll') {
         // The mixer stays still: it would overwrite the detached parts.
         ragdoll.sync();
@@ -267,6 +279,48 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       }
       const t = body.translation();
       return { x: t.x, y: t.y - CENTRE_Y, z: t.z };
+    },
+    active() {
+      return isActive;
+    },
+    despawn() {
+      if (!isActive) return;
+      if (getUp.mode === 'ragdoll' || ragdoll.active()) {
+        // Same world-preserving re-attach as beginRecover: torso before its children.
+        ragdoll.sync();
+        ragdoll.deactivate();
+        character.root.updateMatrixWorld(true);
+        for (const i of reattachOrder) parents[i].attach(character.parts[i]);
+      }
+      character.parts.forEach((p, i) => {
+        p.position.copy(idlePose[i].pos);
+        p.quaternion.copy(idlePose[i].quat);
+        p.scale.copy(idlePose[i].scale);
+      });
+      getUp = createGetUp();
+      recoverT = 0;
+      walker = { ...walker, frozen: true };
+      body.setEnabled(false);
+      character.root.visible = false;
+      isActive = false;
+    },
+    respawn(p) {
+      if (isActive) return;
+      const x = Number.isFinite(p.x) ? p.x : spawn.x;
+      const z = Number.isFinite(p.z) ? p.z : spawn.z;
+      walker = createWalker(opts.route, { x, z }, startIndex);
+      yaw = 0;
+      targetYaw = 0;
+      next.x = x;
+      next.z = z;
+      body.setTranslation(next, true);
+      body.setEnabled(true);
+      body.setNextKinematicTranslation(next);
+      character.root.position.set(x, 0, z);
+      character.root.rotation.y = 0;
+      character.root.visible = true;
+      character.setMotion('idle', 0);
+      isActive = true;
     },
   };
 }
