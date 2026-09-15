@@ -43,7 +43,7 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
   5. cho body ngủ sớm hơn
 
   Đo lại. **Vẫn không đạt thì DỪNG**, viết đánh giá PlayCanvas trước khi sang Phase 2. Không đi tiếp trên stack chưa đạt.
-- **D-08:** Đo fps bằng **chế độ benchmark `?bench=1`**: kịch bản cố định 60s tự chạy (nhân vật đi quanh phòng, tát NPC, đập ≥ 20 đồ, 8 NPC ngã ragdoll cùng lúc — xem D-11). Kết thúc hiện: fps trung bình, fps 1% thấp nhất, draw call, số physics body đỉnh, commit sha, mức chất lượng đang dùng. Ảnh chụp màn hình kết quả là bằng chứng nghiệm thu. Mọi lần đo dùng cùng kịch bản (seed cố định).
+- **D-08:** Đo fps bằng **chế độ benchmark `?bench=1`**: kịch bản cố định 60s tự chạy (nhân vật đi quanh phòng, tát NPC, đập ≥ 20 đồ, ~~8~~ **10** NPC ngã ragdoll cùng lúc — xem D-11, sửa 15/09/2026). Kết thúc hiện: fps trung bình, fps 1% thấp nhất, draw call, số physics body đỉnh, commit sha, mức chất lượng đang dùng. Ảnh chụp màn hình kết quả là bằng chứng nghiệm thu. Mọi lần đo dùng cùng kịch bản (seed cố định).
 
 ### Nội dung căn phòng spike
 - **D-09:** Nhân vật dùng **Kenney Blocky Characters** (CC0, 18 nhân vật, 27 animation, có glTF). Đồ nội thất ưu tiên **Kenney Furniture Kit** (CC0, 140 model, có glTF) cho đồng bộ style. ⚠️ **Chưa kiểm** Furniture Kit có máy tính/màn hình/máy in/cây nước không; researcher phải liệt kê được đồ thật, thiếu thì bù bằng pack CC0 khác của Kenney hoặc khối low-poly tự dựng cùng style.
