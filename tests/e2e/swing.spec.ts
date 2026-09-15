@@ -127,12 +127,13 @@ test.describe('swing desktop', () => {
   test('mashing E is limited by the cooldown', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!, EMPTY_URL);
 
-    // Three presses spread over ~120 ms, so they land on different fixed steps, all inside one cooldown.
+    // Three presses spread over ~80 ms, so they land on different fixed steps, all inside one cooldown.
+    // 01-18: 40 ms (was 60) — timing precondition flaked at 300.1 ms under full-suite load; still > one 16.7 ms step (D-30)
     const t0 = await pageNow(page);
     await page.keyboard.press('KeyE');
-    await page.waitForTimeout(60);
+    await page.waitForTimeout(40);
     await page.keyboard.press('KeyE');
-    await page.waitForTimeout(60);
+    await page.waitForTimeout(40);
     await page.keyboard.press('KeyE');
     const t1 = await pageNow(page);
     await page.waitForTimeout(100);
