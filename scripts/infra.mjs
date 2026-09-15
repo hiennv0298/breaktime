@@ -319,10 +319,17 @@ async function main(argv, env) {
   }
 }
 
-main(process.argv, process.env).then(
-  (code) => process.exit(code),
-  (e) => {
-    console.error(`INFRA_FATAL ${e?.stack ?? e}`);
-    process.exit(EXIT.error);
-  },
-);
+// Run only when executed directly, so deploy.mjs can import runCheck without side effects.
+// Windows paths are case-insensitive (d:\ vs D:\); a false negative here would exit 0 doing nothing.
+const samePath = (a, b) => (process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b);
+const invokedDirectly =
+  Boolean(process.argv[1]) && samePath(resolve(process.argv[1]), fileURLToPath(import.meta.url));
+if (invokedDirectly) {
+  main(process.argv, process.env).then(
+    (code) => process.exit(code),
+    (e) => {
+      console.error(`INFRA_FATAL ${e?.stack ?? e}`);
+      process.exit(EXIT.error);
+    },
+  );
+}
