@@ -47,7 +47,7 @@ async function startPlaying(page: Page, baseURL: string): Promise<PageProblems> 
   await page.waitForFunction(
     () => {
       const b = (window as unknown as { __bt: Bt }).__bt;
-      return !!b.player && !!b.props && !!b.highlight && !!b.shadows && !!b.box;
+      return !!b.player && !!b.props && !!b.shadows && !!b.box;
     },
     undefined,
     { timeout: 10_000, polling: 100 },
@@ -60,6 +60,13 @@ async function startPlaying(page: Page, baseURL: string): Promise<PageProblems> 
 function expectClean(problems: PageProblems): void {
   expect(problems.errors).toEqual([]);
   expect(problems.offOrigin).toEqual([]);
+}
+
+async function waitHighlightKey(page: Page): Promise<void> {
+  await page.waitForFunction(() => !!(window as unknown as { __bt: Bt }).__bt.highlight, undefined, {
+    timeout: 5000,
+    polling: 100,
+  });
 }
 
 async function waitHighlighted(page: Page, id: string, timeout = 3000): Promise<void> {
@@ -139,6 +146,7 @@ test.describe('room desktop', () => {
 
   test('E pushes highlighted', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!);
+    await waitHighlightKey(page);
     const h0 = await bt(page, 'highlight');
     expect(h0!.id).toBeNull();
     expect(h0!.icon).toBe('none');
@@ -160,6 +168,7 @@ test.describe('room desktop', () => {
 
   test('click only highlighted', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!);
+    await waitHighlightKey(page);
     await walkUntilBoxHighlighted(page);
 
     const h = await bt(page, 'highlight');
@@ -208,6 +217,7 @@ test.describe('room touch', () => {
 
   test('touch context icon', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!);
+    await waitHighlightKey(page);
     await expect(page.locator('#btn-context')).toBeVisible();
     expect((await bt(page, 'touchUi'))!.contextIcon).toBe('none');
 

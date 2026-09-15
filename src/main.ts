@@ -77,7 +77,8 @@ async function boot(): Promise<void> {
 
   const physics = createPhysics(rapier.R);
   const ctx = { ...renderCtx, physics, loaded };
-  const game = createGame(ctx);
+  // Async since plan 01-10: the office GLBs fetched before Chơi are parsed here, after three.js has loaded.
+  const game = await createGame(ctx);
   startLoop(ctx, game);
   setBootState('playing');
 }
