@@ -18,7 +18,7 @@ vòng lặp này vẫn phải chơi được mượt trên một điện thoại
 - **Tech stack**: TypeScript + Vite + Three.js + Rapier (WASM) — nhẹ hơn Unity, chạy được Safari iOS, hệ sinh thái lớn
 - **Kích thước**: tải lần đầu mục tiêu ≤ 8 MB, trần cứng ≤ 20 MB — CrazyGames chỉ đưa lên trang chủ mobile khi build ≤ 20 MB; Poki muốn ~8 MB
 - **Hiệu năng**: ≥ 30 fps ổn định trên Android tầm trung, 60 fps desktop; vào gameplay ≤ 10s trên 4G — CrazyGames đo conversion 80%+
-- **Cổng web**: không request ra ngoài (font/asset đóng gói hết), chạy được khi bật ad-blocker, localStorage bọc try/catch, ESC/Space để pause, cutscene skip được — luật Poki/CrazyGames
+- **Cổng web**: không request ra ngoài (font/asset đóng gói hết), chạy được khi bật ad-blocker, localStorage bọc try/catch, ESC (và Ctrl) để pause — Space là phím đánh từ 15/09/2026 (D-27), Space không được cuộn trang; xem lại luật pause của Poki trước giai đoạn phát hành — cutscene skip được — luật Poki/CrazyGames
 - **Nội dung**: ≤ PEGI 12; tin đồn chọn từ thẻ có sẵn, nội dung ngớ ngẩn vô hại
 - **Asset**: chỉ dùng license CC0 hoặc tương đương cho phép thương mại + web; ghi nguồn trong `CREDITS.md`
 - **Dữ liệu**: không thu dữ liệu cá nhân ở v1

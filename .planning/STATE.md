@@ -116,6 +116,7 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-14: Character textures mirror the GLB sampler (RepeatWrapping, LinearFilter, no mipmaps); Blocky UVs lie outside [0,1] and TextureLoader's default clamp painted edge texels
 - [Phase 01]: 01-14: NPC routes run via a west column + north lane derived from DESKS, desk stop +1.6 and fridge stop (-0.4,0.75); plan points clipped desk d2, the counter corner, chair backs and crossed the spawn/test-box corridor; waypoints.test.ts enforces 0.35 m clearance
 - [Phase 01]: 01-14: 8 NPCs = 134 draw calls at yaw 0 (121-127 at yaw 90), over the 120 bench budget; each Blocky character is 6 draws, fix is D-07 step 3 (one SkinnedMesh per character) in 01-20
+- [Phase 01]: 15/09/2026: gộp mesh nhân vật (6 → 1 draw call) chuyển từ lever D-07 ở 01-20 sang plan 01-23, làm trước benchmark 01-17 (bench 10 NPC, D-11/D-29)
 - [Phase 01]: 01-15: Slap kick deferred until torso.mass() > 0 — a Rapier 0.20 body created disabled has mass 0 until the first world step after setEnabled(true), so a same-call impulse is silently lost
 - [Phase 01]: 01-15: Slap impulse = total ragdoll mass x (9 dir + 5 up) on the torso; ragdoll lands ~8.8 m away from the e2e spot, gets up ~3 s later
 - [Phase 01]: 01-15: __bt.audio.requested lists requested SFX names (audio is locked under ?autoplay, so played stays empty)
