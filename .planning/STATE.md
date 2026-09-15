@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-09-15T04:24:34.177Z"
-last_activity: "2026-09-15 -- Completed 01-03 (walled room + Rapier KCC capsule: WASD camera-relative move, walls/desk block, E pushes box within 1.5 m, damped 55 deg follow camera; Vitest 74/74, Playwright 19 passed)"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-09-15T04:43:49.728Z"
+last_activity: "2026-09-15 -- Completed 01-06 (size gate + br/gz sidecars, first load 3,099,063 B until ready-to-play, breaktime.caddy valid on live Caddy read-only, release/activate-site scripts sim 56/56 + 6/6 mutants; Vitest 111/111, Playwright 20 passed)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 5
-  percent: 24
+  completed_plans: 6
+  percent: 29
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 6 of 21
+Plan: 7 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-03 (walled room + Rapier KCC capsule: WASD camera-relative move, walls/desk block, E pushes box within 1.5 m, damped 55 deg follow camera; Vitest 74/74, Playwright 19 passed)
+Last activity: 2026-09-15 -- Completed 01-06 (size gate + br/gz sidecars, first load 3,099,063 B until ready-to-play, breaktime.caddy valid on live Caddy read-only, release/activate-site scripts sim 56/56 + 6/6 mutants; Vitest 111/111, Playwright 20 passed)
 
-Progress: [██░░░░░░░░] 24%
+Progress: [███░░░░░░░] 29%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [██░░░░░░░░] 24%
 | Phase 01 P04 | 35min | 3 tasks | 13 files |
 | Phase 01 P05 | 8min | 2 tasks | 35 files |
 | Phase 01 P03 | 10min | 2 tasks | 10 files |
+| Phase 01 P06 | 16min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-03: PlayerBody.move(desired, dt) takes the horizontal step translation in metres; dt only drives internal gravity (reset when computedGrounded)
 - [Phase 01]: 01-03: camera distance 11 / pitch 55 kept as planned (01-09 pins them) although 1280x720 frames nearly the full room width, not half; flagged for end-of-phase human check
 - [Phase 01]: 01-03: facing yaw convention direction (-sin yaw, -cos yaw) = moveMath forward; push impulse 4*m along facing + 1.5*m up within 1.5 m XZ
+- [Phase 01]: 01-06: release.sh cleanup exits 7 (__CURRENT_MOVED__) when current moved; it skips symlinked names and paths that resolve to the current target
+- [Phase 01]: 01-06: first-load spec stops at ready-to-play (3,099,063 bytes); about 0.54 MB of three/renderer chunks load after Chơi and are not counted
+- [Phase 01]: 01-06: SIZE-REASON.md must contain the first-load total as x.y MB or exact bytes to turn >8 MB into warn
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T04:24:34.165Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-09-15T04:43:49.714Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
