@@ -24,22 +24,22 @@ Requirements: NPC-01, NPC-02, NPC-03, NPC-04, NPC-05, NPC-06.
 ## Implementation Decisions
 
 ### Số lượng & roster
-- **D-01 (G1):** Trần **15 NPC** (giới hạn cứng hiện có: 16 nhóm va chạm ragdoll = 15 NPC + người chơi). Headless đo 15 NPC: 96 draw call, CPU 1,82 ms/frame. Bench phải xác nhận ≥ 30 fps trên 2 máy chuẩn. CTRL-07 (0–10) được nâng lên 0–15; `?npcs=` kẹp 0..15.
-- **D-02 (G2):** Thêm/bớt nhanh bằng **phím +/−** trên desktop (`Equal`/`NumpadAdd`, `Minus`/`NumpadSubtract`, không chặn tổ hợp Ctrl) và **cụm nút "− N +" bán trong suốt** trên HUD mobile/desktop, đánh dấu `data-hud-panel` để không vung tay. NPC thêm vào lấy lần lượt từ những người **có mặt** trong roster.
-- **D-03 (G3):** **Roster tối đa 30 đồng nghiệp**: tên (≤ 16 ký tự, làm sạch như 01-26), 1 trong **17 ngoại hình** Blocky, **tính khí Nóng / Thường / Hiền**; tick ai có mặt; nút tên ngẫu nhiên; đổi tên tại chỗ; xoá. Roster sửa trong settings.
-- **D-04 (G5, kế thừa Phase 1 D-31):** Tên **gõ tự do** + **dòng cảnh báo** "Tên chỉ lưu trên máy bạn — đừng dùng để xúc phạm ai" + nút tên ngẫu nhiên. Bộ lọc từ thô xét ở Phase 9 (CrazyGames). Không gửi tên đi đâu, textContent only.
+- **D-01:** (G1) Trần **15 NPC** (giới hạn cứng hiện có: 16 nhóm va chạm ragdoll = 15 NPC + người chơi). Headless đo 15 NPC: 96 draw call, CPU 1,82 ms/frame. Bench phải xác nhận ≥ 30 fps trên 2 máy chuẩn. CTRL-07 (0–10) được nâng lên 0–15; `?npcs=` kẹp 0..15.
+- **D-02:** (G2) Thêm/bớt nhanh bằng **phím +/−** trên desktop (`Equal`/`NumpadAdd`, `Minus`/`NumpadSubtract`, không chặn tổ hợp Ctrl) và **cụm nút "− N +" bán trong suốt** trên HUD mobile/desktop, đánh dấu `data-hud-panel` để không vung tay. NPC thêm vào lấy lần lượt từ những người **có mặt** trong roster.
+- **D-03:** (G3) **Roster tối đa 30 đồng nghiệp**: tên (≤ 16 ký tự, làm sạch như 01-26), 1 trong **17 ngoại hình** Blocky, **tính khí Nóng / Thường / Hiền**; tick ai có mặt; nút tên ngẫu nhiên; đổi tên tại chỗ; xoá. Roster sửa trong settings.
+- **D-04:** (G5, kế thừa Phase 1 D-31) Tên **gõ tự do** + **dòng cảnh báo** "Tên chỉ lưu trên máy bạn — đừng dùng để xúc phạm ai" + nút tên ngẫu nhiên. Bộ lọc từ thô xét ở Phase 9 (CrazyGames). Không gửi tên đi đâu, textContent only.
 
 ### NPC đánh trả
-- **D-05 (G6):** **Thanh giận theo tính khí**: Nóng giận sau 1 cú tát, Thường 2, Hiền 3; thanh giận nguội dần theo thời gian; NPC chỉ bắt đầu hành động giận **sau khi đứng dậy** khỏi ragdoll. Quyết định dùng rng có seed.
-- **D-06 (G7):** Người chơi bị đánh trúng → **ngã ragdoll nhẹ** kiểu slapstick, **khoá điều khiển tối đa ~3 s**, tự đứng dậy, **bất tử 1,5 s** sau khi dậy. Không thua, không màn game over.
-- **D-07 (G8):** **Token: tối đa 3 NPC đuổi, 1 NPC vung đòn** cùng lúc (đo được: 30 NPC cùng đuổi tốn 8–10 ms/step, giới hạn 3 còn 0,07–0,16 ms). NPC giận không có token thì đứng tại chỗ bực bội / chờ lượt.
-- **D-08 (G10):** **Báo trước 0,6 s**: NPC giơ tay + dấu "!" trên đầu; người chơi **né bằng cách đi ra** khỏi tầm; tát trúng NPC đang giơ tay thì **cắt đòn**. **Không thêm nút né** (mobile vẫn 1 nút ngữ cảnh).
-- **D-09 (G11):** **Không HP**, không máu (PEGI 12). Phản hồi khi bị trúng: hit-stop + **rung camera** (không dùng `navigator.vibrate` — iOS Safari không hỗ trợ) + SFX + **viền màn hình loé** (không màu đỏ máu).
-- **D-10 (G12):** Nhãn tên NPC **luôn hiện**, có **công tắc trong settings**; NPC đang giận **đổi màu nhãn**.
+- **D-05:** (G6) **Thanh giận theo tính khí**: Nóng giận sau 1 cú tát, Thường 2, Hiền 3; thanh giận nguội dần theo thời gian; NPC chỉ bắt đầu hành động giận **sau khi đứng dậy** khỏi ragdoll. Quyết định dùng rng có seed.
+- **D-06:** (G7) Người chơi bị đánh trúng → **ngã ragdoll nhẹ** kiểu slapstick, **khoá điều khiển tối đa ~3 s**, tự đứng dậy, **bất tử 1,5 s** sau khi dậy. Không thua, không màn game over.
+- **D-07:** (G8) **Token: tối đa 3 NPC đuổi, 1 NPC vung đòn** cùng lúc (đo được: 30 NPC cùng đuổi tốn 8–10 ms/step, giới hạn 3 còn 0,07–0,16 ms). NPC giận không có token thì đứng tại chỗ bực bội / chờ lượt.
+- **D-08:** (G10) **Báo trước 0,6 s**: NPC giơ tay + dấu "!" trên đầu; người chơi **né bằng cách đi ra** khỏi tầm; tát trúng NPC đang giơ tay thì **cắt đòn**. **Không thêm nút né** (mobile vẫn 1 nút ngữ cảnh).
+- **D-09:** (G11) **Không HP**, không máu (PEGI 12). Phản hồi khi bị trúng: hit-stop + **rung camera** (không dùng `navigator.vibrate` — iOS Safari không hỗ trợ) + SFX + **viền màn hình loé** (không màu đỏ máu).
+- **D-10:** (G12) Nhãn tên NPC **luôn hiện**, có **công tắc trong settings**; NPC đang giận **đổi màu nhãn**.
 
 ### Benchmark & thứ tự
-- **D-11 (G13):** `?bench=1` **giữ nguyên** (10 NPC, so sánh được với Phase 1); thêm kịch bản **`&brawl=1`** có NPC giận đuổi/đánh trả để đo ngân sách.
-- **D-12 (G14):** **Làm module logic thuần trước** (giận, đuổi, token, roster, lưu trữ — test bằng Node, không phụ thuộc three/Rapier); **phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT**. Plan tích hợp phải có bước chặn (entry guard) đọc `01-GATE.md`: VERDICT=PASS mới làm; nếu Phase 1 dừng để đổi stack thì dừng tích hợp. **Operator xác nhận 16/09/2026:** cũng đi tiếp khi `VERDICT=FAIL` rồi `VERDICT_AFTER_OPT=PASS` sau đúng một vòng tối ưu D-07 (01-20/01-21) — vì khi đó Phase 1 không đổi stack; chỉ dừng khi Phase 1 STOP.
+- **D-11:** (G13) `?bench=1` **giữ nguyên** (10 NPC, so sánh được với Phase 1); thêm kịch bản **`&brawl=1`** có NPC giận đuổi/đánh trả để đo ngân sách.
+- **D-12:** (G14) **Làm module logic thuần trước** (giận, đuổi, token, roster, lưu trữ — test bằng Node, không phụ thuộc three/Rapier); **phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT**. Plan tích hợp phải có bước chặn (entry guard) đọc `01-GATE.md`: VERDICT=PASS mới làm; nếu Phase 1 dừng để đổi stack thì dừng tích hợp. **Operator xác nhận 16/09/2026:** cũng đi tiếp khi `VERDICT=FAIL` rồi `VERDICT_AFTER_OPT=PASS` sau đúng một vòng tối ưu D-07 (01-20/01-21) — vì khi đó Phase 1 không đổi stack; chỉ dừng khi Phase 1 STOP.
 
 ### Claude's Discretion
 - **G3r:** NPC 11–15 dùng lại 5 tuyến đặt tay, lệch pha/offset theo seed (chưa có navmesh — Phase 3); vẫn phải qua test khoảng cách với đồ đạc.
