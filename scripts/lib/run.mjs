@@ -104,9 +104,14 @@ export function run(cmd, args, opts = {}) {
   });
 }
 
+/** ssh argv for one remote command (shared by ssh() and the deploy tar-stream upload). */
+export function sshArgv(remoteCmd) {
+  return ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', SSH_HOST, remoteCmd];
+}
+
 /** Run one command on the VPS. Host key verification stays on (known_hosts). */
 export function ssh(remoteCmd, opts) {
-  return run(SSH, ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', SSH_HOST, remoteCmd], opts);
+  return run(SSH, sshArgv(remoteCmd), opts);
 }
 
 /**
