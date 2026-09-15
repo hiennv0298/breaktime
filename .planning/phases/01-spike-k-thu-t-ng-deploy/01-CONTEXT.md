@@ -48,7 +48,7 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 ### Nội dung căn phòng spike
 - **D-09:** Nhân vật dùng **Kenney Blocky Characters** (CC0, 18 nhân vật, 27 animation, có glTF). Đồ nội thất ưu tiên **Kenney Furniture Kit** (CC0, 140 model, có glTF) cho đồng bộ style. ⚠️ **Chưa kiểm** Furniture Kit có máy tính/màn hình/máy in/cây nước không; researcher phải liệt kê được đồ thật, thiếu thì bù bằng pack CC0 khác của Kenney hoặc khối low-poly tự dựng cùng style.
 - **D-10:** Căn phòng là **open-space 4 bàn làm việc + góc pantry**, bố cục dùng lại được cho Phase 2–3 (NPC đi bàn ↔ pantry, prank cà phê).
-- **D-11:** **3 NPC khi chơi thường**, đi vòng qua các điểm **đặt tay** (bàn ↔ pantry), không navmesh, không lịch trình (đó là DETECT-07, Phase 2). **Benchmark tăng lên 8 NPC** (trần của Tầng 1) và cho ngã ragdoll cùng lúc để đo trần thật.
+- **D-11:** **3 NPC mặc định**, đi vòng qua các điểm **đặt tay** (bàn ↔ pantry), không navmesh, không lịch trình (đó là DETECT-07, Phase 2). ~~Benchmark tăng lên 8 NPC~~ **Sửa 15/09/2026:** người chơi chọn 0–10 NPC trong settings (D-29), nên **benchmark đo trần 10 NPC** cho ngã ragdoll cùng lúc.
 - **D-12:** Cú tát/đẩy kiểu **slapstick phóng đại**: NPC bay xa, xoay, tiếng "bốp", hit-stop khoảng 60ms, rung màn hình nhẹ, ngã ragdoll rồi **tự đứng dậy** đi tiếp. Không máu (PEGI 12).
 - **D-13:** Đồ vật: **phần lớn văng/đổ theo vật lý** (ghế, thùng rác, giấy tờ…). **Cốc, màn hình, chậu cây vỡ thành mảnh**: dùng **một bộ 5–8 mảnh low-poly chung**, đổi màu/tỉ lệ theo vật bị vỡ (không cắt riêng từng vật bằng Blender — operator chốt sau research, 14/09/2026). Mảnh tự dọn sau vài giây, số mảnh tối đa có trần.
 - **D-14:** Ánh sáng **màu phẳng + bóng tròn giả (blob shadow) dưới chân** nhân vật/đồ vật. **Không dùng shadow map thời gian thực.**
@@ -57,9 +57,9 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 ### Điều khiển & hướng màn hình
 - **D-16:** Mobile **ưu tiên màn ngang**. Cầm dọc vẫn chơi được: camera lùi xa hơn, nút dồn xuống đáy. **Không** bắt người chơi xoay máy.
 - **D-17:** Joystick ảo **nổi theo ngón tay**: chạm đâu ở nửa trái màn hình thì joystick hiện ngay đó.
-- **D-18:** Tát bằng **nút ngữ cảnh (mobile) / phím E (desktop)** khi đứng gần NPC; icon nút đổi theo vật gần nhất. Kéo/vuốt để vung đòn dành cho Rage Mode (Phase 4).
-- **D-19:** Camera góc nghiêng cố định, **bám mượt theo nhân vật**, tầm nhìn khoảng 1/2 phòng. Xoay 90° bằng **Z / C trên desktop** và **nút ⟲ ⟳ góc trên phải trên mobile**. (Sửa 14/09/2026 sau research: Q/E ban đầu trùng phím E tương tác của CTRL-01/D-18; operator chọn Z/C.)
-- **D-20:** Desktop di chuyển bằng WASD, tương tác bằng E hoặc click chuột trái vào vật đang sáng (CTRL-01). Pause bằng ESC/Space; mobile có nút ⏸ (CTRL-04).
+- **D-18:** Tát bằng **nút ngữ cảnh (mobile) / ~~phím E~~ Space (desktop, sửa 15/09/2026 — E vẫn dùng được như phím phụ)** khi đứng gần NPC; icon nút đổi theo vật gần nhất. Kéo/vuốt để vung đòn dành cho Rage Mode (Phase 4).
+- **D-19:** Camera góc nghiêng cố định, **bám mượt theo nhân vật**, tầm nhìn khoảng 1/2 phòng. Xoay 90° bằng **Z / C trên desktop** và **nút ⟲ ⟳ góc trên phải trên mobile**. (Sửa 14/09/2026 sau research: Q/E ban đầu trùng phím E tương tác của CTRL-01/D-18; operator chọn Z/C.) **Sửa 15/09/2026:** phím mũi tên KHÔNG còn là phím phụ xoay camera — mũi tên dùng để di chuyển (D-27).
+- **D-20:** ~~Desktop di chuyển bằng WASD, tương tác bằng E hoặc click chuột trái vào vật đang sáng (CTRL-01). Pause bằng ESC/Space; mobile có nút ⏸ (CTRL-04).~~ **Thay bằng D-27 (15/09/2026).** Click chuột trái vào vật đang sáng vẫn giữ; mobile vẫn có nút ⏸.
 
 ### Máy yếu / không có WebGL
 - **D-21:** Có **3 mức chất lượng Thấp / Vừa / Cao**, chỉnh pixel ratio, trần mảnh vỡ và khoảng cách vẽ. Game đo fps vài giây đầu rồi **tự chọn mức**, và **có nút đổi tay** trong menu pause. Benchmark ghi rõ đang chạy mức nào.
@@ -74,6 +74,14 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 ### Chốt bổ sung sau research (14/09/2026)
 - **D-25:** SFX Kenney (OGG) được chuyển sang **MP3** cho Safari iOS bằng **`ffmpeg-static` trong devDependencies**, chạy qua script npm (ví dụ `npm run assets`). Không cài ffmpeg vào Windows.
 - **D-26:** iPhone Safari không hỗ trợ fullscreen cho phần tử (chỉ iPad). Nút "Chơi" (D-23) xin fullscreen khi trình duyệt hỗ trợ; trên iPhone thì chơi ở chế độ phủ kín viewport, không báo lỗi.
+
+### Chốt bổ sung sau khi chơi thử bản live (15/09/2026, operator)
+- **D-27:** Sơ đồ phím desktop: **phím mũi tên và WASD đều di chuyển**; **Space là nút hành động duy nhất** (luôn vung tay; trúng NPC thì tát, trúng đồ thì đẩy — giống nút ngữ cảnh mobile); **Ctrl hoặc Esc mở menu settings/tạm dừng** (có Esc để tránh bẫy Ctrl+W/Ctrl+R và khác biệt Ctrl/Cmd trên Mac; chỉ phản ứng khi Ctrl được nhấn và thả một mình, không nuốt tổ hợp Ctrl+phím của trình duyệt); **xoay camera chỉ Z/C**; E giữ làm phím phụ của Space. Space không còn là phím tạm dừng.
+- **D-28:** **Bảng hướng dẫn phím bán trong suốt ở góc dưới-trái** trên desktop (←↑→↓ đi, Space đánh, Ctrl/Esc settings, Z/C xoay), tự mờ còn ~30% sau vài giây, rõ lại khi di chuột vào, bật/tắt trong settings (nhớ lựa chọn trong localStorage, bọc try/catch). Trên mobile: các nút ảo bán trong suốt và có dòng hướng dẫn ngắn lần đầu.
+- **D-29:** **NPC 0–10, tự đặt tên**: trong settings chọn số NPC 0–10 (mặc định 3) và gõ tên từng NPC (≤ 16 ký tự, cắt khoảng trắng, hiển thị nhãn tên trên đầu NPC — render bằng DOM/textContent hoặc sprite, không innerHTML), lưu localStorage trên máy, không gửi đi đâu. NPC thứ 9–10 cần tuyến đường đặt tay thêm (vẫn không navmesh). `?npcs=` vẫn dùng được và giới hạn 0–10.
+- **D-30:** Bấm nút tấn công (Space/E/nút ngữ cảnh/click) **luôn phát hoạt ảnh vung tay ngay lập tức**, kể cả khi không có mục tiêu trong tầm; trúng mục tiêu thì mới tát/đẩy. Có thời gian hồi ngắn để không spam.
+- **D-31:** Rủi ro nội dung của tên NPC tự gõ (PROJECT Out of Scope "nhập tên người thật"): **operator chấp nhận cho bản chơi thử riêng**; phải xem lại trước khi nộp CrazyGames (Phase 8) — thay bằng danh sách tên có sẵn hoặc lọc.
+- **Hệ quả hiệu năng:** 10 NPC vượt ngân sách draw call (8 NPC đã 134 > 120, mỗi nhân vật 6 draw call) → gộp mesh nhân vật (6 → 1 draw call/nhân vật, RESEARCH A6) nên được làm **trước** benchmark 01-17 thay vì để D-07 ở 01-20.
 
 ### Claude's Discretion
 - Cấu trúc thư mục, cách tách module render / physics / logic / input, ECS hay không

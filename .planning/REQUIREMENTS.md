@@ -17,10 +17,12 @@
 
 ### Điều khiển (CTRL)
 
-- [ ] **CTRL-01**: Trên desktop, người chơi di chuyển bằng WASD và tương tác bằng E hoặc click chuột trái vào vật đang sáng
+- [ ] **CTRL-01**: Trên desktop, người chơi di chuyển bằng phím mũi tên (WASD cũng được) và hành động bằng Space (luôn vung tay; trúng NPC thì tát, trúng đồ thì đẩy); E và click chuột trái vào vật đang sáng vẫn dùng được *(đổi 15/09/2026)*
 - [ ] **CTRL-02**: Trên mobile/tablet, người chơi di chuyển bằng joystick ảo nửa trái và tương tác bằng một nút ngữ cảnh lớn (icon đổi theo vật gần nhất)
 - [ ] **CTRL-03**: Game phủ toàn màn hình ở cả hướng dọc và ngang; xoay máy giữa chừng không vỡ UI
-- [x] **CTRL-04**: Người chơi tạm dừng bằng ESC/Space (desktop) hoặc nút ⏸ (mobile)
+- [ ] **CTRL-04**: Người chơi mở menu settings/tạm dừng bằng Ctrl hoặc ESC (desktop) hoặc nút ⏸ (mobile); Space không còn là phím tạm dừng *(đổi 15/09/2026)*
+- [ ] **CTRL-06**: Có bảng hướng dẫn phím bán trong suốt ở góc dưới-trái (desktop: ←↑→↓ đi, Space đánh, Ctrl/Esc settings, Z/C xoay), tự mờ còn ~30% sau vài giây, rõ lại khi di chuột vào, bật/tắt trong settings; trên mobile các nút ảo bán trong suốt và có dòng hướng dẫn lần đầu *(thêm 15/09/2026)*
+- [ ] **CTRL-07**: Trong settings người chơi chọn số NPC 0–10 và gõ tên cho từng NPC (≤ 16 ký tự, hiện trên đầu NPC), lưu localStorage trên máy, không gửi đi đâu *(thêm 15/09/2026)*
 - [x] **CTRL-05**: Người chơi xoay camera theo bước 90° quanh văn phòng
 
 ### Phát hiện (DETECT)
@@ -117,7 +119,7 @@
 | Tài khoản / backend dữ liệu người chơi | Không dữ liệu cá nhân → không hồ sơ xuyên biên giới; localStorage đủ cho v1 |
 | IAP | Poki cấm; Basic Launch không kiếm tiền |
 | Multiplayer / co-op | Cần backend realtime, lệch Core Value |
-| Gõ tin đồn tự do / nhập tên người thật / level editor | Rủi ro nội dung bắt nạt, cần kiểm duyệt |
+| Gõ tin đồn tự do / nhập tên người thật công khai / level editor | Rủi ro nội dung bắt nạt, cần kiểm duyệt. **Ngoại lệ 15/09/2026 (operator):** tên NPC tự gõ, chỉ lưu trên máy, cho bản chơi thử (CTRL-07) — phải xem lại trước khi nộp CrazyGames (Phase 8) |
 | Máu, vũ khí sắc đâm người | PEGI 12 |
 | Unity WebGL | Size + crash Safari iOS |
 | IP có sẵn (The Office, Scary Teacher…) | Bản quyền |
@@ -137,7 +139,9 @@
 | CTRL-01 | Phase 1 | Pending |
 | CTRL-02 | Phase 1 | Pending |
 | CTRL-03 | Phase 1 | Pending |
-| CTRL-04 | Phase 1 | Complete |
+| CTRL-04 | Phase 1 | In Progress |
+| CTRL-06 | Phase 1 | Pending |
+| CTRL-07 | Phase 1 | Pending |
 | CTRL-05 | Phase 1 | Complete |
 | PLAT-01 | Phase 1 | Pending |
 | PLAT-02 | Phase 1 | Complete |
@@ -187,8 +191,8 @@
 
 **Coverage:**
 
-- v1 requirements: 57 total
-- Mapped to phases: 57
+- v1 requirements: 59 total
+- Mapped to phases: 59
 - Unmapped: 0 ✓
 
 ---
