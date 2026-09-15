@@ -161,6 +161,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-18: crash beacon localStorage bt.beacon (sha + timestamps only, try/catch, heartbeat 5 s, clean on pagehide, stale after 20 s) shows #crash-banner via textContent on the next load; nothing sent off-origin
 - [Phase 01]: 01-18: measurement build 1ecc53ce473e live (DEPLOY_OK, poller 38/38 200, SITE_FILE_UNCHANGED) on the third attempt after an SSH reset at upload and a swing mashing flake (300.1 ms vs < 300); operator approved 60 -> 40 ms waits, SWING_COOLDOWN_MS and assertions unchanged
 
+### Roadmap Evolution
+
+- Phase 01.1 inserted after Phase 1: NPC đồng nghiệp — đặt tên, tăng giảm số lượng tùy ý, NPC đánh trả người chơi (URGENT, operator 15/09/2026). Phase 1 vẫn EXECUTING (chờ đo máy thật 01-19); 01.1 chỉ lập kế hoạch song song.
+
 ### Pending Todos
 
 None yet.

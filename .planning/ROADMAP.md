@@ -128,6 +128,24 @@ Plans:
 Cổng chặn: nếu tiêu chí 2–4 **không** đạt trên máy thật thì dừng lại, xem lại stack (PlayCanvas là ứng viên 2)
 trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 
+### Phase 01.1: NPC đồng nghiệp: đặt tên, tăng giảm số lượng, NPC đánh trả (INSERTED)
+
+**Goal:** Văn phòng có đồng nghiệp mang tên do người chơi đặt, số lượng đổi được tuỳ ý trong giới hạn an toàn hiệu năng, và bị tát thì biết đánh trả kiểu slapstick — đánh qua lại vẫn buồn cười, không máu, không tụt fps
+**Mode:** mvp
+**Requirements**: NPC-01, NPC-02, NPC-03, NPC-04, NPC-05, NPC-06
+**Depends on:** Phase 1
+**Success Criteria** (what must be TRUE) — *bản nháp 15/09/2026, chốt ở discuss-phase*:
+  1. Người chơi thêm/bớt NPC nhanh (không chỉ trong settings) tới mức trần đã đo được, và danh sách đồng nghiệp (tên + ngoại hình) còn nguyên sau reload
+  2. Tát một NPC thì NPC đó có thể nổi giận, quay lại đuổi và vung tay đánh người chơi
+  3. Người chơi bị đánh trúng thì choáng/ngã kiểu slapstick rồi đứng dậy chơi tiếp; có phản hồi rõ (âm thanh, rung, chỉ báo) và không có máu
+  4. Nhiều NPC cùng đánh trả vẫn giữ ngân sách fps/draw call của Phase 1 trên máy chuẩn
+  5. Logic phản đòn (giận, đuổi, đánh, hồi chiêu) deterministic theo seed và có unit test
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 01.1 to break down)
+
 ### Phase 2: Hệ phát hiện
 
 **Goal**: Người chơi lẻn quanh văn phòng có NPC đi lại, hiểu rõ vì sao mình sắp bị hoặc đã bị phát hiện

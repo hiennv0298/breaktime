@@ -94,6 +94,15 @@
 - [ ] **PLAT-04**: Build đạt giới hạn CrazyGames (tổng ≤ 250 MB, ≤ 1.500 file, tải đầu ≤ 50 MB) và được nộp Basic Launch
 - [ ] **PLAT-05**: Có bảng tổng kết số đo sau Basic Launch: playtime trung bình, D1 retention, conversion, so với mốc 10 phút / 10–15% / 80%
 
+### Đồng nghiệp NPC (NPC) — *thêm 15/09/2026, Phase 01.1, bản nháp chốt ở discuss*
+
+- [ ] **NPC-01**: Người chơi thêm/bớt NPC nhanh ngay trong lúc chơi (không bắt buộc mở settings), giới hạn trên theo số đo hiệu năng
+- [ ] **NPC-02**: Người chơi lưu danh sách đồng nghiệp (tên + ngoại hình chọn từ bộ nhân vật có sẵn) trên máy, chọn ai có mặt trong văn phòng; còn nguyên sau reload, không gửi đi đâu
+- [ ] **NPC-03**: NPC bị tát có thể nổi giận (tuỳ tính cách/xác suất), đuổi theo và vung tay đánh trả người chơi
+- [ ] **NPC-04**: Người chơi bị đánh trúng thì choáng/ngã kiểu slapstick rồi tự đứng dậy; có phản hồi rõ (SFX, rung màn, chỉ báo), không máu (PEGI 12)
+- [ ] **NPC-05**: Nhiều NPC đánh trả cùng lúc vẫn giữ ngân sách fps/draw call/body của Phase 1
+- [ ] **NPC-06**: Logic giận–đuổi–đánh–hồi chiêu chạy deterministic theo seed, có unit test không cần trình duyệt
+
 ## v2 Requirements
 
 ### Kiếm tiền & cổng
@@ -145,6 +154,12 @@
 | CTRL-05 | Phase 1 | Complete |
 | PLAT-01 | Phase 1 | Pending |
 | PLAT-02 | Phase 1 | Complete |
+| NPC-01 | Phase 01.1 | Pending |
+| NPC-02 | Phase 01.1 | Pending |
+| NPC-03 | Phase 01.1 | Pending |
+| NPC-04 | Phase 01.1 | Pending |
+| NPC-05 | Phase 01.1 | Pending |
+| NPC-06 | Phase 01.1 | Pending |
 | DETECT-01 | Phase 2 | Pending |
 | DETECT-02 | Phase 2 | Pending |
 | DETECT-03 | Phase 2 | Pending |
@@ -191,8 +206,8 @@
 
 **Coverage:**
 
-- v1 requirements: 59 total
-- Mapped to phases: 59
+- v1 requirements: 65 total
+- Mapped to phases: 65
 - Unmapped: 0 ✓
 
 ---
