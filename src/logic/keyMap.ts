@@ -6,6 +6,8 @@
  * - Space is the action key; E is its secondary alias.
  * - Escape, or Ctrl pressed and released alone, toggles the settings / pause menu.
  * - Z / C rotate the camera; arrow keys never rotate.
+ * - D-02 (plan 02-04): + / − (Equal or NumpadAdd, Minus or NumpadSubtract) add or remove a coworker in play; wired in
+ *   plan 02-08 (keyboard.ts ignores these intents until then). Ctrl± stays browser zoom.
  * - Any key with Ctrl, Meta or Alt held is not a game key, so browser shortcuts keep working.
  *
  * Codes are KeyboardEvent.code values, so the physical keys do not change with the layout (AZERTY, Vietnamese IME).
@@ -21,6 +23,8 @@ export type KeyIntent =
   | 'ctrl'
   | 'rotate-left'
   | 'rotate-right'
+  | 'npc-add'
+  | 'npc-remove'
   | null;
 
 export interface KeyMods {
@@ -47,6 +51,10 @@ const BINDINGS: Readonly<Record<string, Bound>> = {
   ControlRight: 'ctrl',
   KeyZ: 'rotate-left',
   KeyC: 'rotate-right',
+  Equal: 'npc-add',
+  NumpadAdd: 'npc-add',
+  Minus: 'npc-remove',
+  NumpadSubtract: 'npc-remove',
 };
 
 function isCtrlCode(code: string): boolean {

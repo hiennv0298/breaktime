@@ -27,6 +27,21 @@ export function serializeKeyHintsPref(on: boolean): '1' | '0' {
   return on ? '1' : '0';
 }
 
+/**
+ * NPC name tag switch (plan 02-04, D-10): '1' tags on, '0' tags off; same literal-only rule as bt.keyHints. No storage
+ * access here — plan 02-09 reads and writes the key inside try/catch.
+ */
+export const NPC_LABELS_STORAGE_KEY = 'bt.npcLabels';
+
+/** Name tags shown from a stored value: on unless the value is exactly '0'. */
+export function parseNpcLabelsPref(raw: string | null): boolean {
+  return raw !== '0';
+}
+
+export function serializeNpcLabelsPref(on: boolean): '1' | '0' {
+  return on ? '1' : '0';
+}
+
 /** Touch hint should show unless the stored value is exactly '1'. */
 export function shouldShowTouchHint(raw: string | null): boolean {
   return raw !== '1';
