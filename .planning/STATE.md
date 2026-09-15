@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-12-PLAN.md
-last_updated: "2026-09-15T10:00:49.124Z"
-last_activity: "2026-09-15 -- Completed 01-12 (go live: game.doibung.com over Let's Encrypt HTTPS; infra:apply with operator token APPROVE-CADDY-4ebe4eba, backup /root/breaktime-infra-backup/20260915T094249Z, doibung cert FP unchanged; first deploy 1b318ec49460 failed step 16 on one ~1 s fetch failed during first-time caddy site reload; operator-approved single re-run DEPLOY_OK 3d3cb78f560f, SITE_FILE_UNCHANGED, poller non200=0, smoke 9/9, LIVE_OK; PLAT-02 complete, PLAT-01/TECH-01 left for verifier; real-phone check still open)"
+stopped_at: Completed 01-16-PLAN.md
+last_updated: "2026-09-15T10:40:40.568Z"
+last_activity: "2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard kit in 5 InstancedMesh, 60 pooled shard bodies, tier debris cap 20/40/60, break/drop SFX, ?scenario=smash breaks 11/11 and moves 33/33; forces per kg; peak draw calls 105 @3 NPCs / 134-135 @8, HUD bodies 116 / 151, live shards 60 (20 at q=low); vitest 300/300, playwright 55 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 15
-  percent: 71
+  completed_plans: 16
+  percent: 76
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 16 of 21 (01-01..01-15 complete; next 01-16)
+Plan: 17 of 21 (01-01..01-16 complete; next 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-12 (go live: game.doibung.com over Let's Encrypt HTTPS; infra:apply with operator token APPROVE-CADDY-4ebe4eba, backup /root/breaktime-infra-backup/20260915T094249Z, doibung cert FP unchanged; first deploy 1b318ec49460 failed step 16 on one ~1 s fetch failed during first-time caddy site reload; operator-approved single re-run DEPLOY_OK 3d3cb78f560f, SITE_FILE_UNCHANGED, poller non200=0, smoke 9/9, LIVE_OK; PLAT-02 complete, PLAT-01/TECH-01 left for verifier; real-phone check still open)
+Last activity: 2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard kit in 5 InstancedMesh, 60 pooled shard bodies, tier debris cap 20/40/60, break/drop SFX, ?scenario=smash breaks 11/11 and moves 33/33; forces per kg; peak draw calls 105 @3 NPCs / 134-135 @8, HUD bodies 116 / 151, live shards 60 (20 at q=low); vitest 300/300, playwright 55 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06 left open)
 
-Progress: [███████░░░] 71%
+Progress: [████████░░] 76%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [███████░░░] 71%
 | Phase 01 P14 | 33min | 3 tasks | 10 files |
 | Phase 01 P15 | 32min | 2 tasks | 17 files |
 | Phase 01 P12 | 34min | 3 tasks | 5 files |
+| Phase 01 P16 | 36min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-15: 6 pooled ragdoll bodies per NPC count in world.bodies.len() (HUD bodies 56 with 3 NPCs, 91 with 8); draw calls unchanged during ragdoll (104 / 134)
 - [Phase 01]: 01-12: go-live on game.doibung.com (internal name breaktime) ran after 01-13..15 by operator choice; infra applied only with the operator-typed token APPROVE-CADDY-4ebe4eba (two earlier non-matching replies refused), backup /root/breaktime-infra-backup/20260915T094249Z
 - [Phase 01]: 01-12: only a site-file change reloads Caddy; the first-time reload coincided with one ~1 s fetch failed on doibung.com (step 16 fail), the operator-approved re-run skipped the reload (SITE_FILE_UNCHANGED) and passed DEPLOY_OK 3d3cb78f560f with non200=0
+- [Phase 01]: 01-16: break/drop forces in N per kg of the prop (density-1 props: mug off desk 0.50 N but ~255 N/kg); BREAK_FORCE mug 96 / plantSmall 112 / pottedPlant 144 / monitor 160 N/kg, event threshold 8 N/kg x mass, drop SFX min 60 N/kg in play
+- [Phase 01]: 01-16: ?scenario=smash arms breakables at 0.5x threshold (unarmed 10/11 at 8 NPCs, armed 11/11); broken props are disabled not removed; shard tint sampled from palette texel
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T10:00:49.113Z
-Stopped at: Completed 01-12-PLAN.md
+Last session: 2026-09-15T10:40:40.556Z
+Stopped at: Completed 01-16-PLAN.md
 Resume file: None
