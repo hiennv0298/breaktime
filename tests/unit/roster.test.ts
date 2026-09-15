@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addMember,
   defaultRoster,
   LEGACY_SLOTS,
+  removeMember,
+  renameMember,
+  resetRoster,
+  setMemberLook,
+  setMemberPresent,
+  setMemberTemper,
+  withSlotEdits,
   maxOnFloor,
   migrateLegacyNpcs,
   normalizeRoster,
@@ -428,5 +436,171 @@ describe('present / on-floor helpers', () => {
     expect(maxOnFloor(normalizeRoster({ members, present: range(30), count: 0 }))).toBe(15);
     expect(maxOnFloor(normalizeRoster({ members, present: ['m7', 'm2'], count: 0 }))).toBe(2);
     expect(presentMembers(normalizeRoster({ members, present: ['m7', 'm2'], count: 0 })).map((m) => m.id)).toEqual(['m2', 'm7']);
+  });
+});
+
+/* Plan 02-04 Task 2: edit operations for the settings editor (D-03) and the 01-27 adapter. Inputs are deep-frozen, so
+   any mutation throws in strict-mode ESM. */
+
+function deepFreeze<T>(v: T): T {
+  if (typeof v === 'object' && v !== null) {
+    for (const k of Object.keys(v)) deepFreeze((v as Record<string, unknown>)[k]);
+    Object.freeze(v);
+  }
+  return v;
+}
+
+const frozenDefault = (): Roster => deepFreeze(defaultRoster());
+const neverRng = (): number => {
+  throw new Error('rng must not be drawn while a look is free');
+};
+
+describe('addMember', () => {
+  it('default roster: m16 with the first unused look q, not present (15 already), count unchanged', () => {
+    const r = frozenDefault();
+    const out = addMember(r, neverRng);
+    expect(out.added).toEqual({ id: 'm16', name: '', look: 'q', temper: 'normal' });
+    expect(ids(out.roster)).toEqual(range(16));
+    expect(out.roster.present).toEqual(range(15));
+    expect(out.roster.count).toBe(3);
+    expect(r).toEqual(defaultRoster());
+  });
+
+  it('30 members -> added null and roster unchanged', () => {
+    const full = deepFreeze(normalizeRoster({ members: range(30).map((id) => member(id)), present: range(15), count: 4 }));
+    const out = addMember(full, neverRng);
+    expect(out.added).toBeNull();
+    expect(out.roster).toEqual(full);
+  });
+
+  it('reuses the smallest free id and becomes present while fewer than 15 are present', () => {
+    const r = deepFreeze(removeMember(frozenDefault(), 'm3'));
+    const out = addMember(r, neverRng);
+    expect(out.added).toEqual({ id: 'm3', name: '', look: 'd', temper: 'normal' });
+    expect(out.roster.members[out.roster.members.length - 1].id).toBe('m3');
+    expect(out.roster.present.length).toBe(15);
+    expect(out.roster.present.includes('m3')).toBe(true);
+  });
+
+  it('when all 17 looks are used the look is NPC_LOOKS[floor(rng() x 17)]', () => {
+    const all = deepFreeze(
+      normalizeRoster({ members: range(17).map((id, i) => member(id, '', NPC_LOOKS[i])), present: [], count: 0 }),
+    );
+    expect(addMember(all, () => 0).added?.look).toBe('b');
+    expect(addMember(all, () => 0.5).added?.look).toBe(NPC_LOOKS[8]);
+    expect(addMember(all, () => 0.9999999).added?.look).toBe('r');
+    expect(addMember(all, () => 1).added?.look).toBe('r');
+    expect(addMember(all, () => Number.NaN).added?.look).toBe('b');
+    expect(addMember(all, () => -1).added?.look).toBe('b');
+    expect(addMember(all, () => 0.5).added?.id).toBe('m18');
+  });
+});
+
+describe('removeMember', () => {
+  it('drops the member and its present entry and clamps count', () => {
+    const small = deepFreeze(normalizeRoster({ members: range(3).map((id) => member(id)), present: range(3), count: 3 }));
+    const out = removeMember(small, 'm2');
+    expect(ids(out)).toEqual(['m1', 'm3']);
+    expect(out.present).toEqual(['m1', 'm3']);
+    expect(out.count).toBe(2);
+  });
+
+  it('unknown id -> unchanged', () => {
+    const r = frozenDefault();
+    expect(removeMember(r, 'm99')).toEqual(defaultRoster());
+    expect(removeMember(r, '__proto__')).toEqual(defaultRoster());
+  });
+});
+
+describe('renameMember / setMemberLook / setMemberTemper', () => {
+  it('renameMember sanitises', () => {
+    const rlo = String.fromCodePoint(0x202e);
+    const r = frozenDefault();
+    const out = renameMember(r, 'm2', `  ${rlo}Lan   Anh  `);
+    expect(out.members[1].name).toBe('Lan Anh');
+    expect(renameMember(r, 'm2', 42).members[1].name).toBe('');
+    expect(renameMember(r, 'm99', 'X')).toEqual(defaultRoster());
+  });
+
+  it('setMemberLook accepts only one NPC_LOOKS letter', () => {
+    const r = frozenDefault();
+    expect(setMemberLook(r, 'm1', 'r').members[0].look).toBe('r');
+    for (const bad of ['a', 'bb', '', 'B', 3, null, 'z']) {
+      expect(setMemberLook(r, 'm1', bad), String(bad)).toEqual(defaultRoster());
+    }
+    expect(setMemberLook(r, 'm99', 'r')).toEqual(defaultRoster());
+  });
+
+  it('setMemberTemper accepts only hot / normal / calm', () => {
+    const r = frozenDefault();
+    expect(setMemberTemper(r, 'm1', 'hot').members[0].temper).toBe('hot');
+    expect(setMemberTemper(r, 'm1', 'calm').members[0].temper).toBe('calm');
+    for (const bad of ['HOT', 'angry', '', null, 1]) {
+      expect(setMemberTemper(r, 'm1', bad), String(bad)).toEqual(defaultRoster());
+    }
+  });
+});
+
+describe('setMemberPresent', () => {
+  it('on adds only while fewer than 15 are present', () => {
+    const r = deepFreeze(addMember(frozenDefault(), neverRng).roster);
+    expect(setMemberPresent(r, 'm16', true)).toEqual(r);
+    const freed = deepFreeze(setMemberPresent(r, 'm1', false));
+    const out = setMemberPresent(freed, 'm16', true);
+    expect(out.present).toEqual([...range(15).slice(1), 'm16']);
+  });
+
+  it('off removes and clamps count', () => {
+    const small = deepFreeze(normalizeRoster({ members: range(3).map((id) => member(id)), present: range(3), count: 3 }));
+    const out = setMemberPresent(small, 'm1', false);
+    expect(out.present).toEqual(['m2', 'm3']);
+    expect(out.count).toBe(2);
+  });
+
+  it('unknown id or no change -> unchanged', () => {
+    const r = frozenDefault();
+    expect(setMemberPresent(r, 'm99', true)).toEqual(defaultRoster());
+    expect(setMemberPresent(r, 'm1', true)).toEqual(defaultRoster());
+  });
+});
+
+describe('resetRoster', () => {
+  it('deep-equals defaultRoster()', () => {
+    expect(resetRoster()).toEqual(defaultRoster());
+  });
+});
+
+describe('withSlotEdits (01-27 adapter until plan 02-09)', () => {
+  it('sets the count and names the on-floor slots in order', () => {
+    const out = withSlotEdits(frozenDefault(), 5, ['An', 'Bình']);
+    expect(out.count).toBe(5);
+    expect(onFloorMembers(out).map((m) => m.id)).toEqual(range(5));
+    expect(onFloorMembers(out).map((m) => m.name)).toEqual(['An', 'Bình', '', '', '']);
+  });
+
+  it('clamps the count to maxOnFloor and keeps names of members off the floor', () => {
+    const named = deepFreeze(renameMember(renameMember(frozenDefault(), 'm12', 'Xa'), 'm20', 'none'));
+    const out = withSlotEdits(named, 99, []);
+    expect(out.count).toBe(maxOnFloor(named));
+    const low = withSlotEdits(named, 2, []);
+    expect(low.count).toBe(2);
+    expect(low.members[11].name).toBe('Xa');
+  });
+
+  it('sanitises slot names, ignores non-finite counts', () => {
+    const rlo = String.fromCodePoint(0x202e);
+    const out = withSlotEdits(frozenDefault(), Number.NaN, [`${rlo}Lan`, 7]);
+    expect(out.count).toBe(3);
+    expect(out.members[0].name).toBe('Lan');
+    expect(out.members[1].name).toBe('');
+    expect(withSlotEdits(frozenDefault(), -4, []).count).toBe(0);
+    expect(withSlotEdits(frozenDefault(), 6.8, []).count).toBe(6);
+  });
+
+  it('names follow present members, skipping unticked ones', () => {
+    const r = deepFreeze(setMemberPresent(frozenDefault(), 'm2', false));
+    const out = withSlotEdits(r, 3, ['A', 'B', 'C']);
+    expect(onFloorMembers(out).map((m) => `${m.id}:${m.name}`)).toEqual(['m1:A', 'm3:B', 'm4:C']);
+    expect(out.members[1].name).toBe('');
   });
 });
