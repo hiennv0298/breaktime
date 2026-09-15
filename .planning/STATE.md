@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-26-PLAN.md
-last_updated: "2026-09-15T13:13:43.473Z"
-last_activity: "2026-09-15 -- Completed 01-26 (saved bt.npcs count 0-10 + names applied at start; names NFC, control/bidi/zero-width stripped, <= 16 code points; textContent tags over heads follow walking and ragdoll NPCs; corrupt/oversized/throwing storage falls back to 3 unnamed; forcedNpcCount > ?npcs > stored > 3; no network; vitest 439/439, playwright 79 passed 0 failed, SIZE_GATE_OK; CTRL-07/TECH-06 left open)"
+stopped_at: Completed 01-27-PLAN.md
+last_updated: "2026-09-15T13:49:37.426Z"
+last_activity: "2026-09-15 -- Completed 01-27 (settings menu NPC section: 0-10 stepper, 10 name fields, Áp dụng applies in place while paused; grow-only pool max 10 NPCs with despawn/respawn, ragdoll re-attached before despawn, no Rapier removal, bodies stay 60 on repeated Apply; names cleaned and written back, saved to bt.npcs, storage failure still applies + 'Không lưu được'; typing guard e2e; phone fields 16px + user-select text + long-press paste; vitest 439/439, playwright 87 passed 0 failed, SIZE_GATE_OK; CTRL-07/CTRL-04/TECH-06 left open for the real-device check)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 21
-  percent: 78
+  completed_plans: 22
+  percent: 81
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 22 of 27 (01-01..01-16, 01-22..01-26 complete; next 01-27, then 01-17)
+Plan: 23 of 27 (01-01..01-16, 01-22..01-27 complete; next 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-26 (saved bt.npcs count 0-10 + names applied at start; names NFC, control/bidi/zero-width stripped, <= 16 code points; textContent tags over heads follow walking and ragdoll NPCs; corrupt/oversized/throwing storage falls back to 3 unnamed; forcedNpcCount > ?npcs > stored > 3; no network; vitest 439/439, playwright 79 passed 0 failed, SIZE_GATE_OK; CTRL-07/TECH-06 left open)
+Last activity: 2026-09-15 -- Completed 01-27 (settings menu NPC section: 0-10 stepper, 10 name fields, Áp dụng applies in place while paused; grow-only pool max 10 NPCs with despawn/respawn, ragdoll re-attached before despawn, no Rapier removal, bodies stay 60 on repeated Apply; names cleaned and written back, saved to bt.npcs, storage failure still applies + "Không lưu được"; typing guard e2e; phone fields 16px + user-select text + long-press paste; vitest 439/439, playwright 87 passed 0 failed, SIZE_GATE_OK; CTRL-07/CTRL-04/TECH-06 left open for the real-device check)
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [████████░░] 78%
 | Phase 01 P24 | 14min | 2 tasks | 7 files |
 | Phase 01 P25 | 10min | 2 tasks | 7 files |
 | Phase 01 P26 | 15min | 2 tasks | 7 files |
+| Phase 01 P27 | 31min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -146,6 +147,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-26: NPC start count precedence is finite createGame opts.forcedNpcCount > ?npcs= > valid stored bt.npcs ({"v":1,"count","names"[10]}, raw <= 4096) > 3; forced/query report source 'query' and still take names from the stored record
 - [Phase 01]: 01-26: sanitizeNpcName = slice 256 units, NFC, tab/CR/LF to space, strip C0/C1, U+00AD, U+061C, U+180E, U+200B-200F, U+2028-202E, U+2060-206F, U+FEFF, collapse whitespace, trim, 16 code points; npcCountFromQuery now lives in src/logic/npcSettings.ts and returns null when absent
 - [Phase 01]: 01-26: name tags are a DOM layer #npc-labels (z 90, pointer-events none, textContent only) projected in frameUpdate after cameraView.update (camera.updateMatrixWorld first); anchor foot + 1.85 m, ragdoll torso + 0.9 m; D-31 real-name content risk accepted for the play-test only, review before Phase 8
+- [Phase 01]: 01-27: NPC count changes at runtime go through a grow-only pool (max MAX_NPCS 10): Npc.despawn (ragdoll synced, deactivated and re-attached first; capsule disabled, root hidden) / Npc.respawn at the route spawn; never Rapier removal, so __bt.ragdolls.bodies stays 60 and HUD bodies do not drop after lowering the count
+- [Phase 01]: 01-27: Game.applyNpcSettings normalises again, leaves NPCs that stay untouched (a flying ragdoll keeps flying, only the name changes), reports source 'manual' and calls refreshTarget so a despawned glowing NPC stops glowing while paused; startup NPCs are still created before shadows/shards/targeting (body order unchanged), later ones register through a wire hook
+- [Phase 01]: 01-27: Escape typed in an NPC name field still closes the menu; every other key stays in the field; the ?npcAt pin only applies to NPC 0 at page start; __bt.npcSettings.storageOk keeps describing the start-up read, the save result is shown only in #npc-apply-status
+- [Phase 01]: 01-27: pageHardening no longer cancels contextmenu/dblclick on input/textarea (long-press paste); name inputs are 16px, user-select text, touch-callout default; two name columns when the section reaches 520 px (viewport >= 616 px)
 
 ### Pending Todos
 
@@ -165,6 +170,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T13:13:43.460Z
-Stopped at: Completed 01-26-PLAN.md
+Last session: 2026-09-15T13:49:37.406Z
+Stopped at: Completed 01-27-PLAN.md
 Resume file: None

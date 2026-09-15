@@ -101,7 +101,7 @@ Plans:
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 01-27-PLAN.md — Settings section: NPC 0–10 stepper, name fields, Áp dụng with safe in-place respawn (grow-only pool) (W12)
+- [x] 01-27-PLAN.md — Settings section: NPC 0–10 stepper, name fields, Áp dụng with safe in-place respawn (grow-only pool) (W12)
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 21/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 22/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
