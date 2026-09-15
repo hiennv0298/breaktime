@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-24-PLAN.md
-last_updated: "2026-09-15T12:41:22.659Z"
-last_activity: "2026-09-15 -- Completed 01-24 (every Space/E/context/click swings at once, hit only in range, 350 ms SwingGate; [data-hud-panel] clicks never swing; cooldown audit 47 hits 0 adjusted; vitest 408/408, playwright 68 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-02/TECH-06 left open)"
+stopped_at: Completed 01-25-PLAN.md
+last_updated: "2026-09-15T12:54:58.342Z"
+last_activity: "2026-09-15 -- Completed 01-25 (bottom-left key hint panel from KEY_HINTS dims to 0.3 after 4 s, CSS hover restores; pause-menu toggle persists bt.keyHints in try/catch; HUD buttons opacity 0.6; one-time touch hint in the right half; vitest 414/414, playwright 73 passed 0 failed, SIZE_GATE_OK; CTRL-06/TECH-06 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 19
-  percent: 70
+  completed_plans: 20
+  percent: 74
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 20 of 27 (01-01..01-16, 01-22, 01-23 and 01-24 complete; next 01-25..01-27, then 01-17)
+Plan: 21 of 27 (01-01..01-16, 01-22..01-25 complete; next 01-26, 01-27, then 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-24 (every Space/E/context/click swings at once, hit only in range, 350 ms SwingGate; [data-hud-panel] clicks never swing; cooldown audit 47 hits 0 adjusted; vitest 408/408, playwright 68 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-02/TECH-06 left open)
+Last activity: 2026-09-15 -- Completed 01-25 (bottom-left key hint panel from KEY_HINTS dims to 0.3 after 4 s, CSS hover restores; pause-menu toggle persists bt.keyHints in try/catch; HUD buttons opacity 0.6; one-time touch hint in the right half; vitest 414/414, playwright 73 passed 0 failed, SIZE_GATE_OK; CTRL-06/TECH-06 left open)
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [███████░░░] 70%
 | Phase 01 P22 | 12min | 2 tasks | 9 files |
 | Phase 01 P23 | 19min | 3 tasks | 8 files |
 | Phase 01 P24 | 14min | 2 tasks | 7 files |
+| Phase 01 P25 | 10min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,8 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-24: every action press (Space, E, #btn-context, game-area left-click) passes one pure SwingGate (SWING_COOLDOWN_MS = 350) and always swings; a key/context press hits the current target, a click hits only when its ray hit the object that is still the target; otherwise swing only (D-30)
 - [Phase 01]: 01-24: a press inside the cooldown is dropped (not queued, does not extend the cooldown) and counted in __bt.swing.dropped; slap.ts / loop.ts unchanged, the 01-17 bench still calls performSlap outside the gate
 - [Phase 01]: 01-24: pointerPick never swings for clicks inside [data-hud-button], [data-hud-panel], #pause-menu, button, input, textarea, select (panel contract for 01-25); context icon still 'none' with nothing in range (planner note #7, check on the phones)
+- [Phase 01]: 01-25: key hint panel (#key-hints, bottom-left, z 150) renders KEY_HINTS from keyMap.ts, dims to 0.3 after KEY_HINT_DIM_MS = 4000 with CSS-only hover restore; #key-hints-toggle in the pause menu persists bt.keyHints, where only the literal '0' means off (try/catch, session fallback when storage throws)
+- [Phase 01]: 01-25: touch hint (#touch-hint, right half, pointer-events none) is decided once at loop start, bt.touchHintSeen = '1' is written when it is shown, and it hides after TOUCH_HINT_MS = 6000 or on the first touch; [data-hud-button] opacity 0.6 (0.95 while :active); suppressKeyHints(on) is the bench/soak hook for 01-17/01-18
 
 ### Pending Todos
 
@@ -158,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T12:41:22.647Z
-Stopped at: Completed 01-24-PLAN.md
+Last session: 2026-09-15T12:54:58.330Z
+Stopped at: Completed 01-25-PLAN.md
 Resume file: None
