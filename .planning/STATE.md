@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-09-15T05:54:27.272Z"
-last_activity: 2026-09-15 -- Completed 01-09 (Z/C/arrows + rotate buttons 90 deg camera rig, camera-relative movement, portrait/landscape layout with debounced resize guard, page hardening, fullscreen only when fullscreenEnabled; Vitest 174/174, Playwright 32 passed 0 failed, size gate OK; CTRL-05 complete, CTRL-03 awaits phone check)
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-09-15T06:27:14.299Z"
+last_activity: 2026-09-15 -- Completed 01-10 (Kenney open-space office + pantry, 33 dynamic props / 11 breakable, static furniture merged to 2 meshes, blob shadows InstancedMesh, glow + E/click/context push, context icon; Vitest 183/183, Playwright 37 passed 0 failed, size gate OK, first load 3.21 MB to Choi / ~3.88 MB to playable, 66-82 draw calls; CTRL-01/CTRL-02/TECH-03 stay open)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 9
-  percent: 43
+  completed_plans: 10
+  percent: 48
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 10 of 21
+Plan: 11 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-09 (Z/C/arrows + rotate buttons 90 deg camera rig, camera-relative movement, portrait/landscape layout with debounced resize guard, page hardening, fullscreen only when fullscreenEnabled; Vitest 174/174, Playwright 32 passed 0 failed, size gate OK; CTRL-05 complete, CTRL-03 awaits phone check)
+Last activity: 2026-09-15 -- Completed 01-10 (Kenney open-space office + pantry, 33 dynamic props / 11 breakable, static furniture merged to 2 meshes, blob shadows InstancedMesh, glow + E/click/context push, context icon; Vitest 183/183, Playwright 37 passed 0 failed, size gate OK, first load 3.21 MB to Choi / ~3.88 MB to playable, 66-82 draw calls; CTRL-01/CTRL-02/TECH-03 stay open)
 
-Progress: [████░░░░░░] 43%
+Progress: [█████░░░░░] 48%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [████░░░░░░] 43%
 | Phase 01 P07 | 23min | 2 tasks | 9 files |
 | Phase 01 P08 | 17min | 3 tasks | 14 files |
 | Phase 01 P09 | 18min | 3 tasks | 12 files |
+| Phase 01 P10 | 24min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-09: renderer.setSize(w, h, false): CSS (100vw x 100dvh) owns the canvas box, the 100 ms debounced guard owns only backbuffer + camera.aspect; body.portrait toggles immediately
 - [Phase 01]: 01-09: camera input modules import three, so main.ts loads them with the renderer (dynamic import) to keep the index chunk three-free
 - [Phase 01]: 01-09: framing 11 m/55 deg (landscape) and 15 m/60 deg (portrait) still shows the whole room, not ~1/2 (D-19); kept as pinned, flagged for end-of-phase phone check
+- [Phase 01]: 01-10: Kenney Furniture Kit is ~half real size; layout.ts ROLE_SCALE (furniture x2, mug x0.4, counter [3,2,2]) and bottom-centred cloneProp; Placement.on for desk-top y
+- [Phase 01]: 01-10: createGame is async (main.ts awaits); GLBs fetched before Choi as ArrayBuffers, parsed after the play gesture so three.js stays out of first load
+- [Phase 01]: 01-10: mouse pick ignored while paused or on HUD/menu; queued pick pushes only if it still matches the current target; __bt screen projections are lazy getters
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T05:54:27.260Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-09-15T06:27:14.276Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None
