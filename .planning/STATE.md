@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-09-15T03:58:03.643Z"
-last_activity: "2026-09-15 -- Completed 01-04 (server tooling: drift check, token-gated infra:apply/rollback, HANDOFF; live refusals exit 3, doibung untouched)"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-09-15T04:09:10.274Z"
+last_activity: "2026-09-15 -- Completed 01-05 (CC0 asset pipeline: 4 Kenney packs CC0-verified, office/food/character GLB + 18 textures + 11 MP3 = 580 KB raw, CREDITS.md)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 3
-  percent: 14
+  completed_plans: 4
+  percent: 19
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 4 of 21
+Plan: 5 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-04 (server tooling: drift check, token-gated infra:apply/rollback, HANDOFF; live refusals exit 3, doibung untouched)
+Last activity: 2026-09-15 -- Completed 01-05 (CC0 asset pipeline: 4 Kenney packs CC0-verified, office/food/character GLB + 18 textures + 11 MP3 = 580 KB raw, CREDITS.md)
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [██░░░░░░░░] 19%
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Progress: [█░░░░░░░░░] 14%
 | Phase 01 P01 | 6min | 3 tasks | 16 files |
 | Phase 01 P02 | 18min | 2 tasks | 17 files |
 | Phase 01 P04 | 35min | 3 tasks | 13 files |
+| Phase 01 P05 | 8min | 2 tasks | 35 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-04: rollback approval code binds NEED_* to ROLLBACK:<dir>, so an apply code can never approve a rollback (shared nonce file)
 - [Phase 01]: 01-04: preflight also fails when caddy image tag moved off the running image or nodb compose does not render; recreate adds --pull never
 - [Phase 01]: 01-04: auto-rollback only when doibung.com is not 200 within 60 s; other post-recreate failures exit 6 with the token-gated rollback command
+- [Phase 01]: 01-05: asset-map.json paths are relative to each pack folder; 6 Furniture Kit substitutions (kitchenCoffeeMachine, kitchenFridge, kitchenCabinet, plantSmall1, bookcaseClosed, cardboardBoxClosed) recorded in _notes
+- [Phase 01]: 01-05: office-index.json keeps Kenney root node names (desk(Clone)…); build fails when a role root is missing or not unique in the output GLB
+- [Phase 01]: 01-05: meshopt quantization puts each character/office mesh on an unnamed child of the named node; animations still target named parts, so look up parts by name and do not expect .isMesh on them
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T03:58:03.630Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-09-15T04:09:10.263Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
