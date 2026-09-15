@@ -74,6 +74,7 @@ Progress: [█████████░] 89%
 | Phase 02 P01 | 6min | 2 tasks | 5 files |
 | Phase 02 P02 | 9min | 3 tasks | 10 files |
 | Phase 02 P03 | 8min | 2 tasks | 5 files |
+| Phase 02 P04 | 10min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -171,6 +172,9 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-03 (tooling + pure route data, before the Phase 1 device gate per D-12): `node scripts/phase-gate-guard.mjs --plan 02-NN [--gate] [--state] [--dry-run]` prints GUARD_CONTINUE on VERDICT=PASS or VERDICT=FAIL + VERDICT_AFTER_OPT=PASS, PLAN_EXIT_GATE_PENDING on missing gate / REMEASURE / awaiting D-07 / no verdict, PLAN_EXIT_STACK_STOP on VERDICT_AFTER_OPT=FAIL or the 01-21 stack-stop blocker line in STATE (literal kept only in scripts/lib/phaseGate.mjs STACK_STOP_TEXT; never quote it in STATE.md, the substring match would stop every integration plan); exit 0 always, GUARD_USAGE exit 2; per-line anchored regex after stripping only CR, last anchored line wins
 - [Phase 02]: 02-03: on pending/stop the guard keeps exactly one plan-independent STATE blocker line `- [Phase 2] Tích hợp chờ cổng máy thật Phase 1 (01-GATE.md: <reason>) — …` (byte-preserving, CRLF-aware, identical across parallel plans) and removes it on continue; never creates a missing STATE.md; 01-GATE.md still absent (dry run: gate-missing, STATE untouched)
 - [Phase 02]: 02-03: NPC_SLOT_COUNT 15, clamp 0..14; slots 10..14 -> routes 0..4, shared offset 0, start = first index of a mulberry32(BENCH_SEED + i) Fisher-Yates order >= 0.6 m from every earlier spawn (picks 1/0/3/3/0, no fallback; slot 11 exactly 0.6 m from slot 7); slots 0..9 byte-identical to 01-23; spawnPointForNpc / farthestRouteIndex added, game.ts switches in 02-06
+- [Phase 02]: 02-04 (pure logic, before the Phase 1 device gate per D-12): roster in `bt.roster` v1 = ≤ 30 members (id ^m[0-9]{1,3}$, sanitised name, look one of 'bcdefghijklmnopqr', temper), present ≤ 15 in member order, on floor = first `count` present; raw > 8192 ignored before JSON.parse, 200-entry scan, whitelist copy into fresh literals (prototype-pollution test); `bt.npcs` v1 migrates one way (legacy names on m1..m10, looks b..k, count kept, 15 present) and is never written
+- [Phase 02]: 02-04: resolveStartRoster members bench -> default, else stored > migrated > default; count finite forcedCount > ?npcs= > roster count, forced/query clamped to present and reported 'query'; quickAdd = presentMembers[count] while count < min(15, present), quickRemove = LIFO; addMember takes the smallest free id and first unused look (rng only when all 17 are used); withSlotEdits maps names onto present members in order until plan 02-09 removes it
+- [Phase 02]: 02-04: Equal/NumpadAdd -> 'npc-add', Minus/NumpadSubtract -> 'npc-remove' (null with Ctrl/Meta/Alt, so Ctrl± zoom stays); keyboard.ts and KEY_HINTS untouched until 02-08; `bt.npcLabels` on unless exactly '0'; 32 frozen NFC preset nicknames, randomPresetName compares taken names after sanitizeNpcName
 
 ### Roadmap Evolution
 
