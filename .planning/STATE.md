@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-09-15T05:32:51.010Z"
-last_activity: 2026-09-15 -- Completed 01-08 (floating joystick left half + context button multi-touch + Escape/Space/pause-button pause with menu and hidden-tab auto-pause; Vitest 163/163, Playwright 24 passed 0 failed, size gate OK)
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-09-15T05:54:27.272Z"
+last_activity: 2026-09-15 -- Completed 01-09 (Z/C/arrows + rotate buttons 90 deg camera rig, camera-relative movement, portrait/landscape layout with debounced resize guard, page hardening, fullscreen only when fullscreenEnabled; Vitest 174/174, Playwright 32 passed 0 failed, size gate OK; CTRL-05 complete, CTRL-03 awaits phone check)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 8
-  percent: 38
+  completed_plans: 9
+  percent: 43
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 9 of 21
+Plan: 10 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-08 (floating joystick left half + context button multi-touch + Escape/Space/pause-button pause with menu and hidden-tab auto-pause; Vitest 163/163, Playwright 24 passed 0 failed, size gate OK)
+Last activity: 2026-09-15 -- Completed 01-09 (Z/C/arrows + rotate buttons 90 deg camera rig, camera-relative movement, portrait/landscape layout with debounced resize guard, page hardening, fullscreen only when fullscreenEnabled; Vitest 174/174, Playwright 32 passed 0 failed, size gate OK; CTRL-05 complete, CTRL-03 awaits phone check)
 
-Progress: [████░░░░░░] 38%
+Progress: [████░░░░░░] 43%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████░░░░░░] 38%
 | Phase 01 P06 | 16min | 2 tasks | 10 files |
 | Phase 01 P07 | 23min | 2 tasks | 9 files |
 | Phase 01 P08 | 17min | 3 tasks | 14 files |
+| Phase 01 P09 | 18min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-08: pauseFor(r) overwrites the reason; resume only via menu, Escape/Space or pause button (returning to a visible tab stays paused); interact queued while paused is dropped
 - [Phase 01]: 01-08: #touch-zone covers the canvas, so desktop click-on-object (D-20) must listen on #touch-zone or window, not the canvas
 - [Phase 01]: 01-08: CDP touchEnd releases every finger; e2e helper lifts one of several fingers with a touchMove that omits it
+- [Phase 01]: 01-09: KeyC / ArrowRight / rotate-right button = +90 deg yaw (W then walks world -X); KeyZ / ArrowLeft = -90; E never rotates
+- [Phase 01]: 01-09: renderer.setSize(w, h, false): CSS (100vw x 100dvh) owns the canvas box, the 100 ms debounced guard owns only backbuffer + camera.aspect; body.portrait toggles immediately
+- [Phase 01]: 01-09: camera input modules import three, so main.ts loads them with the renderer (dynamic import) to keep the index chunk three-free
+- [Phase 01]: 01-09: framing 11 m/55 deg (landscape) and 15 m/60 deg (portrait) still shows the whole room, not ~1/2 (D-19); kept as pinned, flagged for end-of-phase phone check
 
 ### Pending Todos
 
@@ -112,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T05:32:50.999Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-09-15T05:54:27.260Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
