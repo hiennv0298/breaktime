@@ -71,7 +71,7 @@ Plans:
 - [x] 01-10-PLAN.md — Kenney open-space office + pantry, 24+ physics props, blob shadows, highlight + click/E (W5)
 - [x] 01-11-PLAN.md — Debug HUD + auto/manual quality tiers + context-loss handling (W5)
 - [ ] 01-12-PLAN.md — Go live: DNS checkpoint, operator-typed approval token checkpoint, infra:apply, first deploy (W5)
-- [ ] 01-13-PLAN.md — Audio unlock on Chơi + MP3 SFX module (W5)
+- [x] 01-13-PLAN.md — Audio unlock on Chơi + MP3 SFX module (W5)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 11/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 12/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |

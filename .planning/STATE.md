@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-11-PLAN.md
-last_updated: "2026-09-15T07:29:26.856Z"
-last_activity: 2026-09-15 -- Completed 01-11 (Thấp/Vừa/Cao tiers auto/manual/?q, throttle-guarded auto-tier, debug HUD Backquote/?debug=1/pause menu, WebGL context-loss prompt; resumed after interruption; Vitest 214/214, Playwright 43 passed 0 failed, size gate OK 6.75 MB, first load 3.21 MB; TECH-07 left for verifier, TECH-03 stays open)
+stopped_at: Completed 01-13-PLAN.md
+last_updated: "2026-09-15T07:48:10.134Z"
+last_activity: 2026-09-15 -- Completed 01-13 (Web Audio unlock on Chơi: resume + silent buffer in the click, 11 MP3 SFX preloaded as load task sfx and decoded after the tap, start cue drop-soft-0, suspend on hide / resume on visible or gesture, locked under ?autoplay=1; Vitest 230/230, Playwright 46 passed 0 failed, size gate OK 6.81 MB, first load 3.27 MB; 01-12 go-live still pending; TECH-01/TECH-06 stay open)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 11
-  percent: 52
+  completed_plans: 12
+  percent: 57
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 12 of 21
+Plan: 13 of 21 (01-12 go-live still pending)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-11 (Thấp/Vừa/Cao tiers auto/manual/?q, throttle-guarded auto-tier, debug HUD Backquote/?debug=1/pause menu, WebGL context-loss prompt; resumed after interruption; Vitest 214/214, Playwright 43 passed 0 failed, size gate OK 6.75 MB, first load 3.21 MB; TECH-07 left for verifier, TECH-03 stays open)
+Last activity: 2026-09-15 -- Completed 01-13 (Web Audio unlock on Chơi: resume + silent buffer in the click, 11 MP3 SFX preloaded as load task sfx and decoded after the tap, start cue drop-soft-0, suspend on hide / resume on visible or gesture, locked under ?autoplay=1; Vitest 230/230, Playwright 46 passed 0 failed, size gate OK 6.81 MB, first load 3.27 MB; 01-12 go-live still pending; TECH-01/TECH-06 stay open)
 
-Progress: [█████░░░░░] 52%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████░░░░░] 52%
 | Phase 01 P09 | 18min | 3 tasks | 12 files |
 | Phase 01 P10 | 24min | 3 tasks | 15 files |
 | Phase 01 P11 | 50min | 2 tasks | 12 files |
+| Phase 01 P13 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-11: Start tier precedence is ?q= (forced) > stored manual (bt.quality) > auto (Vừa coarse / Cao desktop); forced ?q= never reads or overwrites the stored choice
 - [Phase 01]: 01-11: Auto-tier is fed only unpaused frames; tier DPR changes go through the resize guard without counting as a resize
 - [Phase 01]: 01-11: Context loss = preventDefault + pause + #context-lost reload prompt; webglcontextrestored not handled (reload is the path)
+- [Phase 01]: 01-13: variantsOf matches only prefix-<digits> sorted numerically ('drop' matches nothing; 'break-glass' never includes 'break-ceramic-*')
+- [Phase 01]: 01-13: __bt.audio.requests counts every playSfx call; played lists only sounds actually started (last 20)
+- [Phase 01]: 01-13: onPlayGesture(unlockFromGesture) registered before fullscreen (fullscreen may consume transient activation); no AudioContext before the gesture
+- [Phase 01]: 01-13: SFX fetch/decode failure warns and counts __bt.audio.failed instead of failing boot; sfx module is its own lazy chunk (3.95 KB)
 
 ### Pending Todos
 
@@ -125,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T07:29:26.843Z
-Stopped at: Completed 01-11-PLAN.md
+Last session: 2026-09-15T07:48:10.119Z
+Stopped at: Completed 01-13-PLAN.md
 Resume file: None
