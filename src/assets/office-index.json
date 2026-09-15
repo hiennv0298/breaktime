@@ -1,0 +1,23 @@
+{
+  "office": {
+    "desk": "desk(Clone)",
+    "chairDesk": "chairDesk(Clone)",
+    "computerScreen": "computerScreen(Clone)",
+    "computerKeyboard": "computerKeyboard(Clone)",
+    "computerMouse": "computerMouse(Clone)",
+    "laptop": "laptop(Clone)",
+    "coffeeMachine": "kitchenCoffeeMachine(Clone)",
+    "fridge": "kitchenFridge(Clone)",
+    "pantryCounter": "kitchenCabinet(Clone)",
+    "pottedPlant": "pottedPlant(Clone)",
+    "plantSmall": "plantSmall1(Clone)",
+    "trashcan": "trashcan(Clone)",
+    "bookcase": "bookcaseClosed(Clone)",
+    "books": "books(Clone)",
+    "boxClosed": "cardboardBoxClosed(Clone)"
+  },
+  "food": {
+    "mug": "mug",
+    "cupCoffee": "cup-coffee"
+  }
+}
