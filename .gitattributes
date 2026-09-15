@@ -1,0 +1,4 @@
+# Bash scripts are sent to the VPS over stdin; CRLF would break them.
+*.sh text eol=lf
+deploy/caddy/* text eol=lf
+*.mjs text eol=lf
