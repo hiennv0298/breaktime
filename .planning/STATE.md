@@ -191,6 +191,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- [Phase 2] Tích hợp chờ cổng máy thật Phase 1 (01-GATE.md: gate-missing) — các plan tích hợp 02-06..02-13 dừng ở entry guard, chưa sửa code (D-12)
 - [Phase 1] **Model máy đo chưa ghi**: operator có Android tầm trung + iPhone (01-CONTEXT D-06) — phải ghi model/OS/trình duyệt trước lần đo đầu
 - [Phase 1] Deploy whattoeat kế tiếp (`rsync --delete`) sẽ ghi đè dòng `import` trong Caddyfile trên server → `npm run deploy` của break-time phải tự phát hiện và báo
 - VPS chỉ **1 vCPU / 3,6 GB RAM** (đo 14/09/2026) và đang chạy cả Postgres của doibung. Static site thì không sao, nhưng **không build game trên VPS**: build ở máy local rồi đẩy `dist/` lên
