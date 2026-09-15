@@ -1,5 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { BENCH_SEED, mulberry32 } from '../../src/logic/rng';
+import { BENCH_SEED, mulberry32, seedFor } from '../../src/logic/rng';
+
+describe('seedFor (per-member streams, RESEARCH Pitfall 7)', () => {
+  it('returns a stable unsigned 32-bit integer', () => {
+    const a = seedFor(1, 'm1');
+    expect(Number.isInteger(a)).toBe(true);
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(a).toBeLessThan(2 ** 32);
+    expect(seedFor(1, 'm1')).toBe(a);
+  });
+
+  it('differs by key and by base', () => {
+    expect(seedFor(1, 'm1')).not.toBe(seedFor(1, 'm2'));
+    expect(seedFor(1, 'm1')).not.toBe(seedFor(2, 'm1'));
+  });
+
+  it('is FNV-1a 32-bit over UTF-16 units xor base', () => {
+    expect(seedFor(0, '')).toBe(0x811c9dc5);
+    expect(seedFor(0, 'a')).toBe(0xe40c292c);
+    expect(seedFor(0x811c9dc5, '')).toBe(0);
+    expect(seedFor(5, 'a')).toBe((0xe40c292c ^ 5) >>> 0);
+  });
+
+  it('treats a non-finite base as 0', () => {
+    expect(seedFor(NaN, 'm3')).toBe(seedFor(0, 'm3'));
+  });
+
+  it('gives independent streams per member', () => {
+    const r1 = mulberry32(seedFor(BENCH_SEED, 'm1'));
+    const r2 = mulberry32(seedFor(BENCH_SEED, 'm2'));
+    expect([r1(), r1(), r1()]).not.toEqual([r2(), r2(), r2()]);
+  });
+});
 
 describe('mulberry32', () => {
   it('replays the same sequence for the same seed', () => {
