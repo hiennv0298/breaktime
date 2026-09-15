@@ -148,7 +148,7 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-25: touch hint (#touch-hint, right half, pointer-events none) is decided once at loop start, bt.touchHintSeen = '1' is written when it is shown, and it hides after TOUCH_HINT_MS = 6000 or on the first touch; [data-hud-button] opacity 0.6 (0.95 while :active); suppressKeyHints(on) is the bench/soak hook for 01-17/01-18
 - [Phase 01]: 01-26: NPC start count precedence is finite createGame opts.forcedNpcCount > ?npcs= > valid stored bt.npcs ({"v":1,"count","names"[10]}, raw <= 4096) > 3; forced/query report source 'query' and still take names from the stored record
 - [Phase 01]: 01-26: sanitizeNpcName = slice 256 units, NFC, tab/CR/LF to space, strip C0/C1, U+00AD, U+061C, U+180E, U+200B-200F, U+2028-202E, U+2060-206F, U+FEFF, collapse whitespace, trim, 16 code points; npcCountFromQuery now lives in src/logic/npcSettings.ts and returns null when absent
-- [Phase 01]: 01-26: name tags are a DOM layer #npc-labels (z 90, pointer-events none, textContent only) projected in frameUpdate after cameraView.update (camera.updateMatrixWorld first); anchor foot + 1.85 m, ragdoll torso + 0.9 m; D-31 real-name content risk accepted for the play-test only, review before Phase 8
+- [Phase 01]: 01-26: name tags are a DOM layer #npc-labels (z 90, pointer-events none, textContent only) projected in frameUpdate after cameraView.update (camera.updateMatrixWorld first); anchor foot + 1.85 m, ragdoll torso + 0.9 m; D-31 real-name content risk accepted for the play-test only, review before Phase 9 (đánh số lại 16/09: CrazyGames là Phase 9)
 - [Phase 01]: 01-27: NPC count changes at runtime go through a grow-only pool (max MAX_NPCS 10): Npc.despawn (ragdoll synced, deactivated and re-attached first; capsule disabled, root hidden) / Npc.respawn at the route spawn; never Rapier removal, so __bt.ragdolls.bodies stays 60 and HUD bodies do not drop after lowering the count
 - [Phase 01]: 01-27: Game.applyNpcSettings normalises again, leaves NPCs that stay untouched (a flying ragdoll keeps flying, only the name changes), reports source 'manual' and calls refreshTarget so a despawned glowing NPC stops glowing while paused; startup NPCs are still created before shadows/shards/targeting (body order unchanged), later ones register through a wire hook
 - [Phase 01]: 01-27: Escape typed in an NPC name field still closes the menu; every other key stays in the field; the ?npcAt pin only applies to NPC 0 at page start; __bt.npcSettings.storageOk keeps describing the start-up read, the save result is shown only in #npc-apply-status
@@ -160,6 +160,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-18: ?soak=1 loops the 10-NPC bench timeline per cycle with a full reset (NPCs recover to routes, player.teleport to spawn, breakables.resetAll creates nothing); leak proxy = geometries/textures/bodies at end of cycle 1 vs last cycle; soakMin 1..30 (15), soakCycles 1..100, dur 5..60; ?soak=1 wins over ?bench=1
 - [Phase 01]: 01-18: crash beacon localStorage bt.beacon (sha + timestamps only, try/catch, heartbeat 5 s, clean on pagehide, stale after 20 s) shows #crash-banner via textContent on the next load; nothing sent off-origin
 - [Phase 01]: 01-18: measurement build 1ecc53ce473e live (DEPLOY_OK, poller 38/38 200, SITE_FILE_UNCHANGED) on the third attempt after an SSH reset at upload and a swing mashing flake (300.1 ms vs < 300); operator approved 60 -> 40 ms waits, SWING_COOLDOWN_MS and assertions unchanged
+
+### Roadmap Evolution
+
+- 16/09/2026: chèn Phase 2 mới "NPC đồng nghiệp — tên, số lượng, đánh trả" (operator); phase cũ 2–8 lùi thành 3–9. Phase 01.1 (chèn nhầm 15/09) đã revert; research + 12 quyết định discuss chuyển sang Phase 2. Phase 1 vẫn EXECUTING (chờ đo máy thật 01-19).
 
 ### Pending Todos
 

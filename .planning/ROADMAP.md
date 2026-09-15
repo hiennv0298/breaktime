@@ -4,9 +4,11 @@
 
 Đi từ một căn phòng trống tới bản game nộp được lên CrazyGames. Thứ tự các phase là **rủi ro lớn nhất trước**:
 Phase 1 chứng minh stack chạy được trên điện thoại thật và dựng sẵn đường deploy, để mọi phase sau đều chơi thử
-được trên máy thật. Phase 2–5 lần lượt thêm từng trụ gameplay (phát hiện → chọc phá → rage → tin đồn), mỗi phase
-kết thúc bằng một bản chơi được. Phase 6 nối tất cả thành vòng tiến trình 5 ngày. Phase 7 đánh bóng cho người lạ
-chơi. Phase 8 phát hành và đo.
+được trên máy thật. Phase 2 cho đồng nghiệp NPC có tên, số lượng tuỳ ý và biết đánh trả. Phase 3–6 lần lượt thêm từng trụ gameplay (phát hiện → chọc phá → rage → tin đồn), mỗi phase
+kết thúc bằng một bản chơi được. Phase 7 nối tất cả thành vòng tiến trình 5 ngày. Phase 8 đánh bóng cho người lạ
+chơi. Phase 9 phát hành và đo.
+
+> **Đánh số lại 16/09/2026 (operator):** chèn Phase 2 mới "NPC đồng nghiệp"; các phase cũ 2–8 lùi thành 3–9, nội dung giữ nguyên. Tài liệu Phase 1 viết trước ngày này nhắc "Phase 2 (navmesh/phát hiện)" = Phase 3 mới, "Phase 4 (Rage)" = Phase 5, "Phase 7" = Phase 8, "Phase 8 (CrazyGames)" = Phase 9.
 
 Tin đồn (USP) đứng sau chọc phá và rage vì nó cần sẵn NPC có lịch trình, điểm tụ tập và hệ gậy/bị bắt.
 Làm sớm hơn thì phải làm lại.
@@ -19,13 +21,14 @@ Làm sớm hơn thì phải làm lại.
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [ ] **Phase 1: Spike kỹ thuật & đường deploy** - 1 phòng, nhân vật đi được trên desktop+mobile, ragdoll + đồ vỡ, đo size/fps trên máy thật, tự deploy lên VPS
-- [ ] **Phase 2: Hệ phát hiện** - NPC có lịch trình, nón nhìn, thanh nghi ngờ, tiếng ồn, chỗ nấp
-- [ ] **Phase 3: Chọc phá & một ngày làm việc** - Nhặt/đặt đồ, prank có punchline, to-do list, đồng hồ ngày, gậy HR
-- [ ] **Phase 4: Stress & Rage Mode** - Thanh stress, Rage đập phá ragdoll, hoá đơn thiệt hại, màn bị đuổi
-- [ ] **Phase 5: Hệ tin đồn** - Thì thầm, lan, méo tin, truy nguồn, đối chất, quan hệ NPC
-- [ ] **Phase 6: Tầng 1 đầy đủ & tiến trình** - 5 ngày, 12+ prank, combo, chấm điểm, coin, shop, lưu tiến trình
-- [ ] **Phase 7: Đánh bóng cho người lạ** - Tutorial, vi/en, âm thanh, tải nhanh, PlatformAdapter, credits
-- [ ] **Phase 8: CrazyGames Basic Launch** - Nộp build, chạy 7–21 ngày, tổng kết số đo
+- [ ] **Phase 2: NPC đồng nghiệp — tên, số lượng, đánh trả** - Roster 30 đồng nghiệp (tên, ngoại hình, tính khí), 0–15 NPC thêm/bớt nhanh, NPC giận đuổi và đánh trả kiểu slapstick
+- [ ] **Phase 3: Hệ phát hiện** - NPC có lịch trình, nón nhìn, thanh nghi ngờ, tiếng ồn, chỗ nấp
+- [ ] **Phase 4: Chọc phá & một ngày làm việc** - Nhặt/đặt đồ, prank có punchline, to-do list, đồng hồ ngày, gậy HR
+- [ ] **Phase 5: Stress & Rage Mode** - Thanh stress, Rage đập phá ragdoll, hoá đơn thiệt hại, màn bị đuổi
+- [ ] **Phase 6: Hệ tin đồn** - Thì thầm, lan, méo tin, truy nguồn, đối chất, quan hệ NPC
+- [ ] **Phase 7: Tầng 1 đầy đủ & tiến trình** - 5 ngày, 12+ prank, combo, chấm điểm, coin, shop, lưu tiến trình
+- [ ] **Phase 8: Đánh bóng cho người lạ** - Tutorial, vi/en, âm thanh, tải nhanh, PlatformAdapter, credits
+- [ ] **Phase 9: CrazyGames Basic Launch** - Nộp build, chạy 7–21 ngày, tổng kết số đo
 
 ## Phase Details
 
@@ -128,11 +131,30 @@ Plans:
 Cổng chặn: nếu tiêu chí 2–4 **không** đạt trên máy thật thì dừng lại, xem lại stack (PlayCanvas là ứng viên 2)
 trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 
-### Phase 2: Hệ phát hiện
+### Phase 2: NPC đồng nghiệp — tên, số lượng, đánh trả
+
+**Goal**: Văn phòng có đồng nghiệp mang tên do người chơi đặt, số lượng thêm/bớt tuỳ ý tới 15, và bị tát đủ nhiều thì nổi giận đuổi theo đánh trả kiểu slapstick — đánh qua lại vẫn buồn cười, không máu, không thanh HP, không tụt fps
+**Mode:** mvp
+**Depends on**: Phase 1
+**Requirements**: NPC-01, NPC-02, NPC-03, NPC-04, NPC-05, NPC-06
+**Success Criteria** (what must be TRUE):
+
+  1. Người chơi thêm/bớt NPC trong lúc chơi bằng phím +/− (desktop) hoặc cụm nút "− N +" trên HUD (mobile), trong khoảng 0–15, không cần mở settings
+  2. Người chơi lưu roster tối đa 30 đồng nghiệp (tên ≤ 16 ký tự, 1 trong 17 ngoại hình Blocky, tính khí Nóng/Thường/Hiền), chọn ai có mặt, có nút tên ngẫu nhiên; roster còn nguyên sau reload và không gửi đi đâu
+  3. Tát NPC làm đầy thanh giận theo tính khí (Nóng 1 cú / Thường 2 / Hiền 3); NPC giận đứng dậy rồi đuổi theo (tối đa 3 NPC đuổi, 1 NPC vung đòn cùng lúc), giơ tay báo trước 0,6 s kèm dấu "!", người chơi né bằng cách đi ra khỏi tầm, tát trúng NPC đang giơ tay thì cắt đòn
+  4. Người chơi bị đánh trúng thì ngã ragdoll nhẹ, khoá điều khiển tối đa ~3 s, tự đứng dậy và bất tử 1,5 s; không HP, không máu; có hit-stop, rung camera, SFX và viền màn hình loé
+  5. Logic giận / đuổi / đánh / token chạy deterministic theo seed và có unit test; `?bench=1` giữ nguyên, kịch bản `&brawl=1` có NPC đánh trả vẫn giữ ngân sách fps/draw call của Phase 1 trên máy chuẩn
+
+**Plans**: TBD
+**UI hint**: yes
+
+Thứ tự (G14): module logic thuần (giận, đuổi, token, roster) làm trước; phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT, để nếu phải đổi stack thì không làm lại.
+
+### Phase 3: Hệ phát hiện
 
 **Goal**: Người chơi lẻn quanh văn phòng có NPC đi lại, hiểu rõ vì sao mình sắp bị hoặc đã bị phát hiện
 **Mode:** mvp
-**Depends on**: Phase 1
+**Depends on**: Phase 2
 **Requirements**: DETECT-01, DETECT-02, DETECT-03, DETECT-04, DETECT-05, DETECT-06, DETECT-07
 **Success Criteria** (what must be TRUE):
 
@@ -145,11 +167,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 3: Chọc phá & một ngày làm việc
+### Phase 4: Chọc phá & một ngày làm việc
 
 **Goal**: Chơi trọn một ngày ngắn: nhận to-do, gài prank, rời hiện trường, xem punchline, bị bắt thì ăn gậy
 **Mode:** mvp
-**Depends on**: Phase 2
+**Depends on**: Phase 3
 **Requirements**: PRANK-01, PRANK-02, PRANK-03, PRANK-04, LOOP-01, LOOP-02
 **Success Criteria** (what must be TRUE):
 
@@ -161,11 +183,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 4: Stress & Rage Mode
+### Phase 5: Stress & Rage Mode
 
 **Goal**: Căng thẳng tích luỹ thành một cú xả đập phá đã tay, rồi quay lại chơi lén lút
 **Mode:** mvp
-**Depends on**: Phase 3
+**Depends on**: Phase 4
 **Requirements**: RAGE-01, RAGE-02, RAGE-03, RAGE-04, RAGE-05, RAGE-06, LOOP-03
 **Success Criteria** (what must be TRUE):
 
@@ -178,11 +200,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 5: Hệ tin đồn
+### Phase 6: Hệ tin đồn
 
 **Goal**: Người chơi tung tin, nhìn tin lan và méo đi, rồi hoặc thoát hoặc bị truy ra và đối chất
 **Mode:** mvp
-**Depends on**: Phase 4
+**Depends on**: Phase 5
 **Requirements**: GOSSIP-01, GOSSIP-02, GOSSIP-03, GOSSIP-04, GOSSIP-05, GOSSIP-06, GOSSIP-07, GOSSIP-08
 **Success Criteria** (what must be TRUE):
 
@@ -195,11 +217,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 6: Tầng 1 đầy đủ & tiến trình
+### Phase 7: Tầng 1 đầy đủ & tiến trình
 
 **Goal**: Một tuần làm việc trọn vẹn có lý do để chơi tiếp ngày mai
 **Mode:** mvp
-**Depends on**: Phase 5
+**Depends on**: Phase 6
 **Requirements**: LOOP-04, LOOP-05, PRANK-05, PRANK-06, PROG-01, PROG-02, PROG-03
 **Success Criteria** (what must be TRUE):
 
@@ -211,11 +233,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 7: Đánh bóng cho người lạ
+### Phase 8: Đánh bóng cho người lạ
 
 **Goal**: Người chưa từng thấy game vào được gameplay trong 10 giây và tự hiểu cách chơi
 **Mode:** mvp
-**Depends on**: Phase 6
+**Depends on**: Phase 7
 **Requirements**: UX-01, UX-02, UX-03, UX-04, UX-05, PLAT-03
 **Success Criteria** (what must be TRUE):
 
@@ -228,11 +250,11 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 8: CrazyGames Basic Launch
+### Phase 9: CrazyGames Basic Launch
 
 **Goal**: Game lên CrazyGames và có số đo thật để quyết định bước tiếp theo
 **Mode:** mvp
-**Depends on**: Phase 7
+**Depends on**: Phase 8
 **Requirements**: PLAT-04, PLAT-05
 **Success Criteria** (what must be TRUE):
 
@@ -250,10 +272,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Spike kỹ thuật & đường deploy | 24/27 | In Progress|  |
-| 2. Hệ phát hiện | 0/TBD | Not started | - |
-| 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
-| 4. Stress & Rage Mode | 0/TBD | Not started | - |
-| 5. Hệ tin đồn | 0/TBD | Not started | - |
-| 6. Tầng 1 đầy đủ & tiến trình | 0/TBD | Not started | - |
-| 7. Đánh bóng cho người lạ | 0/TBD | Not started | - |
-| 8. CrazyGames Basic Launch | 0/TBD | Not started | - |
+| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 0/TBD | Not started | - |
+| 3. Hệ phát hiện | 0/TBD | Not started | - |
+| 4. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
+| 5. Stress & Rage Mode | 0/TBD | Not started | - |
+| 6. Hệ tin đồn | 0/TBD | Not started | - |
+| 7. Tầng 1 đầy đủ & tiến trình | 0/TBD | Not started | - |
+| 8. Đánh bóng cho người lạ | 0/TBD | Not started | - |
+| 9. CrazyGames Basic Launch | 0/TBD | Not started | - |

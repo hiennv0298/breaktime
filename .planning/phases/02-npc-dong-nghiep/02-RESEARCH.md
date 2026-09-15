@@ -1,4 +1,6 @@
-# Phase 01.1: NPC đồng nghiệp — đặt tên, tăng giảm số lượng, NPC đánh trả - Research
+# Phase 2: NPC đồng nghiệp — tên, số lượng, đánh trả - Research
+
+> **Ghi chú 16/09/2026:** research này viết ngày 15/09 khi phase còn bị lập nhầm là "01.1". Mọi chỗ "01.1" bên dưới = **Phase 2** này. Sau khi đánh số lại: "Phase 2 detection/vision" trong file = **Phase 3**, "Phase 4 Rage" = **Phase 5**, "Phase 5 relationship" = **Phase 6**. Quyết định G1–G14 đã chốt trong `02-CONTEXT.md` (tất cả theo khuyến nghị).
 
 **Researched:** 2026-09-15
 **Domain:** Browser game AI (anger / pursuit / melee), Rapier 0.20 character control + ragdoll reuse, local roster storage, perf scaling of the existing Three.js r186 + Rapier scene

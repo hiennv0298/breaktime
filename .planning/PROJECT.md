@@ -34,7 +34,7 @@ vòng lặp này vẫn phải chơi được mượt trên một điện thoại
 - Tài khoản người dùng / backend lưu dữ liệu người chơi — v1 chỉ dùng localStorage; không có dữ liệu cá nhân thì không vướng hồ sơ chuyển dữ liệu xuyên biên giới (VPS ở Singapore)
 - IAP / tiền thật — Poki cấm, CrazyGames Basic Launch không kiếm tiền; để sau Full Launch
 - Multiplayer / co-op — cần backend realtime, lệch Core Value
-- Nhập tên người thật công khai, gõ tin đồn tự do, level editor — rủi ro nội dung bắt nạt/xúc phạm, cần kiểm duyệt. **Ngoại lệ 15/09/2026:** tên NPC tự gõ chỉ lưu trên máy cho bản chơi thử (CTRL-07); xem lại trước Phase 8
+- Nhập tên người thật công khai, gõ tin đồn tự do, level editor — rủi ro nội dung bắt nạt/xúc phạm, cần kiểm duyệt. **Ngoại lệ 15/09/2026:** tên NPC tự gõ chỉ lưu trên máy cho bản chơi thử (CTRL-07); xem lại trước Phase 9
 - Bạo lực có máu, vũ khí sắc nhọn đâm người — PEGI 12 bắt buộc ở CrazyGames
 - Unity / Unity WebGL — build nặng, dễ crash vì hết bộ nhớ trên Safari iOS
 - Tên/nhân vật/IP có sẵn ("The Office", "Scary Teacher"…) — rủi ro bản quyền
@@ -77,7 +77,7 @@ vòng lặp này vẫn phải chơi được mượt trên một điện thoại
 | CrazyGames Basic Launch là đích đầu | Build ≤ 50 MB, chưa bắt SDK, trả số đo thật sau 7–21 ngày | — Pending |
 | Không tài khoản ở v1 | Tránh nghĩa vụ dữ liệu cá nhân + giảm phạm vi | — Pending |
 | Deploy thử sau Caddy của doibung | VPS có sẵn; static site gần như không tốn tài nguyên | ✓ Good (game.doibung.com live 15/09/2026) |
-| Phím desktop: mũi tên/WASD đi, Space đánh, Ctrl/Esc settings; NPC 0–10 tự đặt tên (15/09/2026) | Operator chơi thử bản live và yêu cầu; tên chỉ lưu trên máy | — Pending (xem lại tên NPC trước Phase 8) |
+| Phím desktop: mũi tên/WASD đi, Space đánh, Ctrl/Esc settings; NPC 0–10 tự đặt tên (15/09/2026) | Operator chơi thử bản live và yêu cầu; tên chỉ lưu trên máy | — Pending (xem lại tên NPC trước Phase 9) |
 
 ## Evolution
 

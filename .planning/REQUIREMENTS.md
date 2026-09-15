@@ -94,6 +94,15 @@
 - [ ] **PLAT-04**: Build đạt giới hạn CrazyGames (tổng ≤ 250 MB, ≤ 1.500 file, tải đầu ≤ 50 MB) và được nộp Basic Launch
 - [ ] **PLAT-05**: Có bảng tổng kết số đo sau Basic Launch: playtime trung bình, D1 retention, conversion, so với mốc 10 phút / 10–15% / 80%
 
+### Đồng nghiệp NPC (NPC) — *thêm 16/09/2026, Phase 2*
+
+- [ ] **NPC-01**: Người chơi thêm/bớt NPC trong lúc chơi bằng phím +/− (desktop) hoặc cụm nút "− N +" trên HUD (mobile), 0–15 NPC (nâng trần 0–10 của CTRL-07), không cần mở settings
+- [ ] **NPC-02**: Người chơi lưu roster tối đa 30 đồng nghiệp — tên ≤ 16 ký tự, 1 trong 17 ngoại hình Blocky, tính khí Nóng/Thường/Hiền — chọn ai có mặt, có nút tên ngẫu nhiên và dòng cảnh báo "chỉ lưu trên máy, đừng dùng để xúc phạm ai"; lưu localStorage, còn nguyên sau reload, không gửi đi đâu
+- [ ] **NPC-03**: Tát NPC làm đầy thanh giận theo tính khí (Nóng 1 / Thường 2 / Hiền 3, nguội dần theo thời gian); NPC giận sau khi đứng dậy thì đuổi theo và vung tay đánh trả; tối đa 3 NPC đuổi và 1 NPC vung đòn cùng lúc
+- [ ] **NPC-04**: NPC giơ tay báo trước 0,6 s kèm dấu "!"; người chơi né bằng cách đi ra khỏi tầm, tát trúng NPC đang giơ tay thì cắt đòn; không thêm nút mới
+- [ ] **NPC-05**: Bị đánh trúng thì người chơi ngã ragdoll nhẹ, khoá điều khiển tối đa ~3 s, tự đứng dậy, bất tử 1,5 s; không HP, không máu (PEGI 12); có hit-stop, rung camera, SFX, viền màn hình loé; nhãn tên NPC luôn hiện (tắt được trong settings), NPC đang giận đổi màu nhãn
+- [ ] **NPC-06**: Logic giận/đuổi/đánh/token deterministic theo seed, có unit test không cần trình duyệt; `?bench=1` giữ nguyên, thêm `&brawl=1` đo kịch bản đánh trả trong ngân sách fps/draw call của Phase 1
+
 ## v2 Requirements
 
 ### Kiếm tiền & cổng
@@ -119,7 +128,7 @@
 | Tài khoản / backend dữ liệu người chơi | Không dữ liệu cá nhân → không hồ sơ xuyên biên giới; localStorage đủ cho v1 |
 | IAP | Poki cấm; Basic Launch không kiếm tiền |
 | Multiplayer / co-op | Cần backend realtime, lệch Core Value |
-| Gõ tin đồn tự do / nhập tên người thật công khai / level editor | Rủi ro nội dung bắt nạt, cần kiểm duyệt. **Ngoại lệ 15/09/2026 (operator):** tên NPC tự gõ, chỉ lưu trên máy, cho bản chơi thử (CTRL-07) — phải xem lại trước khi nộp CrazyGames (Phase 8) |
+| Gõ tin đồn tự do / nhập tên người thật công khai / level editor | Rủi ro nội dung bắt nạt, cần kiểm duyệt. **Ngoại lệ 15/09/2026 (operator):** tên NPC tự gõ, chỉ lưu trên máy, cho bản chơi thử (CTRL-07) — phải xem lại trước khi nộp CrazyGames (Phase 9) |
 | Máu, vũ khí sắc đâm người | PEGI 12 |
 | Unity WebGL | Size + crash Safari iOS |
 | IP có sẵn (The Office, Scary Teacher…) | Bản quyền |
@@ -145,54 +154,60 @@
 | CTRL-05 | Phase 1 | Complete |
 | PLAT-01 | Phase 1 | Pending |
 | PLAT-02 | Phase 1 | Complete |
-| DETECT-01 | Phase 2 | Pending |
-| DETECT-02 | Phase 2 | Pending |
-| DETECT-03 | Phase 2 | Pending |
-| DETECT-04 | Phase 2 | Pending |
-| DETECT-05 | Phase 2 | Pending |
-| DETECT-06 | Phase 2 | Pending |
-| DETECT-07 | Phase 2 | Pending |
-| PRANK-01 | Phase 3 | Pending |
-| PRANK-02 | Phase 3 | Pending |
-| PRANK-03 | Phase 3 | Pending |
-| PRANK-04 | Phase 3 | Pending |
-| LOOP-01 | Phase 3 | Pending |
-| LOOP-02 | Phase 3 | Pending |
-| RAGE-01 | Phase 4 | Pending |
-| RAGE-02 | Phase 4 | Pending |
-| RAGE-03 | Phase 4 | Pending |
-| RAGE-04 | Phase 4 | Pending |
-| RAGE-05 | Phase 4 | Pending |
-| RAGE-06 | Phase 4 | Pending |
-| LOOP-03 | Phase 4 | Pending |
-| GOSSIP-01 | Phase 5 | Pending |
-| GOSSIP-02 | Phase 5 | Pending |
-| GOSSIP-03 | Phase 5 | Pending |
-| GOSSIP-04 | Phase 5 | Pending |
-| GOSSIP-05 | Phase 5 | Pending |
-| GOSSIP-06 | Phase 5 | Pending |
-| GOSSIP-07 | Phase 5 | Pending |
-| GOSSIP-08 | Phase 5 | Pending |
-| LOOP-04 | Phase 6 | Pending |
-| LOOP-05 | Phase 6 | Pending |
-| PRANK-05 | Phase 6 | Pending |
-| PRANK-06 | Phase 6 | Pending |
-| PROG-01 | Phase 6 | Pending |
-| PROG-02 | Phase 6 | Pending |
-| PROG-03 | Phase 6 | Pending |
-| UX-01 | Phase 7 | Pending |
-| UX-02 | Phase 7 | Pending |
-| UX-03 | Phase 7 | Pending |
-| UX-04 | Phase 7 | Pending |
-| UX-05 | Phase 7 | Pending |
-| PLAT-03 | Phase 7 | Pending |
-| PLAT-04 | Phase 8 | Pending |
-| PLAT-05 | Phase 8 | Pending |
+| NPC-01 | Phase 2 | Pending |
+| NPC-02 | Phase 2 | Pending |
+| NPC-03 | Phase 2 | Pending |
+| NPC-04 | Phase 2 | Pending |
+| NPC-05 | Phase 2 | Pending |
+| NPC-06 | Phase 2 | Pending |
+| DETECT-01 | Phase 3 | Pending |
+| DETECT-02 | Phase 3 | Pending |
+| DETECT-03 | Phase 3 | Pending |
+| DETECT-04 | Phase 3 | Pending |
+| DETECT-05 | Phase 3 | Pending |
+| DETECT-06 | Phase 3 | Pending |
+| DETECT-07 | Phase 3 | Pending |
+| PRANK-01 | Phase 4 | Pending |
+| PRANK-02 | Phase 4 | Pending |
+| PRANK-03 | Phase 4 | Pending |
+| PRANK-04 | Phase 4 | Pending |
+| LOOP-01 | Phase 4 | Pending |
+| LOOP-02 | Phase 4 | Pending |
+| RAGE-01 | Phase 5 | Pending |
+| RAGE-02 | Phase 5 | Pending |
+| RAGE-03 | Phase 5 | Pending |
+| RAGE-04 | Phase 5 | Pending |
+| RAGE-05 | Phase 5 | Pending |
+| RAGE-06 | Phase 5 | Pending |
+| LOOP-03 | Phase 5 | Pending |
+| GOSSIP-01 | Phase 6 | Pending |
+| GOSSIP-02 | Phase 6 | Pending |
+| GOSSIP-03 | Phase 6 | Pending |
+| GOSSIP-04 | Phase 6 | Pending |
+| GOSSIP-05 | Phase 6 | Pending |
+| GOSSIP-06 | Phase 6 | Pending |
+| GOSSIP-07 | Phase 6 | Pending |
+| GOSSIP-08 | Phase 6 | Pending |
+| LOOP-04 | Phase 7 | Pending |
+| LOOP-05 | Phase 7 | Pending |
+| PRANK-05 | Phase 7 | Pending |
+| PRANK-06 | Phase 7 | Pending |
+| PROG-01 | Phase 7 | Pending |
+| PROG-02 | Phase 7 | Pending |
+| PROG-03 | Phase 7 | Pending |
+| UX-01 | Phase 8 | Pending |
+| UX-02 | Phase 8 | Pending |
+| UX-03 | Phase 8 | Pending |
+| UX-04 | Phase 8 | Pending |
+| UX-05 | Phase 8 | Pending |
+| PLAT-03 | Phase 8 | Pending |
+| PLAT-04 | Phase 9 | Pending |
+| PLAT-05 | Phase 9 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 59 total
-- Mapped to phases: 59
+- v1 requirements: 65 total
+- Mapped to phases: 65
 - Unmapped: 0 ✓
 
 ---

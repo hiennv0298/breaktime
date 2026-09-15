@@ -3,6 +3,8 @@
 **Gathered:** 2026-09-14
 **Status:** Ready for planning
 
+> **Đánh số lại 16/09/2026:** Phase 2 mới = NPC đồng nghiệp; phase cũ 2–8 lùi thành 3–9. Trong file này "Phase 2" (navmesh/nón nhìn/nghi ngờ) = Phase 3 mới, "Phase 3" = 4, "Phase 4" (Rage) = 5, "Phase 7" = 8, "Phase 8" (CrazyGames) = 9.
+
 <domain>
 ## Phase Boundary
 
