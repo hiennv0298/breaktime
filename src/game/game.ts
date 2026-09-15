@@ -1,6 +1,12 @@
-import { BoxGeometry, Mesh, MeshLambertMaterial, PlaneGeometry } from 'three';
+import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
+import { registerDebug } from '../debug/testHook';
+import { consumeInteract, createInputState } from '../input/inputState';
+import { attachKeyboard } from '../input/keyboard';
 import type { Physics } from '../physics/rapier';
+import { createCameraView } from '../render/cameraView';
 import type { RenderCtx } from '../render/renderer';
+import { buildRoom } from '../render/room';
+import { createPlayer } from './player';
 
 export interface GameCtx extends RenderCtx {
   physics: Physics;
@@ -13,32 +19,60 @@ export interface Game {
   timeScale(nowMs: number): number;
 }
 
-/** Walking-skeleton scene: a 16 x 12 floor and one dynamic 0.5 m box dropped from y 3. */
+const INTERACT_RADIUS = 1.5; // m, XZ distance player -> box
+const PUSH_SPEED = 4; // impulse = mass * speed: bounded constants, not derived from input (T-01-03-01)
+const PUSH_UP_SPEED = 1.5;
+
+/** Walking-skeleton slice 2: walled room, WASD kinematic player, E pushes a physics box, follow camera. */
 export function createGame(ctx: GameCtx): Game {
   const { R, world } = ctx.physics;
 
-  const floor = new Mesh(new PlaneGeometry(16, 12), new MeshLambertMaterial({ color: '#d9d4c7' }));
-  floor.rotation.x = -Math.PI / 2;
-  ctx.scene.add(floor);
-  const floorBody = world.createRigidBody(R.RigidBodyDesc.fixed());
-  world.createCollider(R.ColliderDesc.cuboid(8, 0.1, 6).setTranslation(0, -0.1, 0), floorBody);
+  buildRoom(ctx);
 
-  const boxMesh = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshLambertMaterial({ color: '#e0763c' }));
+  const input = createInputState();
+  attachKeyboard(input);
+
+  const player = createPlayer(ctx, { x: 0, z: 2 });
+  const cameraView = createCameraView(ctx.camera);
+
+  const boxMesh = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshLambertMaterial({ color: '#c97b3c' }));
   ctx.scene.add(boxMesh);
-  const boxBody = world.createRigidBody(
-    R.RigidBodyDesc.dynamic().setTranslation(0, 3, 0).setRotation({ x: 0.2, y: 0.1, z: 0.05, w: 0.97 }),
-  );
-  world.createCollider(R.ColliderDesc.cuboid(0.25, 0.25, 0.25), boxBody);
+  const boxBody = world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(0, 0.25, -0.5));
+  world.createCollider(R.ColliderDesc.cuboid(0.25, 0.25, 0.25).setDensity(1), boxBody);
+
+  let interactCount = 0;
+  registerDebug('box', () => {
+    const p = boxBody.translation();
+    return { pos: [p.x, p.y, p.z] };
+  });
+  registerDebug('interactCount', () => interactCount);
 
   return {
-    fixedUpdate() {
-      /* no per-step game logic in the skeleton */
+    fixedUpdate(dt) {
+      player.fixedUpdate(dt, input);
+
+      if (consumeInteract(input)) {
+        const p = player.pos();
+        const b = boxBody.translation();
+        if (Math.hypot(b.x - p.x, b.z - p.z) <= INTERACT_RADIUS) {
+          const yaw = player.yaw();
+          const m = boxBody.mass() > 0 ? boxBody.mass() : 0.125; // 0.5 m cube at density 1
+          boxBody.applyImpulse(
+            { x: -Math.sin(yaw) * PUSH_SPEED * m, y: PUSH_UP_SPEED * m, z: -Math.cos(yaw) * PUSH_SPEED * m },
+            true,
+          );
+          boxBody.wakeUp();
+          interactCount++;
+        }
+      }
     },
-    frameUpdate() {
+    frameUpdate(dt) {
+      player.frameUpdate(dt);
       const p = boxBody.translation();
       const q = boxBody.rotation();
       boxMesh.position.set(p.x, p.y, p.z);
       boxMesh.quaternion.set(q.x, q.y, q.z, q.w);
+      cameraView.update(dt, player.pos());
     },
     timeScale() {
       return 1;
