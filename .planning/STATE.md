@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-27-PLAN.md
-last_updated: "2026-09-15T13:49:37.426Z"
-last_activity: "2026-09-15 -- Completed 01-27 (settings menu NPC section: 0-10 stepper, 10 name fields, Áp dụng applies in place while paused; grow-only pool max 10 NPCs with despawn/respawn, ragdoll re-attached before despawn, no Rapier removal, bodies stay 60 on repeated Apply; names cleaned and written back, saved to bt.npcs, storage failure still applies + 'Không lưu được'; typing guard e2e; phone fields 16px + user-select text + long-press paste; vitest 439/439, playwright 87 passed 0 failed, SIZE_GATE_OK; CTRL-07/CTRL-04/TECH-06 left open for the real-device check)"
+stopped_at: Completed 01-17-PLAN.md
+last_updated: "2026-09-15T14:26:16.047Z"
+last_activity: "2026-09-15 -- Completed 01-17 (?bench=1 seeded 60 s scenario with 10 NPCs via createGame forcedNpcCount MAX_NPCS: autopilot walk + slaps, all 10 ragdolls at once, smash; results screen with avg/1% low fps, peak draws/bodies, NPC, ragdolls, knocked/broken, tier+source, Rapier, DPR/backbuffer, throttled, sha, UA; headless dur 8: 10 NPC, 10 ragdolls, 31-33 knocked (11 broken), peak draws 91, bodies 165; stored count 2 still 10; vitest 465/465, playwright 90 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-07 left open for real devices)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 22
-  percent: 81
+  completed_plans: 23
+  percent: 85
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 23 of 27 (01-01..01-16, 01-22..01-27 complete; next 01-17)
+Plan: 24 of 27 (01-01..01-17, 01-22..01-27 complete; next 01-18)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-27 (settings menu NPC section: 0-10 stepper, 10 name fields, Áp dụng applies in place while paused; grow-only pool max 10 NPCs with despawn/respawn, ragdoll re-attached before despawn, no Rapier removal, bodies stay 60 on repeated Apply; names cleaned and written back, saved to bt.npcs, storage failure still applies + "Không lưu được"; typing guard e2e; phone fields 16px + user-select text + long-press paste; vitest 439/439, playwright 87 passed 0 failed, SIZE_GATE_OK; CTRL-07/CTRL-04/TECH-06 left open for the real-device check)
+Last activity: 2026-09-15 -- Completed 01-17 (?bench=1 seeded 60 s scenario with 10 NPCs via createGame forcedNpcCount MAX_NPCS: autopilot walk + slaps, all 10 ragdolls at once, smash; results screen with avg/1% low fps, peak draws/bodies, NPC, ragdolls, knocked/broken, tier+source, Rapier, DPR/backbuffer, throttled, sha, UA; headless dur 8: 10 NPC, 10 ragdolls, 31-33 knocked (11 broken), peak draws 91, bodies 165; stored count 2 still 10; vitest 465/465, playwright 90 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-07 left open for real devices)
 
-Progress: [████████░░] 81%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [████████░░] 81%
 | Phase 01 P25 | 10min | 2 tasks | 7 files |
 | Phase 01 P26 | 15min | 2 tasks | 7 files |
 | Phase 01 P27 | 31min | 3 tasks | 7 files |
+| Phase 01 P17 | 22min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-27: Game.applyNpcSettings normalises again, leaves NPCs that stay untouched (a flying ragdoll keeps flying, only the name changes), reports source 'manual' and calls refreshTarget so a despawned glowing NPC stops glowing while paused; startup NPCs are still created before shadows/shards/targeting (body order unchanged), later ones register through a wire hook
 - [Phase 01]: 01-27: Escape typed in an NPC name field still closes the menu; every other key stays in the field; the ?npcAt pin only applies to NPC 0 at page start; __bt.npcSettings.storageOk keeps describing the start-up read, the save result is shown only in #npc-apply-status
 - [Phase 01]: 01-27: pageHardening no longer cancels contextmenu/dblclick on input/textarea (long-press paste); name inputs are 16px, user-select text, touch-callout default; two name columns when the section reaches 520 px (viewport >= 616 px)
+- [Phase 01]: 01-17: bench timeline (src/logic/benchTimeline.ts) is sim-step keyed: roam 0-55 % (walk + slapNearest segments, >= 3 slaps, >= 0.5 s apart), massRagdoll 60 %, smash 75 %, walk on 76-99 %, end 100 %; mulberry32(BENCH_SEED) shuffles only the walk order; &dur= plain integer clamped 5..60
+- [Phase 01]: 01-17: massRagdoll slaps every slappable NPC in one step outside the swing gate, then for up to 300 steps slaps NPCs that stand up from an earlier slap until all active NPCs are ragdolls at once (measured 0 late slaps at dur 8 and 60); scripted slapNearest goes through the swing gate
+- [Phase 01]: 01-17: bench mode keeps pause toggles but the player reads an autopilot-owned InputState (Game.playerInput); presses/clicks dropped, joystick and pointer pick not attached; loop.ts onStep runs before fixedUpdate, onFrame after render with workMs
+- [Phase 01]: 01-17: frames recorded after a 60-step warm-up and never while paused; results overlay #bench-results z 1100 over a pauseFor('user'); bench waypoints = spawn + NPC_ROUTES de-duplicated at 1 cm (raw corners repeat and the loop paced in place)
 
 ### Pending Todos
 
@@ -170,6 +175,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T13:49:37.406Z
-Stopped at: Completed 01-27-PLAN.md
+Last session: 2026-09-15T14:26:16.032Z
+Stopped at: Completed 01-17-PLAN.md
 Resume file: None

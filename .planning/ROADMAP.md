@@ -105,7 +105,7 @@ Plans:
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 01-17-PLAN.md — `?bench=1` deterministic 60 s benchmark with 10 NPCs + results screen (W13)
+- [x] 01-17-PLAN.md — `?bench=1` deterministic 60 s benchmark with 10 NPCs + results screen (W13)
 
 **Wave 14** *(blocked on Wave 13 completion)*
 
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 22/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 23/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
