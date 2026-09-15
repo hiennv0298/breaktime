@@ -49,8 +49,12 @@ export function slapGetUp(s: GetUpState): GetUpState {
 export function updateGetUp(
   s: GetUpState,
   input: { torsoSpeed: number; torsoAngSpeed: number; dt: number },
+  opts?: { timeoutSec?: number },
 ): { state: GetUpState; event: GetUpEvent; recoverT: number } {
   const dt = Number.isFinite(input.dt) && input.dt > 0 ? input.dt : 0;
+  // Callers may shorten (player, 02-02) or lengthen the ragdoll timeout; NPCs pass nothing and keep 4.0 s.
+  const t = opts?.timeoutSec;
+  const timeoutSec = typeof t === 'number' && Number.isFinite(t) && t > 0 ? t : RAGDOLL_TIMEOUT_SEC;
   const next: GetUpState = { ...s };
 
   if (s.mode === 'ragdoll') {
@@ -63,7 +67,7 @@ export function updateGetUp(
     next.settleSec = calm ? next.settleSec + dt : 0;
     if (
       (calm && dt > 0 && next.settleSec >= SETTLE_HOLD_SEC - EPS) ||
-      (dt > 0 && next.ragdollSec >= RAGDOLL_TIMEOUT_SEC - EPS)
+      (dt > 0 && next.ragdollSec >= timeoutSec - EPS)
     ) {
       next.mode = 'recover';
       next.recoverSec = 0;
