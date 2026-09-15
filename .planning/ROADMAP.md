@@ -145,7 +145,51 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
   4. Người chơi bị đánh trúng thì ngã ragdoll nhẹ, khoá điều khiển tối đa ~3 s, tự đứng dậy và bất tử 1,5 s; không HP, không máu; có hit-stop, rung camera, SFX và viền màn hình loé
   5. Logic giận / đuổi / đánh / token chạy deterministic theo seed và có unit test; `?bench=1` giữ nguyên, kịch bản `&brawl=1` có NPC đánh trả vẫn giữ ngân sách fps/draw call của Phase 1 trên máy chuẩn
 
-**Plans**: TBD
+**Plans**: 13 plans (10 waves; 02-01..02-05 logic thuần chạy ngay, 02-06..02-13 mở đầu bằng entry guard D-12 đọc `01-GATE.md`)
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Logic thuần: thanh giận theo tính khí (1/2/3 cú, chỉ nguội khi NPC đứng, rng có seed) + token 3 đuổi / 1 vung (W1)
+- [ ] 02-02-PLAN.md — Logic thuần: hit test tầm/nón, stun người chơi (khoá ≤ 3 s, bất tử 1,5 s), 16 bit nhóm va chạm, điểm đứng dậy (W1)
+- [ ] 02-03-PLAN.md — Công cụ entry guard D-12 (`scripts/phase-gate-guard.mjs`) + tuyến/điểm xuất phát cho NPC 11–15 (W1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-04-PLAN.md — Logic thuần: roster 30 người (`bt.roster`, migrate một chiều `bt.npcs`), thêm/bớt nhanh, 32 tên ngẫu nhiên, phím +/−, luật công tắc nhãn `bt.npcLabels` (W2)
+- [ ] 02-05-PLAN.md — Logic thuần: FSM chiến đấu + combat director, test deterministic 600 step (W2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-06-PLAN.md — Guard + trần 15 NPC (`?npcs=`, stepper), NPC 11–15 xuất phát cách nhau, bench vẫn 10, đo draw/body ở 15 (W3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-07-PLAN.md — Guard + văn phòng dựng từ roster (`rosterStore`, ngoại hình/tên/tính khí theo thành viên, migrate `bt.npcs`, không ghi `bt.npcs`) (W4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-08-PLAN.md — Guard + thêm/bớt NPC trong lúc chơi: phím +/− và cụm nút "− N +" (W5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-09-PLAN.md — Guard + danh sách đồng nghiệp trong settings (tên, ngoại hình, tính khí, có mặt, ngẫu nhiên, xoá hết, cảnh báo) + công tắc nhãn tên (W6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 02-10-PLAN.md — Guard + NPC nổi giận, đuổi (KCC, token), giơ tay 0,6 s + "!", né, tát cắt đòn, nhãn giận đổi màu (cả NPC không tên: 'Giận!') (W7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 02-11-PLAN.md — Guard + người chơi bị hạ: ragdoll nhẹ, khoá ≤ ~3 s, đứng dậy chỗ trống, bất tử 1,5 s, hit-stop/rung/SFX/viền loé (W8)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 02-12-PLAN.md — Guard + `?bench=1&brawl=1` (15 NPC đánh trả, p99 ms/step), `?bench=1` và soak giữ nguyên (W9)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 02-13-PLAN.md — Guard + full suite + `npm run deploy` + `02-DEVICE-CHECK.md` cho 2 máy chuẩn (đề xuất hạ trần về 10 nếu brawl < 30 fps là của planner, chờ operator quyết) (W10)
+
 **UI hint**: yes
 
 Thứ tự (G14): module logic thuần (giận, đuổi, token, roster) làm trước; phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT, để nếu phải đổi stack thì không làm lại.
@@ -272,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Spike kỹ thuật & đường deploy | 24/27 | In Progress|  |
-| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 0/TBD | Not started | - |
+| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 0/13 | Planned | - |
 | 3. Hệ phát hiện | 0/TBD | Not started | - |
 | 4. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 5. Stress & Rage Mode | 0/TBD | Not started | - |

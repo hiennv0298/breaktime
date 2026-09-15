@@ -39,7 +39,7 @@ Requirements: NPC-01, NPC-02, NPC-03, NPC-04, NPC-05, NPC-06.
 
 ### Benchmark & thứ tự
 - **D-11 (G13):** `?bench=1` **giữ nguyên** (10 NPC, so sánh được với Phase 1); thêm kịch bản **`&brawl=1`** có NPC giận đuổi/đánh trả để đo ngân sách.
-- **D-12 (G14):** **Làm module logic thuần trước** (giận, đuổi, token, roster, lưu trữ — test bằng Node, không phụ thuộc three/Rapier); **phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT**. Plan tích hợp phải có bước chặn (entry guard) đọc `01-GATE.md`: VERDICT=PASS mới làm; nếu Phase 1 dừng để đổi stack thì dừng tích hợp.
+- **D-12 (G14):** **Làm module logic thuần trước** (giận, đuổi, token, roster, lưu trữ — test bằng Node, không phụ thuộc three/Rapier); **phần gắn vào game chờ cổng đo máy thật Phase 1 (01-19..01-21) có VERDICT**. Plan tích hợp phải có bước chặn (entry guard) đọc `01-GATE.md`: VERDICT=PASS mới làm; nếu Phase 1 dừng để đổi stack thì dừng tích hợp. **Operator xác nhận 16/09/2026:** cũng đi tiếp khi `VERDICT=FAIL` rồi `VERDICT_AFTER_OPT=PASS` sau đúng một vòng tối ưu D-07 (01-20/01-21) — vì khi đó Phase 1 không đổi stack; chỉ dừng khi Phase 1 STOP.
 
 ### Claude's Discretion
 - **G3r:** NPC 11–15 dùng lại 5 tuyến đặt tay, lệch pha/offset theo seed (chưa có navmesh — Phase 3); vẫn phải qua test khoảng cách với đồ đạc.

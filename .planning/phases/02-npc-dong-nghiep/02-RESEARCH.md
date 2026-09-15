@@ -693,7 +693,9 @@ Mỗi mục có các phương án kèm bằng chứng, chi phí, rủi ro và **
 | A8 | Gang Beasts K.O. figures (max 6 s, 4 s wake protection) from a fan wiki | Pattern 8, G7 | Only used as inspiration, not a requirement |
 | A9 | "PEGI 12: no blood/injuries or emphasis on pain toward humans; slap = trivial injury" wording comes from secondary summaries (askaboutgames/parentzone/fandom); pegi.info confirms "non-realistic violence towards human-like characters" | Pattern 8, G11 | Low: design stays well inside (no blood, cartoon ragdoll) |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> **Resolved 16/09/2026 (02-CONTEXT.md):** Q1 → RESOLVED: out of scope (CONTEXT Deferred — NPCs never hit NPCs). Q2 → RESOLVED: out of scope (no witness anger; detection is Phase 3). Q3 → RESOLVED: cap locked at 15 (D-01); real-device confirmation is plan 02-13 `CAP_DECISION` on the two reference phones. Q4 → RESOLVED: no (player look not selectable in Phase 2).
 
 1. **Does the operator want NPCs to hit each other (friendly fire) when a swing misses the player?**
    - What we know: `strikeHit` could test NPC capsules too; it would make chaos funnier.
