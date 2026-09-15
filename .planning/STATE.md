@@ -73,6 +73,7 @@ Progress: [█████████░] 89%
 | Phase 01 P18 | 65min | 3 tasks | 18 files |
 | Phase 02 P01 | 6min | 2 tasks | 5 files |
 | Phase 02 P02 | 9min | 3 tasks | 10 files |
+| Phase 02 P03 | 8min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,9 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-02 (pure logic, before the Phase 1 device gate per D-12): strikeHits = edge <= 1.2 m and within a 100 deg cone of the NPC walker facing (sin yaw, cos yaw), EPS 1e-9, non-finite -> false; walking away during the 0.6 s wind-up ends at edge 2.92 m (miss)
 - [Phase 02]: 02-02: player knockdown = playerStun over getUpFsm with opts.timeoutSec 2.5 (NPC default 4.0 unchanged) plus a hard cap forcing recover at lockSec >= 2.55, so the input lock is <= 3.0 s; invulnerable 1.5 s; hits accepted only in 'free' (rejected = unchanged copy); non-finite/<= 0 dt = unchanged copy; no HP field
 - [Phase 02]: 02-02: collisionGroups.ts reproduces ragdoll.ts ragdollGroups (NPC index 0..14 -> bits 1..15) and gives the player ragdoll bit 0 (0x0001fffe); ragdoll.ts untouched until 02-11; freeSpotCandidates = clamped landing point + 5 rings x 8 dirs from +X (41 points, last ring exactly 2.0 m), either coordinate non-finite -> origin
+- [Phase 02]: 02-03 (tooling + pure route data, before the Phase 1 device gate per D-12): `node scripts/phase-gate-guard.mjs --plan 02-NN [--gate] [--state] [--dry-run]` prints GUARD_CONTINUE on VERDICT=PASS or VERDICT=FAIL + VERDICT_AFTER_OPT=PASS, PLAN_EXIT_GATE_PENDING on missing gate / REMEASURE / awaiting D-07 / no verdict, PLAN_EXIT_STACK_STOP on VERDICT_AFTER_OPT=FAIL or the 01-21 stack-stop blocker line in STATE (literal kept only in scripts/lib/phaseGate.mjs STACK_STOP_TEXT; never quote it in STATE.md, the substring match would stop every integration plan); exit 0 always, GUARD_USAGE exit 2; per-line anchored regex after stripping only CR, last anchored line wins
+- [Phase 02]: 02-03: on pending/stop the guard keeps exactly one plan-independent STATE blocker line `- [Phase 2] Tích hợp chờ cổng máy thật Phase 1 (01-GATE.md: <reason>) — …` (byte-preserving, CRLF-aware, identical across parallel plans) and removes it on continue; never creates a missing STATE.md; 01-GATE.md still absent (dry run: gate-missing, STATE untouched)
+- [Phase 02]: 02-03: NPC_SLOT_COUNT 15, clamp 0..14; slots 10..14 -> routes 0..4, shared offset 0, start = first index of a mulberry32(BENCH_SEED + i) Fisher-Yates order >= 0.6 m from every earlier spawn (picks 1/0/3/3/0, no fallback; slot 11 exactly 0.6 m from slot 7); slots 0..9 byte-identical to 01-23; spawnPointForNpc / farthestRouteIndex added, game.ts switches in 02-06
 
 ### Roadmap Evolution
 
