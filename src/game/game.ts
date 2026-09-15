@@ -9,6 +9,13 @@ import { createDebrisBudget, DEFAULT_DEBRIS_CAPACITY } from '../logic/debrisBudg
 import { createHitStop, type HitStop } from '../logic/hitStop';
 import { iconFor, pickNearest, type Candidate } from '../logic/nearest';
 import { parseNpcAt } from '../logic/npcAt';
+import {
+  DEFAULT_NPCS,
+  MAX_NPCS,
+  resolveStartNpcSettings,
+  type NpcSettings,
+  type NpcSettingsSource,
+} from '../logic/npcSettings';
 import { TIERS } from '../logic/quality';
 import { BENCH_SEED, mulberry32 } from '../logic/rng';
 import { createSwingGate, SWING_COOLDOWN_MS } from '../logic/swing';
@@ -25,11 +32,13 @@ import type { RenderCtx } from '../render/renderer';
 import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
 import { createShardKit } from '../render/shardKit';
+import { createNpcLabels } from '../ui/npcLabels';
 import { createBreakables } from './breakables';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, ROOM, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
 import { createNpc, type Npc } from './npc';
 import { createPlayer, PLAYER_TEXTURE, type Player } from './player';
+import { readNpcSettingsRaw } from './npcSettingsStore';
 import { performSlap, slapCount } from './slap';
 import { NPC_ROUTES, routeIndexForNpc, sharedIndexForNpc } from './waypoints';
 
@@ -47,15 +56,26 @@ export interface Game {
   timeScale(nowMs: number): number;
   readonly hitStop: HitStop;
   readonly player: Player;
+  /** Settings the office started with (plan 01-26): count, sanitised names, where the count came from, storage health. */
+  npcSettings(): { settings: NpcSettings; source: NpcSettingsSource; storageOk: boolean };
 }
 
-/** Coworkers in normal play (D-11). */
-export const DEFAULT_NPCS = 3;
+export interface CreateGameOptions {
+  /** Replaces the ?npcs= count (clamped 0..10); the 01-17 bench and the 01-18 soak pass MAX_NPCS. */
+  forcedNpcCount?: number;
+}
+
 /**
- * Player-selectable and benchmark ceiling (D-29, D-11 revised): ?npcs is clamped to it so a URL cannot spawn unbounded
- * bodies (T-01-14-01, T-01-23-01).
+ * DEFAULT_NPCS (3, D-11) and MAX_NPCS (10, D-29 / D-11 revised) live in src/logic/npcSettings.ts; ?npcs and stored
+ * counts are clamped to MAX_NPCS so neither a URL nor tampered storage can spawn unbounded bodies (T-01-14-01,
+ * T-01-23-01, T-01-26-02). Re-exported for existing importers.
  */
-export const MAX_NPCS = 10;
+export { DEFAULT_NPCS, MAX_NPCS };
+/** Name tag anchor above the floor point of a walking NPC, and above the torso of a ragdoll (plan 01-26). */
+const LABEL_HEAD_Y = 1.85;
+const LABEL_RAGDOLL_Y = 0.9;
+/** A projected anchor further than this outside NDC hides its label. */
+const LABEL_NDC_LIMIT = 1.1;
 /** Slap target footprint: an NPC is reachable within 1.6 m of its 0.4 m radius (plan 01-15). */
 const NPC_TARGET_RADIUS = 0.4;
 /** Spawn offset per extra NPC sharing a route, so capsules never start inside each other. */
@@ -66,15 +86,6 @@ export const SMASH_STEP = 30;
 /** T-01-16-03: only the literal value 'smash' is recognised. */
 export function scenarioFromQuery(search: string): 'smash' | null {
   return new URLSearchParams(search).get('scenario') === 'smash' ? 'smash' : null;
-}
-
-/** ?npcs=N as an integer clamped to [0, MAX_NPCS] = [0, 10]; missing or unparsable gives the default 3. */
-export function npcCountFromQuery(search: string): number {
-  const raw = new URLSearchParams(search).get('npcs');
-  if (raw === null) return DEFAULT_NPCS;
-  const n = Number.parseInt(raw, 10);
-  if (!Number.isFinite(n)) return DEFAULT_NPCS;
-  return Math.max(0, Math.min(MAX_NPCS, n));
 }
 
 function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
@@ -90,8 +101,10 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
  * view always swings at once (plan 01-24, D-30, behind a 350 ms cooldown); the swing pushes the glowing prop or slaps
  * the glowing coworker into a ragdoll (plan 01-15, D-12) only when that target is in range (and, for a click, only when
  * the click landed on it — D-18 / D-20 revised).
+ * NPC count and names (plan 01-26, D-29): opts.forcedNpcCount > ?npcs= > saved 'bt.npcs' > 3; saved names show as
+ * textContent tags above the NPCs and never leave the device (D-31).
  */
-export async function createGame(ctx: GameCtx): Promise<Game> {
+export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Promise<Game> {
   const [assets, characterAsset] = await Promise.all([
     parseOfficeAssets(loadedBuffer(ctx, 'office'), loadedBuffer(ctx, 'food')),
     parseCharacterAsset(loadedBuffer(ctx, 'character')),
@@ -115,7 +128,10 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
 
   // Coworkers on hand-placed routes (D-11). Texture letters follow the player's: b, c, d, …
   const npcs: Npc[] = [];
-  const npcCount = npcCountFromQuery(location.search);
+  const storedNpcSettings = readNpcSettingsRaw();
+  const startNpcSettings = resolveStartNpcSettings(location.search, storedNpcSettings.raw, opts.forcedNpcCount);
+  const npcCount = startNpcSettings.settings.count;
+  const npcNames = startNpcSettings.settings.names;
   // ?npcAt=x,z pins NPC 0, frozen until slapped, for the slap e2e and the benchmark (T-01-15-01: parsed and clamped).
   const npcAt = parseNpcAt(location.search, { halfX: ROOM.width / 2, halfZ: ROOM.depth / 2, margin: 0.5 });
   const firstNpcLetter = PLAYER_TEXTURE.charCodeAt(0) + 1;
@@ -140,6 +156,11 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     );
   }
   const npcTexture = new Map(npcs.map((n, i) => [n, String.fromCharCode(firstNpcLetter + i)]));
+  // Name tags (D-29): one DOM layer, textContent only; unnamed NPCs never show a tag.
+  const labels = createNpcLabels(uiRoot, MAX_NPCS);
+  for (let i = 0; i < npcs.length; i++) labels.setText(i, npcNames[i] ?? '');
+  const labelNdc = new Vector3();
+  const hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
 
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
   const shadows = createBlobShadows(ctx.scene);
@@ -229,6 +250,38 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     () => getPauseState().isPaused(),
   );
 
+  /** Projects every named NPC's head anchor and moves its tag; tags outside the view hide (runs every rendered frame). */
+  function updateLabels(): void {
+    if (!hasNamedNpc) return;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    // cameraView.update moved the camera this frame; refresh its inverse so tags do not trail by one frame.
+    ctx.camera.updateMatrixWorld();
+    for (let i = 0; i < npcs.length; i++) {
+      if (!npcNames[i]) continue;
+      const npc = npcs[i];
+      if (npc.mode === 'ragdoll') {
+        const p = npc.pos();
+        labelNdc.set(p.x, p.y + LABEL_RAGDOLL_Y, p.z);
+      } else {
+        const f = npc.foot();
+        labelNdc.set(f.x, f.y + LABEL_HEAD_Y, f.z);
+      }
+      labelNdc.project(ctx.camera);
+      if (
+        !Number.isFinite(labelNdc.x) ||
+        !Number.isFinite(labelNdc.y) ||
+        labelNdc.z > 1 ||
+        Math.abs(labelNdc.x) > LABEL_NDC_LIMIT ||
+        Math.abs(labelNdc.y) > LABEL_NDC_LIMIT
+      ) {
+        labels.hide(i);
+      } else {
+        labels.place(i, ((labelNdc.x + 1) / 2) * w, ((1 - labelNdc.y) / 2) * h);
+      }
+    }
+  }
+
   function refreshTarget(): void {
     candidates.length = 0;
     for (const c of allCandidates) {
@@ -300,11 +353,30 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   });
   registerDebug('interactCount', () => interactCount);
   registerDebug('npcs', () =>
-    npcs.map((n) => {
+    npcs.map((n, i) => {
       const p = n.pos();
-      return { id: n.id, pos: [p.x, p.y, p.z], mode: n.mode, texture: npcTexture.get(n) };
+      const size = viewport();
+      return {
+        id: n.id,
+        pos: [p.x, p.y, p.z],
+        mode: n.mode,
+        texture: npcTexture.get(n),
+        name: npcNames[i] ?? '',
+        // Projected lazily when read (same maths as the highlight getter).
+        get screen() {
+          npcScreen.set(p.x, p.y, p.z).project(ctx.camera);
+          return { x: ((npcScreen.x + 1) / 2) * size.width, y: ((1 - npcScreen.y) / 2) * size.height };
+        },
+      };
     }),
   );
+  registerDebug('npcSettings', () => ({
+    count: startNpcSettings.settings.count,
+    names: [...npcNames],
+    source: startNpcSettings.source,
+    storageOk: storedNpcSettings.storageOk,
+  }));
+  registerDebug('npcLabels', () => labels.snapshot());
   registerDebug('highlight', () => {
     const size = viewport();
     const entry = target ? entryOf.get(target) : undefined;
@@ -380,11 +452,19 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       shardKit.commit();
       // The shake keeps running through the hit-stop (that is the point) but waits while paused.
       cameraView.update(dt, player.pos(), paused ? 0 : dt);
+      updateLabels();
       room.update(getCameraYaw());
       shadows.update();
     },
     timeScale(nowMs) {
       return hitStop.active(nowMs) ? 0 : 1;
+    },
+    npcSettings() {
+      return {
+        settings: { count: startNpcSettings.settings.count, names: [...npcNames] },
+        source: startNpcSettings.source,
+        storageOk: storedNpcSettings.storageOk,
+      };
     },
   };
   return game;

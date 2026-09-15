@@ -1,0 +1,28 @@
+/* NPC name labels (plan 01-26, D-29). Stack: labels (90) < #touch-zone (100) < key hints (150) < HUD buttons (200) < #pause-menu (400).
+ * pointer-events none: a label never takes a click or a touch meant for the game view (plan 01-24 swing contract). */
+#npc-labels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  overflow: hidden;
+}
+#npc-labels .npc-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  max-width: 12em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 600 13px/1.25 system-ui, sans-serif;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 1px 6px;
+  border-radius: 6px;
+  will-change: transform;
+}
+#npc-labels .npc-label[hidden] {
+  display: none;
+}
