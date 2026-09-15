@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-09-15T04:09:10.274Z"
-last_activity: "2026-09-15 -- Completed 01-05 (CC0 asset pipeline: 4 Kenney packs CC0-verified, office/food/character GLB + 18 textures + 11 MP3 = 580 KB raw, CREDITS.md)"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-09-15T04:24:34.177Z"
+last_activity: "2026-09-15 -- Completed 01-03 (walled room + Rapier KCC capsule: WASD camera-relative move, walls/desk block, E pushes box within 1.5 m, damped 55 deg follow camera; Vitest 74/74, Playwright 19 passed)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 4
-  percent: 19
+  completed_plans: 5
+  percent: 24
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 5 of 21
+Plan: 6 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-05 (CC0 asset pipeline: 4 Kenney packs CC0-verified, office/food/character GLB + 18 textures + 11 MP3 = 580 KB raw, CREDITS.md)
+Last activity: 2026-09-15 -- Completed 01-03 (walled room + Rapier KCC capsule: WASD camera-relative move, walls/desk block, E pushes box within 1.5 m, damped 55 deg follow camera; Vitest 74/74, Playwright 19 passed)
 
-Progress: [██░░░░░░░░] 19%
+Progress: [██░░░░░░░░] 24%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [██░░░░░░░░] 19%
 | Phase 01 P02 | 18min | 2 tasks | 17 files |
 | Phase 01 P04 | 35min | 3 tasks | 13 files |
 | Phase 01 P05 | 8min | 2 tasks | 35 files |
+| Phase 01 P03 | 10min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-05: asset-map.json paths are relative to each pack folder; 6 Furniture Kit substitutions (kitchenCoffeeMachine, kitchenFridge, kitchenCabinet, plantSmall1, bookcaseClosed, cardboardBoxClosed) recorded in _notes
 - [Phase 01]: 01-05: office-index.json keeps Kenney root node names (desk(Clone)…); build fails when a role root is missing or not unique in the output GLB
 - [Phase 01]: 01-05: meshopt quantization puts each character/office mesh on an unnamed child of the named node; animations still target named parts, so look up parts by name and do not expect .isMesh on them
+- [Phase 01]: 01-03: PlayerBody.move(desired, dt) takes the horizontal step translation in metres; dt only drives internal gravity (reset when computedGrounded)
+- [Phase 01]: 01-03: camera distance 11 / pitch 55 kept as planned (01-09 pins them) although 1280x720 frames nearly the full room width, not half; flagged for end-of-phase human check
+- [Phase 01]: 01-03: facing yaw convention direction (-sin yaw, -cos yaw) = moveMath forward; push impulse 4*m along facing + 1.5*m up within 1.5 m XZ
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T04:09:10.263Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-09-15T04:24:34.165Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None

@@ -57,7 +57,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-03-PLAN.md — Walled room, WASD kinematic player, E pushes a physics box, follow camera (W3)
+- [x] 01-03-PLAN.md — Walled room, WASD kinematic player, E pushes a physics box, follow camera (W3)
 - [ ] 01-06-PLAN.md — Size gate + precompress + first-load e2e + Caddy site file + release scripts (W3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 4/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 5/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
