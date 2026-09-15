@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-09-15T04:43:49.728Z"
-last_activity: "2026-09-15 -- Completed 01-06 (size gate + br/gz sidecars, first load 3,099,063 B until ready-to-play, breaktime.caddy valid on live Caddy read-only, release/activate-site scripts sim 56/56 + 6/6 mutants; Vitest 111/111, Playwright 20 passed)"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-09-15T05:12:14.950Z"
+last_activity: "2026-09-15 -- Completed 01-07 (npm run deploy 17 fail-fast steps; live dry-run stops at drift rc 2 before build, dirty tree rc 1 before ssh; local container sim 42/42 incl. real tar-stream upload count 30=30; Vitest 149/149, Playwright 20 passed)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 6
-  percent: 29
+  completed_plans: 7
+  percent: 33
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 7 of 21
+Plan: 8 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-06 (size gate + br/gz sidecars, first load 3,099,063 B until ready-to-play, breaktime.caddy valid on live Caddy read-only, release/activate-site scripts sim 56/56 + 6/6 mutants; Vitest 111/111, Playwright 20 passed)
+Last activity: 2026-09-15 -- Completed 01-07 (npm run deploy 17 fail-fast steps; live dry-run stops at drift rc 2 before build, dirty tree rc 1 before ssh; local container sim 42/42 incl. real tar-stream upload count 30=30; Vitest 149/149, Playwright 20 passed)
 
-Progress: [███░░░░░░░] 29%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 29%
 | Phase 01 P05 | 8min | 2 tasks | 35 files |
 | Phase 01 P03 | 10min | 2 tasks | 10 files |
 | Phase 01 P06 | 16min | 2 tasks | 10 files |
+| Phase 01 P07 | 23min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-06: release.sh cleanup exits 7 (__CURRENT_MOVED__) when current moved; it skips symlinked names and paths that resolve to the current target
 - [Phase 01]: 01-06: first-load spec stops at ready-to-play (3,099,063 bytes); about 0.54 MB of three/renderer chunks load after Chơi and are not counted
 - [Phase 01]: 01-06: SIZE-REASON.md must contain the first-load total as x.y MB or exact bytes to turn >8 MB into warn
+- [Phase 01]: 01-07: DNS preflight strict — every resolver must return only 187.53.128.67; an extra A record fails
+- [Phase 01]: 01-07: deploy clean-tree guard also covers public/ and tests/ (--untracked-files=all); HEAD re-checked before upload; dist/version.json sha must equal HEAD
+- [Phase 01]: 01-07: failure after activation (steps 13-17) exits 1 but leaves the new release current; no automatic rollback
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T04:43:49.714Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-09-15T05:12:14.939Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
