@@ -24,6 +24,23 @@ export function getPauseState(): PauseState {
   return pauseState;
 }
 
+/** Recorder hooks (plan 01-17 bench, 01-18 soak): rAF timestamp + measured CPU work of every rendered frame. */
+const frameHooks = new Set<(ts: number, workMs: number) => void>();
+/** Called once per fixed simulation step, before the game logic of that step, with the 0-based step index. */
+const stepHooks = new Set<(step: number) => void>();
+
+/** Subscribe to every rendered frame (paused frames included); returns an unsubscribe function. */
+export function onFrame(cb: (ts: number, workMs: number) => void): () => void {
+  frameHooks.add(cb);
+  return () => frameHooks.delete(cb);
+}
+
+/** Subscribe to every fixed simulation step; returns an unsubscribe function. */
+export function onStep(cb: (step: number) => void): () => void {
+  stepHooks.add(cb);
+  return () => stepHooks.delete(cb);
+}
+
 /** Fixed-step sim + variable render (RESEARCH Pattern 3). Paused frames still render but run 0 sim steps. */
 export function startLoop(ctx: GameCtx, game: Game): void {
   const timer = new Timer();
@@ -136,6 +153,8 @@ export function startLoop(ctx: GameCtx, game: Game): void {
     // steps while rendering and the camera shake carry on.
     const steps = stepper(frameDt, paused ? 0 : game.timeScale(performance.now()));
     for (let i = 0; i < steps; i++) {
+      // Scripted input (bench autopilot, timeline actions) lands before the step reads it.
+      for (const cb of stepHooks) cb(simStep);
       game.fixedUpdate(FIXED_DT);
       ctx.physics.step();
       simStep++;
@@ -145,6 +164,7 @@ export function startLoop(ctx: GameCtx, game: Game): void {
     game.frameUpdate(frameDt, performance.now());
     ctx.renderer.render(ctx.scene, ctx.camera);
     const workMs = performance.now() - workStart;
+    for (const cb of frameHooks) cb(t, workMs);
 
     fpsMeter.push(t);
     // Paused frames (menu, hidden tab, lost context) say nothing about gameplay cost, so auto-tier skips them.

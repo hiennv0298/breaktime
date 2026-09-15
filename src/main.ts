@@ -60,15 +60,24 @@ async function boot(): Promise<void> {
   onPlayGesture(requestFullscreenIfSupported);
   await waitForPlay({ autoplay: new URLSearchParams(location.search).has('autoplay') });
 
-  const [{ createRenderer }, { createPhysics }, { createGame }, { startLoop }, { attachCameraKeys }, { attachCameraButtons }] =
-    await Promise.all([
-      import('./render/renderer'),
-      import('./physics/rapier'),
-      import('./game/game'),
-      import('./game/loop'),
-      import('./input/cameraKeys'),
-      import('./input/cameraButtons'),
-    ]);
+  const [
+    { createRenderer },
+    { createPhysics },
+    { createGame, MAX_NPCS },
+    { startLoop },
+    { attachCameraKeys },
+    { attachCameraButtons },
+    { benchFromQuery, parseBenchDuration },
+  ] = await Promise.all([
+    import('./render/renderer'),
+    import('./physics/rapier'),
+    import('./game/game'),
+    import('./game/loop'),
+    import('./input/cameraKeys'),
+    import('./input/cameraButtons'),
+    // Loaded with the game (after Chơi), so the index chunk and the unsupported path stay as they were.
+    import('./logic/benchTimeline'),
+  ]);
 
   let renderCtx: RenderCtx;
   try {
@@ -86,9 +95,19 @@ async function boot(): Promise<void> {
 
   const physics = createPhysics(rapier.R);
   const ctx = { ...renderCtx, physics, loaded };
+  // ?bench=1 (plan 01-17, D-08, D-11 revised): always 10 NPCs; the saved 'bt.npcs' count is neither used nor written.
+  const benchOn = benchFromQuery(location.search);
   // Async since plan 01-10: the office GLBs fetched before Chơi are parsed here, after three.js has loaded.
-  const game = await createGame(ctx);
-  startLoop(ctx, game);
+  const game = await createGame(ctx, benchOn ? { forcedNpcCount: MAX_NPCS, bench: true } : {});
+  if (benchOn) {
+    const [{ startBench }, { suppressKeyHints }] = await Promise.all([import('./bench/benchScript'), import('./ui/keyHints')]);
+    // Before the loop mounts the hint panels, so the one-time touch hint is not spent on a scripted run (D-28).
+    suppressKeyHints(true);
+    startLoop(ctx, game);
+    startBench(game, { durationSec: parseBenchDuration(new URLSearchParams(location.search).get('dur')) });
+  } else {
+    startLoop(ctx, game);
+  }
   setBootState('playing');
 }
 

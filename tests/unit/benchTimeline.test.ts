@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTimeline, type BenchAction } from '../../src/logic/benchTimeline';
+import { benchFromQuery, buildTimeline, parseBenchDuration, type BenchAction } from '../../src/logic/benchTimeline';
 
 /*
  * Plan 01-17 (D-08, D-11 revised, D-29): the ?bench=1 scenario is pure data driven by the simulation-step index, so a
@@ -131,5 +131,31 @@ describe('buildTimeline shape', () => {
     expect(stepsOf(t, 'walkTo')).toHaveLength(0);
     expect(stepsOf(t, 'massRagdoll')).toHaveLength(1);
     expect(t[t.length - 1].kind).toBe('end');
+  });
+});
+
+describe('parseBenchDuration (T-01-17-01)', () => {
+  it('absent or malformed values give the 60 s default', () => {
+    for (const raw of [null, undefined, '', 'abc', '8.5', '1e3', '0x10', ' ', '+8', '99999999']) {
+      expect(parseBenchDuration(raw)).toBe(60);
+    }
+  });
+
+  it('integers are clamped to 5..60', () => {
+    expect(parseBenchDuration('8')).toBe(8);
+    expect(parseBenchDuration(' 30 ')).toBe(30);
+    expect(parseBenchDuration('1')).toBe(5);
+    expect(parseBenchDuration('0')).toBe(5);
+    expect(parseBenchDuration('-4')).toBe(5);
+    expect(parseBenchDuration('600')).toBe(60);
+  });
+});
+
+describe('benchFromQuery', () => {
+  it('only bench=1 turns the bench on', () => {
+    expect(benchFromQuery('?bench=1&dur=8')).toBe(true);
+    expect(benchFromQuery('?bench=true')).toBe(false);
+    expect(benchFromQuery('?bench=0')).toBe(false);
+    expect(benchFromQuery('')).toBe(false);
   });
 });

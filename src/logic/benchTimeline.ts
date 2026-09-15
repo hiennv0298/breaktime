@@ -38,6 +38,26 @@ const MIN_SLAPS = 3;
 /** Position of the slap inside its segment: halfway, after the walk had time to close in. */
 const SLAP_IN_SEGMENT = 0.5;
 
+export const BENCH_DEFAULT_SEC = 60;
+export const BENCH_MIN_SEC = 5;
+export const BENCH_MAX_SEC = 60;
+
+/**
+ * &dur= (T-01-17-01): a plain decimal integer clamped to 5..60 s; anything else (absent, empty, "8.5", "1e3", "abc",
+ * signs other than a leading minus) gives the 60 s default.
+ */
+export function parseBenchDuration(raw: string | null | undefined): number {
+  if (typeof raw !== 'string' || !/^-?\d{1,6}$/.test(raw.trim())) return BENCH_DEFAULT_SEC;
+  const n = Number.parseInt(raw.trim(), 10);
+  if (!Number.isFinite(n)) return BENCH_DEFAULT_SEC;
+  return Math.max(BENCH_MIN_SEC, Math.min(BENCH_MAX_SEC, n));
+}
+
+/** Only the literal value '1' turns the benchmark on. */
+export function benchFromQuery(search: string): boolean {
+  return new URLSearchParams(search).get('bench') === '1';
+}
+
 /** Fisher-Yates on a copy, driven by the seeded generator. */
 function shuffled<T>(list: readonly T[], rng: () => number): T[] {
   const out = list.slice();

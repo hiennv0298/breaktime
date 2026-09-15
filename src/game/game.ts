@@ -65,11 +65,34 @@ export interface Game {
    * in place and reports source 'manual'. Storage is the caller's job (writeNpcSettings).
    */
   applyNpcSettings(s: NpcSettings): void;
+
+  // ---------- Benchmark hooks (plan 01-17, D-08) ----------
+  /** The InputState the player moves with: `input` in play, a separate autopilot-owned state in bench mode. */
+  readonly playerInput: InputState;
+  /** Slaps the nearest slappable active NPC (any distance) through the swing cooldown; false when none was slapped. */
+  slapNearestNpc(): boolean;
+  /** Slaps every slappable active NPC in this step, bypassing the swing cooldown; returns how many were slapped. */
+  massRagdoll(): number;
+  /** Launches every dynamic prop with the bench seed (breakables.smashAll). */
+  smash(): void;
+  /** Active NPCs currently flying or lying as a ragdoll. */
+  countRagdollsActive(): number;
+  activeNpcCount(): number;
+  /** Props displaced >= 0.3 m from home, broken props included (props.movedCount, plan 01-16). */
+  knockedOrBroken(): number;
+  brokenCount(): number;
+  /** Renderer / physics numbers of the last rendered frame for the bench recorder. */
+  stats(): { drawCalls: number; bodies: number; dpr: number; backbufferWidth: number; backbufferHeight: number; flavor: string };
 }
 
 export interface CreateGameOptions {
   /** Replaces the ?npcs= count (clamped 0..10); the 01-17 bench and the 01-18 soak pass MAX_NPCS. */
   forcedNpcCount?: number;
+  /**
+   * Bench mode (plan 01-17): the autopilot owns the player's InputState. Keyboard and the touch pause button still
+   * pause (portal rule), but movement keys, the joystick, action presses and game-area clicks never reach the player.
+   */
+  bench?: boolean;
 }
 
 /**
@@ -124,11 +147,14 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const viewport = () => ({ width: canvas.clientWidth, height: canvas.clientHeight });
   props.setCamera(ctx.camera, viewport);
 
+  const bench = opts.bench === true;
   const input = createInputState();
+  // Bench mode: the player reads an autopilot-owned state; device input only keeps its pause toggles (plan 01-17).
+  const playerInput = bench ? createInputState() : input;
   attachKeyboard(input);
   // Touch controls share the same InputState (D-17, D-18); they live for the page lifetime like the keyboard.
   const uiRoot = document.getElementById('app') ?? document.body;
-  attachJoystick(uiRoot, input);
+  if (!bench) attachJoystick(uiRoot, input);
   attachTouchButtons(uiRoot, input);
 
   const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
@@ -281,15 +307,19 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
 
   setContextIcon(iconFor(null));
 
-  attachPointerPick(
-    canvas,
-    ctx.camera,
-    () => (target ? { id: target.id, object: entryOf.get(target)!.object } : null),
-    (id) => {
-      pickQueued = id;
-    },
-    () => getPauseState().isPaused(),
-  );
+  if (!bench) {
+    attachPointerPick(
+      canvas,
+      ctx.camera,
+      () => (target ? { id: target.id, object: entryOf.get(target)!.object } : null),
+      (id) => {
+        pickQueued = id;
+      },
+      () => getPauseState().isPaused(),
+    );
+  }
+  const smashRng = mulberry32(BENCH_SEED);
+  const rapierFlavor = String((ctx.loaded.get('rapier') as { flavor?: string } | undefined)?.flavor ?? '?');
 
   function activateNpc(i: number): void {
     const npc = pool[i];
@@ -499,13 +529,15 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       fixedSteps++;
       if (scenario === 'smash' && fixedSteps === SMASH_STEP) breakables.smashAll(mulberry32(BENCH_SEED));
 
-      player.fixedUpdate(dt, input);
+      player.fixedUpdate(dt, playerInput);
       for (const npc of npcs) npc.fixedUpdate(dt);
       refreshTarget();
 
       // D-30: any action press or game-area click swings at once (cooldown permitting); only a target in range is hit.
-      const pressed = consumeInteract(input);
-      const picked = pickQueued;
+      // Bench mode drops device presses (the timeline owns every swing).
+      const pressedRaw = consumeInteract(input);
+      const pressed = !bench && pressedRaw;
+      const picked = bench ? undefined : pickQueued;
       pickQueued = undefined;
       if (pressed || picked !== undefined) {
         const nowMs = performance.now();
@@ -549,6 +581,74 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     },
     applyNpcSettings(input) {
       applySettings(input, 'manual');
+    },
+    playerInput,
+    slapNearestNpc() {
+      const p = player.pos();
+      let best: Npc | null = null;
+      let bestD = Number.POSITIVE_INFINITY;
+      for (const npc of npcs) {
+        if (!npc.slappable()) continue;
+        const t = npc.body.translation();
+        const d = Math.hypot(t.x - p.x, t.z - p.z);
+        if (d < bestD) {
+          bestD = d;
+          best = npc;
+        }
+      }
+      if (!best) return false;
+      const nowMs = performance.now();
+      // A scripted slap respects the D-30 cooldown like any press (plan 01-24); the timeline spaces slaps >= 0.5 s.
+      if (!swingGate.tryStart(nowMs)) {
+        swingDropped++;
+        return false;
+      }
+      const before = slapCount();
+      performSlap(game, best, nowMs);
+      if (slapCount() === before) return false;
+      swingHits++;
+      refreshTarget();
+      return true;
+    },
+    massRagdoll() {
+      // Every NPC in the same step, outside the swing gate (01-24 decision: the bench calls performSlap directly).
+      const nowMs = performance.now();
+      let slapped = 0;
+      for (const npc of npcs) {
+        if (!npc.slappable()) continue;
+        const before = slapCount();
+        performSlap(game, npc, nowMs);
+        if (slapCount() > before) slapped++;
+      }
+      if (slapped > 0) refreshTarget();
+      return slapped;
+    },
+    smash() {
+      breakables.smashAll(smashRng);
+    },
+    countRagdollsActive() {
+      let n = 0;
+      for (const npc of npcs) if (npc.mode === 'ragdoll') n++;
+      return n;
+    },
+    activeNpcCount() {
+      return npcs.length;
+    },
+    knockedOrBroken() {
+      return props.movedCount();
+    },
+    brokenCount() {
+      return props.brokenCount();
+    },
+    stats() {
+      return {
+        drawCalls: ctx.renderer.info.render.calls,
+        bodies: ctx.physics.world.bodies.len(),
+        dpr: ctx.renderer.getPixelRatio(),
+        backbufferWidth: canvas.width,
+        backbufferHeight: canvas.height,
+        flavor: rapierFlavor,
+      };
     },
   };
   return game;
