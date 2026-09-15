@@ -102,4 +102,12 @@ Checks: PREFLIGHT_OK present · APPROVAL_CODE is 8 hex · APPROVAL_TOKEN_MISSING
 
 Nonce age note: `NONCE_AGE_S=19974` means the server nonce was created at about 2026-09-15T03:53Z by an earlier preflight. The server TTL is 21600 s from nonce creation (`NONCE_TTL` in deploy/infra/apply-caddy-sites.sh), so this APPROVAL_CODE is only valid until about **2026-09-15T09:53Z (16:53 Vietnam time)**. After that, an approved apply returns APPROVAL_TOKEN_INVALID, and Task 2 must be re-run to get a fresh preflight and a new code.
 
-Awaiting operator reply (Task 2 checkpoint). No OPERATOR_REPLY yet.
+### Operator reply
+
+Recorded at 2026-09-15T09:41:40Z (reply typed by the operator in the orchestrator session, final message, verbatim):
+
+OPERATOR_REPLY=APPROVE-CADDY-4ebe4eba
+
+Two earlier replies in the same conversation were refused by the orchestrator: they did not match `APPROVE-CADDY-[0-9a-f]{8}`. The first was "oke duyệt". The second was the literal placeholder "APPROVE-CADDY-APPROVAL_CODE". Neither counted as approval, and no `--approve=` run happened for them.
+
+Token extracted with regex `APPROVE-CADDY-[0-9a-f]{8}`, unchanged: `APPROVE-CADDY-4ebe4eba`.
