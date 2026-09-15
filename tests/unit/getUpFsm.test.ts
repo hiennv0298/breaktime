@@ -143,3 +143,65 @@ describe('getUpFsm', () => {
     expect(s.ragdollSec).toBe(0.5);
   });
 });
+
+describe('getUpFsm opts.timeoutSec (02-02, D-06)', () => {
+  function runOpts(
+    s: GetUpState,
+    seconds: number,
+    torsoSpeed: number,
+    opts?: { timeoutSec?: number },
+  ): { state: GetUpState; events: Array<{ step: number; event: string }> } {
+    const steps = Math.round(seconds / DT);
+    const events: Array<{ step: number; event: string }> = [];
+    let state = s;
+    for (let i = 1; i <= steps; i++) {
+      const r = updateGetUp(state, { torsoSpeed, torsoAngSpeed: 0.5, dt: DT }, opts);
+      state = r.state;
+      if (r.event !== 'none') events.push({ step: i, event: r.event });
+    }
+    return { state, events };
+  }
+
+  function firstRecoverStep(events: Array<{ step: number; event: string }>): number {
+    const e = events.find((x) => x.event === 'start-recover');
+    return e ? e.step : -1;
+  }
+
+  it('a shorter timeout (2.5 s) recovers a never-calm ragdoll at 2.5 s (+/- one step)', () => {
+    const { events } = runOpts(slapGetUp(createGetUp()), 3.0, 5.0, { timeoutSec: 2.5 });
+    const step = firstRecoverStep(events);
+    expect(step).toBeGreaterThanOrEqual(149);
+    expect(step).toBeLessThanOrEqual(151);
+    expect(events.filter((e) => e.event === 'start-recover')).toHaveLength(1);
+  });
+
+  it('a longer timeout (6 s) is honoured too', () => {
+    const { events } = runOpts(slapGetUp(createGetUp()), 6.5, 5.0, { timeoutSec: 6 });
+    const step = firstRecoverStep(events);
+    expect(step).toBeGreaterThanOrEqual(359);
+    expect(step).toBeLessThanOrEqual(361);
+  });
+
+  it('without opts (or with an empty object) the timeout is still 4.0 s', () => {
+    expect(firstRecoverStep(runOpts(slapGetUp(createGetUp()), 4.5, 5.0).events)).toBe(240);
+    expect(firstRecoverStep(runOpts(slapGetUp(createGetUp()), 4.5, 5.0, {}).events)).toBe(240);
+    expect(RAGDOLL_TIMEOUT_SEC).toBe(4.0);
+  });
+
+  it('non-finite or non-positive timeoutSec falls back to RAGDOLL_TIMEOUT_SEC', () => {
+    for (const timeoutSec of [Number.NaN, Infinity, -Infinity, 0, -1]) {
+      expect(firstRecoverStep(runOpts(slapGetUp(createGetUp()), 4.5, 5.0, { timeoutSec }).events)).toBe(240);
+    }
+  });
+
+  it('the settle rule is unchanged with a custom timeout', () => {
+    const { events } = runOpts(slapGetUp(createGetUp()), 1.0, 0.2, { timeoutSec: 2.5 });
+    expect(events).toEqual([{ step: 36, event: 'start-recover' }]);
+  });
+
+  it('does not mutate the opts object', () => {
+    const opts = { timeoutSec: 2.5 };
+    updateGetUp(slapGetUp(createGetUp()), { torsoSpeed: 5, torsoAngSpeed: 5, dt: 3 }, opts);
+    expect(opts).toEqual({ timeoutSec: 2.5 });
+  });
+});
