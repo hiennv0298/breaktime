@@ -1,0 +1,104 @@
+/* NPC settings section (plan 01-27, D-29, CTRL-07) inside #pause-menu .panel (max-height 90dvh, overflow-y auto). */
+
+/* A definite width lets the panel grow to fit two name columns on wide screens and stay inside narrow ones. */
+#pause-menu .npc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  width: min(520px, calc(100vw - 96px));
+  margin: 0 auto;
+}
+#pause-menu .npc-section .label { font-size: 15px; opacity: 0.85; }
+
+#pause-menu .npc-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#npc-count-dec,
+#npc-count-inc,
+#npc-apply {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 17px;
+  color: #f2f2f2;
+  background: #3a3e47;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+#npc-count-dec,
+#npc-count-inc {
+  min-width: 56px;
+  font-size: 24px;
+  font-weight: 700;
+}
+#npc-count-dec:disabled,
+#npc-count-inc:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#npc-count-value {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/*
+ * One column on narrow panels (phones in portrait), two columns once the section reaches its full 520 px (viewport
+ * >= 616 px = 520 + the panel's 2 x 24 px padding + 2 x 24 px margin), so the panel is then at least 568 px wide.
+ */
+#pause-menu .npc-names {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 616px) {
+  #pause-menu .npc-names { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+#pause-menu label.npc-name-row { display: block; }
+#pause-menu label.npc-name-row[hidden] { display: none; }
+
+/*
+ * iOS Safari: body inherits -webkit-user-select none from hud.css (typing and paste break without an override), and it
+ * zooms the page when a focused input's font is under 16 px. Long-press callout is restored for paste (D-16, D-29).
+ */
+#pause-menu input.npc-name {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid #4a4f5a;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  color: #f2f2f2;
+  background: #1d1f24;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+  touch-action: manipulation;
+}
+#pause-menu input.npc-name:focus {
+  outline: none;
+  border-color: #ffc83d;
+}
+#pause-menu input.npc-name::placeholder { color: #8a8f99; }
+
+#npc-apply {
+  font-weight: 700;
+  color: #1d1f24;
+  background: #ffc83d;
+}
+#npc-apply-status {
+  min-height: 1.2em;
+  font-size: 14px;
+  opacity: 0.9;
+}

@@ -6,12 +6,22 @@
  * - contextmenu: long-press menus
  * - dblclick: double-tap zoom
  * Only cancelable events are prevented, so Chrome logs no intervention warning. A one-finger drag inside the
- * pause menu stays scrollable (its sections can overflow on small screens).
+ * pause menu stays scrollable (its sections can overflow on small screens). contextmenu and dblclick on a text field
+ * (input / textarea) are left alone, so long-press paste and word selection work in the NPC name fields (plan 01-27).
  */
 let installed = false;
 
 function prevent(e: Event): void {
   if (e.cancelable) e.preventDefault();
+}
+
+function isTextField(t: EventTarget | null): boolean {
+  return t instanceof Element && t.closest('input, textarea') !== null;
+}
+
+function preventOutsideTextFields(e: Event): void {
+  if (isTextField(e.target)) return;
+  prevent(e);
 }
 
 function onTouchMove(e: TouchEvent): void {
@@ -24,6 +34,6 @@ export function installPageHardening(): void {
   installed = true;
   document.addEventListener('gesturestart', prevent);
   document.addEventListener('touchmove', onTouchMove, { passive: false });
-  document.addEventListener('contextmenu', prevent);
-  document.addEventListener('dblclick', prevent);
+  document.addEventListener('contextmenu', preventOutsideTextFields);
+  document.addEventListener('dblclick', preventOutsideTextFields);
 }

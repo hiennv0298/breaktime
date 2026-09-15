@@ -1,4 +1,5 @@
 import { MAX_NPCS, normalizeNpcSettings, type NpcSettings } from '../logic/npcSettings';
+import './settings.css';
 
 /**
  * Pause-menu NPC section (plan 01-27, D-29, CTRL-07; menu from CTRL-04 / D-27): a 0–10 count stepper, one name field per
@@ -71,6 +72,10 @@ export function createNpcSettingsSection(opts: NpcSettingsSectionOptions): HTMLE
     input.placeholder = 'Tên NPC ' + (i + 1);
     input.setAttribute('aria-label', 'Tên NPC ' + (i + 1));
     input.value = start.names[i] ?? '';
+    // Keep the focused field above the on-screen keyboard inside the scrollable panel (D-16 portrait and landscape).
+    input.addEventListener('focus', () => {
+      if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ block: 'nearest' });
+    });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.isComposing) {
         e.preventDefault();
