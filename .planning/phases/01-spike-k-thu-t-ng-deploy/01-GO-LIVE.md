@@ -473,3 +473,149 @@ Lines 1–36 (steps 1–7) are the same shape as the first deploy: STEP 3 had LI
 - It happened during the first-time site activation. Step 13 wrote `/srv/sites/breaktime.caddy` and ran a graceful `caddy reload` that added the new TLS host game.doibung.com, and ACME then issued its certificate (valid_to Dec 14 08:50:33 2026). The reload is the most likely cause. It is not proven: deploy.mjs has no per-step timestamps and no server logs were read.
 - Second deploy (3d3cb78f560f, operator option 1): step 13 printed SITE_FILE_UNCHANGED and skipped the reload. The poller saw count=5 non200=0, and deploy printed DEPLOY_OK, exit 0. This is consistent with the hypothesis: the only run with a Caddy reload is the only run with a blip. A routine deploy (site file unchanged) does not touch Caddy.
 - Residual risk: any future change to `deploy/caddy/breaktime.caddy` triggers a reload again and may cause a similar blip of about 1 s on doibung.com. The step-16 gate will fail that deploy loudly, as it did here.
+
+## Measurement build
+
+Plan 01-18 Task 3: the build with `?bench=1` (01-17), `?soak=1`, the crash beacon and the banner (01-18). It is deployed for the real-device gate in 01-19. Only `npm run deploy` was run. No infra:apply, rollback, docker or caddy command was run by hand.
+
+**Result: `DEPLOY_OK 1ecc53ce473e https://game.doibung.com/ https://game.doibung.com/b/1ecc53ce473e/`, exit 0 (DEPLOY_RC=0), 15:22:04Z – 15:28:11Z. This was the third deploy attempt for this plan (see "Earlier attempts" below).**
+
+URLs for the gate:
+
+- `https://game.doibung.com/b/1ecc53ce473e/?bench=1`
+- `https://game.doibung.com/b/1ecc53ce473e/?soak=1`
+- `https://game.doibung.com/b/1ecc53ce473e/`
+
+Before (2026-09-15T15:22:04.531Z, Node, default TLS): `DOIBUNG_PRE 200 GAME_VERSION_PRE {"sha":"00130ad392e5","time":"2026-09-15T13:52:47.649Z"}`. `git status --porcelain --untracked-files=all` printed 0 lines. HEAD was 1ecc53ce473e.
+
+- sha: 1ecc53ce473e = ae03486 (soak, beacon, banner, wake lock) + the operator-approved spec de-flake `test(01-18)` 1ecc53c. The only change is in a test file, so the shipped game code is the same as at ae03486.
+- Gates: TYPECHECK_OK files=757 · BUILD_OK version.json sha=1ecc53ce473e · PRECOMPRESS_DONE files=25 · SIZE_GATE_OK totalRaw=7306719 files=63 · Vitest 36 files / 483 passed · Playwright 92 passed (5.0m)
+- **First load: `FIRST_LOAD_TOTAL_RAW=3364381 FIRST_LOAD_LEVEL=ok`** (about 3.21 MB, budget 8 MB). DIST_RAW=7306719 DIST_GZIP=2752929 DIST_BROTLI=2143288.
+- DNS preflight: game.doibung.com → 187.53.128.67 on 8.8.8.8 and 1.1.1.1
+- Upload `tarRc=0 sshRc=0 uploaded=113 local=113` · `__ACTIVATED__ 1ecc53ce473e releases=4` · CLEANUP_NOTHING
+- **Step 13: `SITE_FILE_UNCHANGED sha256=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8`.** Caddy was not reloaded.
+- Smoke 9/9 OK: version.json sha on attempt 1, / 200, /b/1ecc53ce473e/ 200, its version.json 200, no-slash 308, asset 200, bad sha 404, doibung.com 200, www 301
+- **Poller: `POLLER https://doibung.com/ count=38 non200=0 maxConsecutiveNon200Ms=0`** (SUMMARY `poller=38/38 200`)
+- Step 17 final state check: STATE_CHECK_OK, LIVE_SITE=1
+
+Plan Task 3 verify command (exact `<automated>` line, 2026-09-15T15:28:28Z):
+
+```
+MEASURE_BUILD_LIVE 1ecc53ce473e
+VERIFY_RC=0
+HEAD=1ecc53ce473e
+```
+
+Independent live checks (Node, default TLS, 2026-09-15T15:28:31.467Z):
+
+```
+TS=2026-09-15T15:28:31.467Z HEAD=1ecc53ce473e
+VERSION_JSON={"sha":"1ecc53ce473e","time":"2026-09-15T15:22:11.777Z"}
+B_SHA_STATUS=200 BENCH_STATUS=200 SOAK_STATUS=200 BENCH_LEN=745 SOAK_LEN=745
+DOIBUNG_STATUS=200 WWW_STATUS=301 WWW_LOCATION=https://doibung.com/
+SHA_EQUALS_HEAD=true
+INDEPENDENT_OK
+INDEPENDENT_RC=0
+```
+
+- game.doibung.com/version.json sha == deployed sha == `git rev-parse --short=12 HEAD` (1ecc53ce473e)
+- /b/1ecc53ce473e/ 200 · `?bench=1` 200 · `?soak=1` 200 (the same index.html; the query string is read by the client)
+- doibung.com 200 · www 301 → https://doibung.com/
+
+### Earlier attempts (both failed and left the live site unchanged)
+
+Neither earlier attempt was retried automatically. After each failure the executor stopped, and each re-run was the operator's decision.
+
+**Attempt 1** (HEAD ae034868d449): all gates passed (TYPECHECK_OK files=757, SIZE_GATE_OK totalRaw=7306719 files=63, Vitest 483 passed, Playwright 92 passed (5.0m), FIRST_LOAD_TOTAL_RAW=3364381). The SSH connection then dropped during upload. The release was aborted before activation, and doibung.com stayed 200 throughout:
+
+```
+== STEP 11/17 upload
+UPLOAD tarRc=0 sshRc=255 uploaded=NaN local=113
+
+
+client_loop: send disconnect: Connection reset
+DEPLOY_FAIL step=11/17 rc=1 upload thất bại (rc, marker __UPLOADED__ hoặc số file không khớp)
+__ABORTED__ ae034868d449
+POLLER https://doibung.com/ count=108 non200=0 maxConsecutiveNon200Ms=0
+DEPLOY_RC=1
+```
+
+**Attempt 2** (same HEAD ae034868d449; before: `DOIBUNG_PRE_RETRY 200`, `GAME_VERSION_PRE_RETRY {"sha":"00130ad392e5",...}`): the step 8 Playwright gate failed on the pre-existing spec `tests/e2e/swing.spec.ts:127`. Its timing precondition measured 300.1 ms, just over the 300 ms limit, for three E presses under full-suite load. The cooldown assertions after it never ran. Nothing was uploaded, and the poller had not started:
+
+```
+== STEP 8/17 playwright + first-load
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 300
+    Received:   300.0999999642372
+
+    > 140 |     expect(t1 - t0, 'presses must all fall inside one 350 ms cooldown').toBeLessThan(300);
+        at D:\break-time\tests\e2e\swing.spec.ts:140:73
+
+  1 failed
+    [desktop] › tests\e2e\swing.spec.ts:127:3 › swing desktop › mashing E is limited by the cooldown 
+  76 skipped
+  91 passed (5.1m)
+DEPLOY_FAIL step=8/17 rc=1 C:\Program Files\nodejs\node.exe rc=1
+DEPLOY_RC=1
+```
+
+**Operator decision** (typed in the orchestrator session): option 1, "Sửa test rồi deploy lại". The executor made only these changes:
+
+- The two inter-press waits in that test went from 60 to 40 ms, with the comment `01-18: 40 ms (was 60) — timing precondition flaked at 300.1 ms under full-suite load; still > one 16.7 ms step (D-30)`.
+- The comment above them now says ~80 ms instead of ~120 ms.
+- `SWING_COOLDOWN_MS` (350), the `< 300` threshold and the `count` / `dropped >= 1` assertions are unchanged.
+
+Before the third deploy, the executor ran these checks locally:
+
+- 5× repeat on desktop (`--repeat-each=5`): the mashing test passed 5/5 (2.1–2.2 s each), 30 passed, 5 touch tests skipped, rc 0.
+- Full suite: typecheck rc 0, vitest 483/483, build rc 0, `SIZE_GATE_OK totalRaw=7306719 files=63`, Playwright 92 passed with 0 failed.
+
+The fix was committed as 1ecc53c, and deploy was run exactly once (above).
+
+Release note: the server now has 4 releases. The site was 00130ad392e5 before this deploy and is 1ecc53ce473e after it. Rolling back the release means redeploying the previous commit. The infra rollback form in "## Rollback" is unchanged.
+
+Last 40 lines of the deploy output (full log 79 lines, including 4 wrapper lines before `npm run deploy`; `C:/Users/hiennv/AppData/Local/Temp/bt18-deploy3.log`):
+
+```
+FIRST_LOAD_TOTAL_RAW=3364381 FIRST_LOAD_LEVEL=ok
+== STEP 9/17 DNS preflight
+DNS game.doibung.com {"8.8.8.8":["187.53.128.67"],"1.1.1.1":["187.53.128.67"]}
+== STEP 10/17 doibung.com poller
+POLLER_STARTED https://doibung.com/ every 1000 ms
+== STEP 11/17 upload
+UPLOAD tarRc=0 sshRc=0 uploaded=113 local=113
+__UPLOADED__ 113
+== STEP 12/17 activate
+__ACTIVATED__ 1ecc53ce473e releases=4
+== STEP 13/17 site file
+SITE_FILE_UNCHANGED sha256=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8
+== STEP 14/17 cleanup keep 10
+CLEANUP_NOTHING
+== STEP 15/17 smoke
+SMOKE OK   breaktime /version.json sha — status 200 (attempts=1, window=20s)
+SMOKE OK   breaktime / — status 200
+SMOKE OK   breaktime /b/1ecc53ce473e/ — status 200
+SMOKE OK   breaktime /b/1ecc53ce473e/version.json sha — status 200
+SMOKE OK   breaktime /b/1ecc53ce473e (no slash) — status 308
+SMOKE OK   breaktime asset assets/index-CycMRXYi.js — status 200
+SMOKE OK   breaktime /b/zzz/ (bad sha) — status 404
+SMOKE OK   https://doibung.com/ — status 200
+SMOKE OK   https://www.doibung.com/ — status 301
+== STEP 16/17 poller verdict
+POLLER https://doibung.com/ count=38 non200=0 maxConsecutiveNon200Ms=0
+== STEP 17/17 final state check
+HOST_IMPORT=1
+HOST_MOUNT_NODB=1
+HOST_MOUNT_WITHDB=1
+LIVE_MOUNT=1
+LIVE_IMPORT=1
+LIVE_SITE=1
+SITE_FILE_SHA=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8
+CADDY_RUNNING=true
+STATE_CHECK_OK
+SUMMARY DIST_FILES=63 DIST_RAW=7306719 DIST_GZIP=2752929 DIST_BROTLI=2143288 FIRST_LOAD_TOTAL_RAW=3364381 FIRST_LOAD_LEVEL=ok poller=38/38 200
+DEPLOY_OK 1ecc53ce473e https://game.doibung.com/ https://game.doibung.com/b/1ecc53ce473e/
+DEPLOY_RC=0
+DEPLOY_END=2026-09-15T15:28:11Z
+```
