@@ -1,0 +1,43 @@
+# deploy/caddy/breaktime.caddy -> server: /srv/sites/breaktime.caddy (container: /etc/caddy/sites/breaktime.caddy)
+# Public test build (D-05): no auth, no robots header. Latest build at /, per-commit builds at /b/<sha>/ (D-04).
+breaktime.doibung.com {
+	# Fallback only for files without sidecars; precompressed br/gzip sidecars win when present.
+	encode zstd gzip
+
+	@buildNoSlash path_regexp nos ^/b/([0-9a-f]{7,40})$
+	redir @buildNoSlash /b/{re.nos.1}/ 308
+
+	@badBuild {
+		path /b /b/*
+		not path_regexp ^/b/[0-9a-f]{7,40}/
+	}
+	respond @badBuild 404
+
+	@hashed path_regexp hashed /assets/[^/]+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	# Default for index.html, version.json and everything unhashed.
+	header ?Cache-Control "no-cache"
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options SAMEORIGIN
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	handle_path /b/* {
+		root * /etc/caddy/sites/breaktime/releases
+		file_server {
+			precompressed br gzip
+			hide .* *.map
+		}
+	}
+	handle {
+		# current is a relative symlink -> releases/<sha>
+		root * /etc/caddy/sites/breaktime/current
+		file_server {
+			precompressed br gzip
+			hide .* *.map
+		}
+	}
+}
