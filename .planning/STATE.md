@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-22-PLAN.md
-last_updated: "2026-09-15T11:55:54.187Z"
-last_activity: "2026-09-15 -- Completed 01-22 (key map D-27: arrows/WASD move, Space/E action, Esc or lone Ctrl pause, Z/C-only rotate, modifier + typing guards; pure src/logic/keyMap.ts 90 unit cases; vitest 390/390, playwright 57 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-04/TECH-06 left open)"
+stopped_at: Completed 01-23-PLAN.md
+last_updated: "2026-09-15T12:20:36.839Z"
+last_activity: "2026-09-15 -- Completed 01-23 (one rigid SkinnedMesh per Blocky character = 1 draw each; routes 3-4 for NPCs 9-10, ?npcs 0..10; 10 NPCs smash peak 92 draws / 165 bodies, 3 NPCs 84 idle / 85 smash peak; vitest 400/400, playwright 61 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06/CTRL-07 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 17
-  percent: 63
+  completed_plans: 18
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 18 of 27 (01-01..01-16 and 01-22 complete; next 01-23, then 01-24..01-27, then 01-17)
+Plan: 19 of 27 (01-01..01-16, 01-22 and 01-23 complete; next 01-24..01-27, then 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-22 (key map D-27: arrows/WASD move, Space/E action, Esc or lone Ctrl pause, Z/C-only rotate, modifier + typing guards; pure src/logic/keyMap.ts 90 unit cases; vitest 390/390, playwright 57 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-04/TECH-06 left open)
+Last activity: 2026-09-15 -- Completed 01-23 (one rigid SkinnedMesh per Blocky character = 1 draw each; routes 3-4 for NPCs 9-10, ?npcs 0..10; 10 NPCs smash peak 92 draws / 165 bodies, 3 NPCs 84 idle / 85 smash peak; vitest 400/400, playwright 61 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06/CTRL-07 left open)
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████░░░░] 63%
 | Phase 01 P12 | 34min | 3 tasks | 5 files |
 | Phase 01 P16 | 36min | 2 tasks | 10 files |
 | Phase 01 P22 | 12min | 2 tasks | 9 files |
+| Phase 01 P23 | 19min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-22: key bindings are pure data in src/logic/keyMap.ts (classifyKey / axisFromHeld / createCtrlTap / isTypingTarget / KEY_HINTS); keyboard.ts, cameraKeys.ts and debugHud.ts all read it
 - [Phase 01]: 01-22: any key with Ctrl/Meta/Alt held is not a game key and is never default-prevented; a Control keydown itself stays 'ctrl'; lone Ctrl tap is disarmed by any other keydown, pointerdown (capture) or wheel, reset on blur/hidden
 - [Phase 01]: 01-22: typing targets (text-like INPUT, TEXTAREA, SELECT, contenteditable) are ignored by movement/action/rotate/HUD/pause; only Escape passes in keyboard.ts; keyup always releases held codes
+- [Phase 01]: 01-23: each Blocky character is one rigid SkinnedMesh (6 identity bones under the part nodes, weight 1.0 per part) built at spawn in the bind pose; merged geometry cached per asset.scene, only the Skeleton is per character; frustumCulled false (ragdoll parts fly far)
+- [Phase 01]: 01-23: part meshes stay as hidden children so ragdoll collider sizing and pointer pick are unchanged; player.ts, npc.ts, ragdoll.ts, highlight.ts untouched
+- [Phase 01]: 01-23: NPCs 1-8 keep routes i % 3 / offsets floor(i/3); NPC 9 -> route 3 (desk d2 <-> counter east end), NPC 10 -> route 4 (east window <-> storage boxes), planned coordinates unchanged; MAX_NPCS = 10
+- [Phase 01]: 01-23: measured 3 NPCs 84 draws idle / 85 smash peak, 116 bodies; 10 NPCs 91 idle / 92 smash peak, 165 bodies (budget 120 / 200) — draw calls no longer block the 01-17 bench
 
 ### Pending Todos
 
@@ -149,6 +154,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T11:57:00.000Z
-Stopped at: Completed 01-22-PLAN.md
+Last session: 2026-09-15T12:20:36.826Z
+Stopped at: Completed 01-23-PLAN.md
 Resume file: None

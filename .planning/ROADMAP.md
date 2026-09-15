@@ -88,7 +88,7 @@ Plans:
 **Wave 9** *(blocked on Wave 8 completion)*
 
 - [x] 01-22-PLAN.md — Key map D-27: arrows/WASD move, Space action (E secondary), Esc or lone Ctrl opens settings, Z/C-only rotation, typing guard (W9)
-- [ ] 01-23-PLAN.md — One draw call per Blocky character (rigid SkinnedMesh), routes for NPCs 9–10, ?npcs 0..10, budget measured at 3 and 10 NPCs (W9)
+- [x] 01-23-PLAN.md — One draw call per Blocky character (rigid SkinnedMesh), routes for NPCs 9–10, ?npcs 0..10, budget measured at 3 and 10 NPCs (W9)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 17/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 18/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
