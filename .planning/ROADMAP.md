@@ -63,7 +63,7 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 01-07-PLAN.md — One-command `npm run deploy` orchestration with DNS/smoke helpers (W4)
-- [ ] 01-08-PLAN.md — Floating joystick, context button, ESC/Space/⏸ pause (W4)
+- [x] 01-08-PLAN.md — Floating joystick, context button, ESC/Space/⏸ pause (W4)
 - [ ] 01-09-PLAN.md — Z/C + ⟲⟳ 90° camera rotation, portrait/landscape layout, fullscreen-if-supported, page hardening (W4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 7/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 8/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |

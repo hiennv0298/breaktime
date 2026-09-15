@@ -20,7 +20,7 @@
 - [ ] **CTRL-01**: Trên desktop, người chơi di chuyển bằng WASD và tương tác bằng E hoặc click chuột trái vào vật đang sáng
 - [ ] **CTRL-02**: Trên mobile/tablet, người chơi di chuyển bằng joystick ảo nửa trái và tương tác bằng một nút ngữ cảnh lớn (icon đổi theo vật gần nhất)
 - [ ] **CTRL-03**: Game phủ toàn màn hình ở cả hướng dọc và ngang; xoay máy giữa chừng không vỡ UI
-- [ ] **CTRL-04**: Người chơi tạm dừng bằng ESC/Space (desktop) hoặc nút ⏸ (mobile)
+- [x] **CTRL-04**: Người chơi tạm dừng bằng ESC/Space (desktop) hoặc nút ⏸ (mobile)
 - [ ] **CTRL-05**: Người chơi xoay camera theo bước 90° quanh văn phòng
 
 ### Phát hiện (DETECT)
@@ -137,7 +137,7 @@
 | CTRL-01 | Phase 1 | Pending |
 | CTRL-02 | Phase 1 | Pending |
 | CTRL-03 | Phase 1 | Pending |
-| CTRL-04 | Phase 1 | Pending |
+| CTRL-04 | Phase 1 | Complete |
 | CTRL-05 | Phase 1 | Pending |
 | PLAT-01 | Phase 1 | Pending |
 | PLAT-02 | Phase 1 | Pending |

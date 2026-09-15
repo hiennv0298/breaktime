@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-09-15T05:12:14.950Z"
-last_activity: "2026-09-15 -- Completed 01-07 (npm run deploy 17 fail-fast steps; live dry-run stops at drift rc 2 before build, dirty tree rc 1 before ssh; local container sim 42/42 incl. real tar-stream upload count 30=30; Vitest 149/149, Playwright 20 passed)"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-09-15T05:32:51.010Z"
+last_activity: 2026-09-15 -- Completed 01-08 (floating joystick left half + context button multi-touch + Escape/Space/pause-button pause with menu and hidden-tab auto-pause; Vitest 163/163, Playwright 24 passed 0 failed, size gate OK)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 7
-  percent: 33
+  completed_plans: 8
+  percent: 38
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 8 of 21
+Plan: 9 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-07 (npm run deploy 17 fail-fast steps; live dry-run stops at drift rc 2 before build, dirty tree rc 1 before ssh; local container sim 42/42 incl. real tar-stream upload count 30=30; Vitest 149/149, Playwright 20 passed)
+Last activity: 2026-09-15 -- Completed 01-08 (floating joystick left half + context button multi-touch + Escape/Space/pause-button pause with menu and hidden-tab auto-pause; Vitest 163/163, Playwright 24 passed 0 failed, size gate OK)
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 38%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01 P03 | 10min | 2 tasks | 10 files |
 | Phase 01 P06 | 16min | 2 tasks | 10 files |
 | Phase 01 P07 | 23min | 2 tasks | 9 files |
+| Phase 01 P08 | 17min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-07: DNS preflight strict — every resolver must return only 187.53.128.67; an extra A record fails
 - [Phase 01]: 01-07: deploy clean-tree guard also covers public/ and tests/ (--untracked-files=all); HEAD re-checked before upload; dist/version.json sha must equal HEAD
 - [Phase 01]: 01-07: failure after activation (steps 13-17) exits 1 but leaves the new release current; no automatic rollback
+- [Phase 01]: 01-08: pauseFor(r) overwrites the reason; resume only via menu, Escape/Space or pause button (returning to a visible tab stays paused); interact queued while paused is dropped
+- [Phase 01]: 01-08: #touch-zone covers the canvas, so desktop click-on-object (D-20) must listen on #touch-zone or window, not the canvas
+- [Phase 01]: 01-08: CDP touchEnd releases every finger; e2e helper lifts one of several fingers with a touchMove that omits it
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T05:12:14.939Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-09-15T05:32:50.999Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
