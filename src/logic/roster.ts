@@ -248,3 +248,129 @@ export function onFloorMembers(r: Roster): RosterMember[] {
 export function maxOnFloor(r: Roster): number {
   return Math.min(NPC_CAP, presentMembers(r).length);
 }
+
+/* ---- Edit operations (settings editor, D-03). Each returns normalizeRoster(result) built from fresh objects and never
+   mutates its input. ---- */
+
+/** Same as defaultRoster() (settings editor "reset"). */
+export function resetRoster(): Roster {
+  return defaultRoster();
+}
+
+function copyMember(m: RosterMember): RosterMember {
+  return { id: m.id, name: m.name, look: m.look, temper: m.temper };
+}
+
+/** Index into a list of `size` from one rng draw; non-finite or out-of-range draws are clamped. */
+function pickIndex(draw: number, size: number): number {
+  if (!Number.isFinite(draw)) return 0;
+  return Math.max(0, Math.min(size - 1, Math.floor(draw * size)));
+}
+
+/** Rebuilds the roster with one member changed by `edit`; unknown id → normalised copy. */
+function editMember(r: Roster, id: string, edit: (m: RosterMember) => RosterMember): Roster {
+  const base = normalizeRoster(r);
+  const members = base.members.map((m) => (m.id === id ? edit(copyMember(m)) : copyMember(m)));
+  return normalizeRoster({ members, present: base.present.slice(), count: base.count });
+}
+
+/**
+ * New member at the end: smallest free id m1.., name '', temper normal, the first NPC_LOOKS letter no member uses (or
+ * NPC_LOOKS[floor(rng() × 17)] when all are used), present while fewer than 15 are present. Count unchanged.
+ * At 30 members → added null.
+ */
+export function addMember(r: Roster, rng: () => number): { roster: Roster; added: RosterMember | null } {
+  const base = normalizeRoster(r);
+  if (base.members.length >= ROSTER_MAX_MEMBERS) return { roster: base, added: null };
+
+  const ids = new Set(base.members.map((m) => m.id));
+  let k = 1;
+  while (ids.has(`m${k}`)) k++;
+  const id = `m${k}`;
+
+  const usedLooks = new Set(base.members.map((m) => m.look));
+  let look = '';
+  for (const letter of NPC_LOOKS) {
+    if (!usedLooks.has(letter)) {
+      look = letter;
+      break;
+    }
+  }
+  if (look === '') look = NPC_LOOKS[pickIndex(rng(), NPC_LOOKS.length)];
+
+  const added: RosterMember = { id, name: '', look, temper: DEFAULT_TEMPER };
+  const members = base.members.map(copyMember);
+  members.push(added);
+  const present = base.present.slice();
+  if (present.length < NPC_CAP) present.push(id);
+  const roster = normalizeRoster({ members, present, count: base.count });
+  return { roster, added: copyMember(added) };
+}
+
+/** Drops the member and its present entry; count clamps. Unknown id → unchanged. */
+export function removeMember(r: Roster, id: string): Roster {
+  const base = normalizeRoster(r);
+  return normalizeRoster({
+    members: base.members.filter((m) => m.id !== id).map(copyMember),
+    present: base.present.filter((p) => p !== id),
+    count: base.count,
+  });
+}
+
+/** Renames through the Phase 1 sanitiser. */
+export function renameMember(r: Roster, id: string, name: unknown): Roster {
+  const clean = sanitizeNpcName(name);
+  return editMember(r, id, (m) => ({ id: m.id, name: clean, look: m.look, temper: m.temper }));
+}
+
+/** Accepts only one NPC_LOOKS letter ('a' is the player's). */
+export function setMemberLook(r: Roster, id: string, look: unknown): Roster {
+  if (!isLook(look)) return normalizeRoster(r);
+  return editMember(r, id, (m) => ({ id: m.id, name: m.name, look, temper: m.temper }));
+}
+
+/** Accepts only hot / normal / calm. */
+export function setMemberTemper(r: Roster, id: string, temper: unknown): Roster {
+  if (!isTemper(temper)) return normalizeRoster(r);
+  return editMember(r, id, (m) => ({ id: m.id, name: m.name, look: m.look, temper }));
+}
+
+/** Ticks a member present (only while fewer than 15 are present) or unticks it (count clamps). */
+export function setMemberPresent(r: Roster, id: string, on: boolean): Roster {
+  const base = normalizeRoster(r);
+  if (!base.members.some((m) => m.id === id)) return base;
+  const isOn = base.present.includes(id);
+  let present = base.present.slice();
+  if (on && !isOn) {
+    if (present.length >= NPC_CAP) return base;
+    present.push(id);
+  } else if (!on && isOn) {
+    present = present.filter((p) => p !== id);
+  } else {
+    return base;
+  }
+  return normalizeRoster({ members: base.members.map(copyMember), present, count: base.count });
+}
+
+/**
+ * Adapter that lets the existing 01-27 settings section (count stepper + one name field per slot) edit the roster
+ * until plan 02-09 replaces that section and deletes this function. names[i] renames the i-th present member (roster
+ * order); members without a slot entry keep their names. A finite count is truncated and clamped to maxOnFloor;
+ * a non-finite count keeps the current one.
+ */
+export function withSlotEdits(r: Roster, count: number, names: readonly unknown[]): Roster {
+  const base = normalizeRoster(r);
+  const slots = presentMembers(base);
+  const renamed = new Map<string, string>();
+  const n = Math.min(Array.isArray(names) ? names.length : 0, slots.length);
+  for (let i = 0; i < n; i++) renamed.set(slots[i].id, sanitizeNpcName(names[i]));
+  const members = base.members.map((m) => {
+    const name = renamed.get(m.id);
+    return { id: m.id, name: name === undefined ? m.name : name, look: m.look, temper: m.temper };
+  });
+  const next =
+    typeof count === 'number' && Number.isFinite(count)
+      ? Math.max(0, Math.min(maxOnFloor(base), Math.trunc(count)))
+      : base.count;
+  return normalizeRoster({ members, present: base.present.slice(), count: next });
+}
