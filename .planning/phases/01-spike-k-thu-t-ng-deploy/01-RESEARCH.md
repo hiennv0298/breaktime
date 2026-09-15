@@ -154,7 +154,7 @@ On the server, read-only inspection found things the plan must handle. Caddy is 
 | `@types/three` | 0.186.0 | Types | Always (dev) |
 | `@gltf-transform/cli` | 4.5.0 | Offline asset pipeline: `merge`, `optimize --compress meshopt --palette`, `resize` | Dev only; outputs are committed, never run at deploy time |
 | Three addons (bundled in `three`) | r186 | `three/addons/loaders/GLTFLoader.js`, `three/addons/libs/meshopt_decoder.module.js`, `three/addons/utils/SkeletonUtils.js`, `three/addons/utils/BufferGeometryUtils.js` | Loader + clone + static merge |
-| ffmpeg (system tool, not npm) | any | One-time OGG → MP3 conversion of Kenney SFX | Not installed locally. Operator installs via `winget install Gyan.FFmpeg` (human step), or the conversion task becomes a checkpoint |
+| ~~ffmpeg (system tool, not npm)~~ | any | One-time OGG → MP3 conversion of Kenney SFX | **SUPERSEDED by D-25 (2026-09-14):** use `ffmpeg-static` devDependency; no winget/system install |
 
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
@@ -191,7 +191,7 @@ slopcheck 0.6.1 ran this session (`slopcheck scan package.json --json`). No `pos
 | @gltf-transform/cli | npm | since 2018 | 80 K | gltf-transform.dev (NO_REPO info flag) | [OK] | Approved (dev tool, maintainer donmccurdy) |
 | nipplejs | npm | since 2016, v1 rewrite 2026 | — | github.com/yoannmoinet/nipplejs | [OK] | Not recommended (hand-roll) |
 | howler | npm | last publish 2023 | — | — | [OK] | Not recommended |
-| ffmpeg-static | npm | — | — | eugeneware/ffmpeg-static | not scanned | **Rejected**: GPL-3.0 and an `install` script downloads binaries |
+| ffmpeg-static | npm | — | — | eugeneware/ffmpeg-static | not scanned | ~~Rejected~~ **SUPERSEDED by D-25 — operator approved 2026-09-15 (plan 01-01 Task 1)**: GPL-3.0 dev-only tool, install script downloads ffmpeg into node_modules; never shipped in dist |
 
 **Packages removed due to slopcheck [SLOP] verdict:** none
 **Packages flagged as suspicious [SUS]:** `vitest` (typosquat heuristic false positive, see above)
@@ -874,7 +874,7 @@ export default defineConfig({
 5. **ffmpeg availability**
    - What we know: not installed locally; winget is available.
    - What's unclear: whether the operator installs it.
-   - Recommendation: human step `winget install Gyan.FFmpeg`, else the SFX conversion task waits.
+   - ~~Recommendation: human step `winget install Gyan.FFmpeg`, else the SFX conversion task waits.~~ **SUPERSEDED by D-25:** `ffmpeg-static` devDependency.
 6. **Printer and water cooler models**
    - What we know: not in Furniture Kit; Poly Pizza candidates ("Office Printer / Copier" by Bruno Oliveira, "Water Cooler" by J-Toastie) are CC-BY.
    - Recommendation: build both from Box/Cylinder primitives using Furniture Kit palette colours (CC0 by construction). CC-BY is only acceptable if the operator agrees to attribution in CREDITS.md.
@@ -891,7 +891,7 @@ export default defineConfig({
 | rsync (local) | — | ✗ | — | tar over ssh (recommended) |
 | Playwright Chromium headless shell | E2E | ✓ | 153 (build 1243, installed this session) | — |
 | Docker Desktop (local) | optional Caddy config tests | ✓ | 29.7.2 (bind mounts may fail: file sharing not configured; use `docker build` + COPY as done here) | skip local Caddy test |
-| ffmpeg | SFX conversion | ✗ | — | human install via winget |
+| ffmpeg | SFX conversion | ✓ (via `ffmpeg-static` 5.3.0 in node_modules, D-25) | — | — (no winget) |
 | slopcheck | package audit | ✓ | 0.6.1 (installed this session) | — |
 | Python | slopcheck | ✓ | 3.13 | — |
 | VPS: Docker/Compose | caddy recreate | ✓ | 29.8.0 / v5.5.1 | — |
@@ -988,7 +988,7 @@ ASVS Level 1, block on high (`.planning/config.json`).
 | CPU exhaustion of the shared 1 vCPU box via compression-heavy requests | DoS | Precompressed br/gz sidecars; `encode` only as fallback |
 | Let's Encrypt lockout from repeated failed issuance | DoS | DNS preflight on 1.1.1.1 and 8.8.8.8 before site activation |
 | Silent config drift after a whattoeat deploy removes the game | Integrity (availability) | Per-deploy host+live state check; `infra:apply` idempotent re-apply; HANDOFF note |
-| Malicious/typosquatted npm packages | Tampering | slopcheck audit (vitest SUS = verified false positive), exact pins, lockfile, reject packages with install scripts (ffmpeg-static) |
+| Malicious/typosquatted npm packages | Tampering | slopcheck audit (vitest SUS = verified false positive), exact pins, lockfile, reject packages with install scripts unless operator-approved (ffmpeg-static approved 2026-09-15 under D-25, dev-only) |
 
 ## Sources
 
