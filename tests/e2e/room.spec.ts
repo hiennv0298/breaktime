@@ -174,27 +174,21 @@ test.describe('room desktop', () => {
     const h = await bt(page, 'highlight');
     expect(h!.id).toBe(TEST_BOX_ID);
     expect(h!.screen).not.toBeNull();
-    const before = await propPos(page, TEST_BOX_ID);
-    await page.mouse.click(h!.screen!.x, h!.screen!.y);
-    await waitMoved(page, TEST_BOX_ID, before, 0.2);
-    const countAfterHit = await bt(page, 'interactCount');
-    expect(countAfterHit).toBeGreaterThanOrEqual(1);
+    const count0 = await bt(page, 'interactCount');
 
-    // Let the box land, then click a visible prop that is not highlighted and far from the box.
-    await page.waitForTimeout(800);
+    // 1) While the box glows, click a visible prop that is NOT highlighted: nothing moves, nothing counts.
+    //    (Done first, so a pick that ignored the ray would push the glowing box and fail here.)
     const vp = page.viewportSize()!;
     const now = await props(page);
-    const hNow = await bt(page, 'highlight');
-    const boxNow = now.list.find((i) => i.id === TEST_BOX_ID)!;
+    const boxBefore = now.list.find((i) => i.id === TEST_BOX_ID)!.pos;
     const others = now.list.filter(
       (i) =>
-        i.id !== hNow!.id &&
         i.id !== TEST_BOX_ID &&
         i.screen.x > 40 &&
         i.screen.x < vp.width - 40 &&
         i.screen.y > 40 &&
         i.screen.y < vp.height - 40 &&
-        Math.hypot(i.pos[0] - boxNow.pos[0], i.pos[2] - boxNow.pos[2]) > 2.5,
+        Math.hypot(i.screen.x - h!.screen!.x, i.screen.y - h!.screen!.y) > 120,
     );
     // Prefer a prop that is already asleep so "did not move" cannot be confused with settling.
     const other = others.find((i) => i.sleeping) ?? others[0];
@@ -202,9 +196,16 @@ test.describe('room desktop', () => {
 
     await page.mouse.click(other!.screen.x, other!.screen.y);
     await page.waitForTimeout(500);
-    const otherAfter = await propPos(page, other!.id);
-    expect(dist3(other!.pos, otherAfter)).toBeLessThanOrEqual(0.01);
-    expect(await bt(page, 'interactCount')).toBe(countAfterHit);
+    expect(dist3(other!.pos, await propPos(page, other!.id))).toBeLessThanOrEqual(0.01);
+    expect(dist3(boxBefore, await propPos(page, TEST_BOX_ID))).toBeLessThanOrEqual(0.01);
+    expect(await bt(page, 'interactCount')).toBe(count0);
+    expect((await bt(page, 'highlight'))!.id).toBe(TEST_BOX_ID); // still a live target: the guard was exercised
+
+    // 2) Click the glowing box itself: it moves.
+    const h2 = await bt(page, 'highlight');
+    await page.mouse.click(h2!.screen!.x, h2!.screen!.y);
+    await waitMoved(page, TEST_BOX_ID, boxBefore, 0.2);
+    expect(await bt(page, 'interactCount')).toBe(count0! + 1);
 
     expectClean(problems);
   });

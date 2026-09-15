@@ -265,7 +265,8 @@ test.describe('touch', () => {
     const problems = await startPlaying(page, baseURL!);
     await expect(page.locator('#btn-context')).toBeVisible();
     await expect(page.locator('#btn-context')).toHaveAttribute('data-hud-button', /.*/);
-    expect(await bt(page, 'touchUi')).toEqual({ visible: true, contextIcon: 'hand' });
+    // Plan 01-10 (D-18): the icon follows the nearest target, so it is 'none' at spawn with nothing in range.
+    expect(await bt(page, 'touchUi')).toEqual({ visible: true, contextIcon: 'none' });
 
     await touchDown(page, 150, 250);
     await touchMove(page, 150, 170);
