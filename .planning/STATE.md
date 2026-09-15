@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-23-PLAN.md
-last_updated: "2026-09-15T12:20:36.839Z"
-last_activity: "2026-09-15 -- Completed 01-23 (one rigid SkinnedMesh per Blocky character = 1 draw each; routes 3-4 for NPCs 9-10, ?npcs 0..10; 10 NPCs smash peak 92 draws / 165 bodies, 3 NPCs 84 idle / 85 smash peak; vitest 400/400, playwright 61 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06/CTRL-07 left open)"
+stopped_at: Completed 01-24-PLAN.md
+last_updated: "2026-09-15T12:41:22.659Z"
+last_activity: "2026-09-15 -- Completed 01-24 (every Space/E/context/click swings at once, hit only in range, 350 ms SwingGate; [data-hud-panel] clicks never swing; cooldown audit 47 hits 0 adjusted; vitest 408/408, playwright 68 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-02/TECH-06 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 18
-  percent: 67
+  completed_plans: 19
+  percent: 70
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 19 of 27 (01-01..01-16, 01-22 and 01-23 complete; next 01-24..01-27, then 01-17)
+Plan: 20 of 27 (01-01..01-16, 01-22, 01-23 and 01-24 complete; next 01-25..01-27, then 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-23 (one rigid SkinnedMesh per Blocky character = 1 draw each; routes 3-4 for NPCs 9-10, ?npcs 0..10; 10 NPCs smash peak 92 draws / 165 bodies, 3 NPCs 84 idle / 85 smash peak; vitest 400/400, playwright 61 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06/CTRL-07 left open)
+Last activity: 2026-09-15 -- Completed 01-24 (every Space/E/context/click swings at once, hit only in range, 350 ms SwingGate; [data-hud-panel] clicks never swing; cooldown audit 47 hits 0 adjusted; vitest 408/408, playwright 68 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-02/TECH-06 left open)
 
-Progress: [███████░░░] 67%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P16 | 36min | 2 tasks | 10 files |
 | Phase 01 P22 | 12min | 2 tasks | 9 files |
 | Phase 01 P23 | 19min | 3 tasks | 8 files |
+| Phase 01 P24 | 14min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-23: part meshes stay as hidden children so ragdoll collider sizing and pointer pick are unchanged; player.ts, npc.ts, ragdoll.ts, highlight.ts untouched
 - [Phase 01]: 01-23: NPCs 1-8 keep routes i % 3 / offsets floor(i/3); NPC 9 -> route 3 (desk d2 <-> counter east end), NPC 10 -> route 4 (east window <-> storage boxes), planned coordinates unchanged; MAX_NPCS = 10
 - [Phase 01]: 01-23: measured 3 NPCs 84 draws idle / 85 smash peak, 116 bodies; 10 NPCs 91 idle / 92 smash peak, 165 bodies (budget 120 / 200) — draw calls no longer block the 01-17 bench
+- [Phase 01]: 01-24: every action press (Space, E, #btn-context, game-area left-click) passes one pure SwingGate (SWING_COOLDOWN_MS = 350) and always swings; a key/context press hits the current target, a click hits only when its ray hit the object that is still the target; otherwise swing only (D-30)
+- [Phase 01]: 01-24: a press inside the cooldown is dropped (not queued, does not extend the cooldown) and counted in __bt.swing.dropped; slap.ts / loop.ts unchanged, the 01-17 bench still calls performSlap outside the gate
+- [Phase 01]: 01-24: pointerPick never swings for clicks inside [data-hud-button], [data-hud-panel], #pause-menu, button, input, textarea, select (panel contract for 01-25); context icon still 'none' with nothing in range (planner note #7, check on the phones)
 
 ### Pending Todos
 
@@ -154,6 +158,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T12:20:36.826Z
-Stopped at: Completed 01-23-PLAN.md
+Last session: 2026-09-15T12:41:22.647Z
+Stopped at: Completed 01-24-PLAN.md
 Resume file: None

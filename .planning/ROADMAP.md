@@ -92,7 +92,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 01-24-PLAN.md — Swing always plays on Space/E/context/click, hit only in range, 350 ms cooldown (W10)
+- [x] 01-24-PLAN.md — Swing always plays on Space/E/context/click, hit only in range, 350 ms cooldown (W10)
 - [ ] 01-25-PLAN.md — Key hint panel (bottom-left, fades to 30%, settings toggle), translucent touch buttons, one-time touch hint (W10)
 
 **Wave 11** *(blocked on Wave 10 completion)*
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 18/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 19/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
