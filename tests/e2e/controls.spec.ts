@@ -22,6 +22,7 @@ type Bt = {
   pauseReason?: string | null;
   joystick?: { active: boolean; x: number; y: number };
   touchUi?: { visible: boolean; contextIcon: string };
+  camera?: { yawDeg: number; targetYawDeg: number };
 };
 
 /** Wall inner faces sit 0.1 m inside the bounds; the capsule centre must stay at least 0.2 m inside. */
@@ -176,6 +177,63 @@ test.describe('desktop', () => {
 
     expectClean(problems);
   });
+
+  // Plan 01-22 (D-27, CTRL-01 reworded 15/09/2026): arrow keys move exactly like WASD; they no longer rotate (D-19 revised).
+  test('arrow keys move like WASD and never rotate the camera', async ({ page, baseURL }) => {
+    const problems = await startPlaying(page, baseURL!);
+
+    const p0 = await playerPos(page);
+    await holdKey(page, 'ArrowUp', 1000);
+    const p1 = await playerPos(page);
+    expect(distXZ(p0, p1)).toBeGreaterThanOrEqual(1.0);
+    expect(p1[2]).toBeLessThan(p0[2]); // ArrowUp is world -Z at camera yaw 0
+
+    await holdKey(page, 'ArrowRight', 800);
+    const p2 = await playerPos(page);
+    expect(p2[0] - p1[0]).toBeGreaterThanOrEqual(0.6);
+
+    expect((await bt(page, 'camera'))?.targetYawDeg).toBe(0);
+
+    expectClean(problems);
+  });
+
+  // Plan 01-22 (D-27, D-18 revised 15/09/2026): Space is the action key and does what E does; it never pauses.
+  test('Space near box pushes it like E', async ({ page, baseURL }) => {
+    const problems = await startPlaying(page, baseURL!);
+
+    await page.keyboard.down('KeyW');
+    await page.waitForFunction(
+      () => {
+        const b = (window as unknown as { __bt: Bt }).__bt;
+        const p = b.player!.pos;
+        const x = b.box!.pos;
+        return Math.hypot(p[0] - x[0], p[2] - x[2]) < 1.2;
+      },
+      undefined,
+      { timeout: 4000, polling: 16 },
+    );
+    await page.keyboard.up('KeyW');
+    await page.waitForTimeout(100);
+
+    const box0 = await boxPos(page);
+    expect(distXZ(await playerPos(page), box0)).toBeLessThanOrEqual(1.5);
+    expect(await bt(page, 'interactCount')).toBe(0);
+
+    await page.keyboard.press('Space');
+    await page.waitForFunction(
+      (start) => {
+        const b = (window as unknown as { __bt: Bt }).__bt;
+        const x = b.box!.pos;
+        return b.interactCount === 1 && Math.hypot(x[0] - start[0], x[1] - start[1], x[2] - start[2]) >= 0.3;
+      },
+      box0,
+      { timeout: 1000, polling: 16 },
+    );
+    expect(await bt(page, 'interactCount')).toBe(1);
+    expect(await bt(page, 'paused')).toBe(false);
+
+    expectClean(problems);
+  });
 });
 
 /* ---------- plan 01-08: touch controls (D-17, D-18, CTRL-02) and pause (D-20, CTRL-04) ---------- */
@@ -311,46 +369,102 @@ test.describe('touch', () => {
 });
 
 test.describe('pause', () => {
-  test('Escape and Space toggle pause, freeze the sim and never scroll', async ({ page, baseURL }, testInfo) => {
+  // Plan 01-22: replaces the old Escape/Space pause test of plan 01-08 (D-27 / CTRL-04 reworded 15/09/2026, D-20 replaced):
+  // Space no longer pauses (it is the action key), Escape or a lone Ctrl opens the menu, and Ctrl+key browser
+  // shortcuts are neither swallowed (no preventDefault) nor turned into game input.
+  test('Escape and a lone Ctrl toggle the menu; Space never pauses; Ctrl combos are not swallowed', async (
+    { page, baseURL },
+    testInfo,
+  ) => {
     test.skip(testInfo.project.name !== 'desktop', 'keyboard pause runs in the desktop project');
     const problems = await startPlaying(page, baseURL!);
     expect(await bt(page, 'paused')).toBe(false);
     await expect(page.locator('#pause-menu')).toBeHidden();
     await expect(page.locator('#btn-pause')).toBeHidden(); // no touch UI on a fine pointer without touches
 
-    // Record whether the game prevented the default action (page scroll) of every Space keydown.
+    // Record whether the game prevented the default action of every Space and KeyZ keydown (this listener is added
+    // after the game's own window listeners, so it sees their decision).
     await page.evaluate(() => {
-      const w = window as unknown as { __spaceDefaultPrevented: boolean[] };
-      w.__spaceDefaultPrevented = [];
+      const w = window as unknown as { __keyLog: { code: string; ctrl: boolean; prevented: boolean }[] };
+      w.__keyLog = [];
       window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') w.__spaceDefaultPrevented.push(e.defaultPrevented);
+        if (e.code === 'Space' || e.code === 'KeyZ') {
+          w.__keyLog.push({ code: e.code, ctrl: e.ctrlKey, prevented: e.defaultPrevented });
+        }
       });
     });
 
-    for (const key of ['Escape', 'Space']) {
+    // Escape opens and closes the menu.
+    await page.keyboard.press('Escape');
+    await waitPaused(page, true);
+    expect(await bt(page, 'pauseReason')).toBe('user');
+    await expect(page.locator('#pause-menu')).toBeVisible();
+    await expect(page.locator('#pause-menu h2')).toHaveText('Tạm dừng');
+    await expect(page.locator('#pause-resume')).toHaveText('Tiếp tục');
+    await expectFrozen(page);
+
+    await page.keyboard.press('Escape');
+    await waitPaused(page, false);
+    expect(await bt(page, 'pauseReason')).toBeNull();
+    await expect(page.locator('#pause-menu')).toBeHidden();
+    expect(await simStepGrowth(page, 500)).toBeGreaterThan(5);
+
+    // A lone Ctrl (left or right) opens and closes it too.
+    for (const key of ['Control', 'ControlRight']) {
       await page.keyboard.press(key);
       await waitPaused(page, true);
       expect(await bt(page, 'pauseReason')).toBe('user');
       await expect(page.locator('#pause-menu')).toBeVisible();
-      await expect(page.locator('#pause-menu h2')).toHaveText('Tạm dừng');
-      await expect(page.locator('#pause-resume')).toHaveText('Tiếp tục');
       await expectFrozen(page);
 
       await page.keyboard.press(key);
       await waitPaused(page, false);
-      expect(await bt(page, 'pauseReason')).toBeNull();
       await expect(page.locator('#pause-menu')).toBeHidden();
       expect(await simStepGrowth(page, 500)).toBeGreaterThan(5);
     }
 
+    // Space never pauses, and never scrolls the page.
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(300);
+    expect(await bt(page, 'paused')).toBe(false);
+
+    // Ctrl+Z: not a pause, not a rotation, and the browser keeps its shortcut (no preventDefault).
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyZ');
+    await page.keyboard.up('Control');
+    await page.waitForTimeout(300);
+    expect(await bt(page, 'paused')).toBe(false);
+    expect((await bt(page, 'camera'))?.targetYawDeg).toBe(0);
+
+    // Ctrl + mouse click is not a lone Ctrl tap.
+    await page.keyboard.down('Control');
+    await page.mouse.click(640, 200);
+    await page.keyboard.up('Control');
+    await page.waitForTimeout(300);
+    expect(await bt(page, 'paused')).toBe(false);
+
+    // Ctrl + ArrowUp neither moves the player nor pauses.
+    const pc0 = await playerPos(page);
+    await page.keyboard.down('Control');
+    await page.keyboard.down('ArrowUp');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('ArrowUp');
+    await page.keyboard.up('Control');
+    await page.waitForTimeout(100);
+    expect(distXZ(pc0, await playerPos(page))).toBeLessThan(0.05);
+    expect(await bt(page, 'paused')).toBe(false);
+
     const scroll = await page.evaluate(() => ({
       y: window.scrollY,
       top: document.scrollingElement?.scrollTop ?? 0,
-      prevented: (window as unknown as { __spaceDefaultPrevented: boolean[] }).__spaceDefaultPrevented,
+      log: (window as unknown as { __keyLog: { code: string; ctrl: boolean; prevented: boolean }[] }).__keyLog,
     }));
     expect(scroll.y).toBe(0);
     expect(scroll.top).toBe(0);
-    expect(scroll.prevented).toEqual([true, true]);
+    expect(scroll.log).toEqual([
+      { code: 'Space', ctrl: false, prevented: true },
+      { code: 'KeyZ', ctrl: true, prevented: false },
+    ]);
 
     // The menu button resumes too.
     await page.keyboard.press('Escape');

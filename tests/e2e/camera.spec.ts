@@ -66,7 +66,9 @@ test.describe('camera desktop', () => {
     test.skip(testInfo.project.name !== 'desktop', 'keyboard camera rotation runs in the desktop project');
   });
 
-  test('Z / C and arrow aliases rotate the target yaw by exactly 90°, E never rotates', async ({ page, baseURL }) => {
+  // Plan 01-22: replaces 'Z / C and arrow aliases rotate…' (D-19 revised 15/09/2026, D-27): arrow keys now move
+  // the player, so only Z / C rotate.
+  test('Z / C rotate by exactly 90°; arrow keys and E never rotate', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!);
     const c0 = await camera(page);
     expect(c0.targetYawDeg).toBe(0);
@@ -81,11 +83,12 @@ test.describe('camera desktop', () => {
     await page.keyboard.press('KeyZ');
     await expectYawAfter1s(page, 0);
 
-    await page.keyboard.press('ArrowLeft');
-    await expectYawAfter1s(page, -90);
-
-    await page.keyboard.press('ArrowRight');
-    await expectYawAfter1s(page, 0);
+    // Arrow keys are movement keys (D-27): they must never touch the camera.
+    for (const key of ['ArrowLeft', 'ArrowRight']) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(500);
+      expect((await camera(page)).targetYawDeg).toBe(0);
+    }
 
     // E is interact (Pitfall 10 / C1): it must never touch the camera.
     await page.keyboard.press('KeyE');
