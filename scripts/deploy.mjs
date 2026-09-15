@@ -103,7 +103,7 @@ export function parseUploadedCount(out) {
 }
 
 /** tar -czf - -C dist . | ssh doibung '<remote>' — both exit codes, marker and count are checked by the caller. */
-function tarStreamUpload(remoteCmd, { sshCmd = SSH, sshArgs = sshArgv, timeoutMs = 600000 } = {}) {
+export function tarStreamUpload(remoteCmd, { sshCmd = SSH, sshArgs = sshArgv, timeoutMs = 600000 } = {}) {
   return new Promise((resolvePromise) => {
     const tar = spawn(TAR, ['-czf', '-', '-C', 'dist', '.'], { cwd: ROOT, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const up = spawn(sshCmd, sshArgs(remoteCmd), { cwd: ROOT, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
