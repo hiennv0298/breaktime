@@ -18,7 +18,7 @@ const DEG = Math.PI / 180;
 /** One rig for the page: movement (getCameraYaw) and the view read the same yaw. */
 const rig = createCameraRig();
 
-/** Rotate the view by one 90° step: -1 = Z / ArrowLeft / ⟲, +1 = C / ArrowRight / ⟳ (D-19). */
+/** Rotate the view by one 90° step: -1 = Z / ⟲, +1 = C / ⟳ (D-19 revised 15/09/2026: arrow keys move, D-27). */
 export function rotateCamera(dir: -1 | 1): void {
   rig.rotate(dir);
 }

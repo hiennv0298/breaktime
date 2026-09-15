@@ -1,3 +1,4 @@
+import { isTypingTarget } from '../logic/keyMap';
 import './debugHud.css';
 
 /** One 4 Hz sample shown by the HUD (TECH-07). */
@@ -71,7 +72,10 @@ export function createDebugHud(initialVisible: boolean): DebugHud {
   };
 
   window.addEventListener('keydown', (e) => {
-    if (e.code === 'Backquote' && !e.repeat) hud.toggle();
+    if (e.code !== 'Backquote' || e.repeat) return;
+    // Not a game key inside a text field or as part of a browser shortcut (D-27).
+    if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return;
+    hud.toggle();
   });
 
   return hud;

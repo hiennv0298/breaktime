@@ -1,25 +1,19 @@
+import { classifyKey, isTypingTarget } from '../logic/keyMap';
 import { rotateCamera } from '../render/cameraView';
 
-/** Rotate codes (D-19 revised, RESEARCH C1): the interact key is deliberately absent, it must never rotate. */
-const ROTATE: Readonly<Record<string, -1 | 1>> = {
-  KeyZ: -1,
-  ArrowLeft: -1,
-  KeyC: 1,
-  ArrowRight: 1,
-};
-
 /**
- * Desktop camera keys: KeyZ / ArrowLeft rotate -90°, KeyC / ArrowRight rotate +90°.
- * Its own window listener (movement/interact/pause stay in keyboard.ts). Uses KeyboardEvent.code, so the
- * physical keys do not change with the layout. Held keys do not auto-repeat rotations. Returns a detach function.
+ * Desktop camera keys (D-19 revised 15/09/2026, D-27, CTRL-05): KeyZ rotates -90°, KeyC rotates +90°; nothing else.
+ * The arrow keys are movement keys now and E is the secondary action key, so neither ever rotates.
+ * Its own window listener (movement / action / pause stay in keyboard.ts). Intents come from the pure key map, so
+ * Ctrl+Z / Cmd+Z never rotate; keys typed into a text field are ignored; held keys do not auto-repeat rotations.
+ * No preventDefault (Z / C have no default action worth blocking). Returns a detach function.
  */
 export function attachCameraKeys(): () => void {
   function onKeyDown(e: KeyboardEvent): void {
-    if (!Object.prototype.hasOwnProperty.call(ROTATE, e.code)) return;
-    // Arrow keys would otherwise scroll a scrollable ancestor.
-    e.preventDefault();
-    if (e.repeat) return;
-    rotateCamera(ROTATE[e.code]);
+    if (e.repeat || isTypingTarget(e.target)) return;
+    const intent = classifyKey(e.code, e);
+    if (intent === 'rotate-left') rotateCamera(-1);
+    else if (intent === 'rotate-right') rotateCamera(1);
   }
 
   window.addEventListener('keydown', onKeyDown);

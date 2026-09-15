@@ -1,12 +1,12 @@
 /** Device-agnostic input written by keyboard, joystick and touch buttons; the loop and sim read it. */
 export interface InputState {
-  /** -1 left (A) .. +1 right (D) */
+  /** -1 left (A / ArrowLeft) .. +1 right (D / ArrowRight) */
   moveX: number;
-  /** -1 back (S) .. +1 forward (W) */
+  /** -1 back (S / ArrowDown) .. +1 forward (W / ArrowUp) */
   moveY: number;
-  /** Set on an interact press (E / context button); cleared by consumeInteract. */
+  /** Set on an action press (Space / E / context button / click on the glowing object); cleared by consumeInteract. */
   interactQueued: boolean;
-  /** Set on a pause toggle press (Escape / Space / pause button); cleared by consumePauseToggle. */
+  /** Set on a pause toggle (Escape / lone Ctrl press-and-release / pause button, D-27); cleared by consumePauseToggle. */
   pauseToggleQueued: boolean;
 }
 
