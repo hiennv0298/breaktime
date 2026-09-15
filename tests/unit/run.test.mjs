@@ -23,6 +23,13 @@ describe('run(): rc + marker + output length are all required', () => {
     await expect(run(NODE, ['-e', 'process.exit(3)'], { allowEmpty: true })).rejects.toThrow(/rc=3/);
   });
 
+  it('attaches the full stdout and rc to the rejection so callers can recover markers', async () => {
+    const err = await run(NODE, ['-e', "console.log('BACKUP_DIR=/x');process.exit(30)"]).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.rc).toBe(30);
+    expect(err.out).toContain('BACKUP_DIR=/x');
+  });
+
   it('resolves when rc=0, output non-empty and marker present', async () => {
     const r = await run(NODE, ['-e', "console.log('__OK__')"], { marker: '__OK__' });
     expect(r.out).toContain('__OK__');

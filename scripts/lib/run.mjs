@@ -33,10 +33,19 @@ export function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let timer = null;
+    let out = '';
+    let err = '';
+    let rc = null;
     const finish = (fn, value) => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
+      if (value instanceof Error) {
+        // Callers may need the full output of a failed step (e.g. BACKUP_DIR= before a failure).
+        value.out = out;
+        value.stderr = err;
+        value.rc = rc;
+      }
       fn(value);
     };
 
@@ -48,8 +57,6 @@ export function run(cmd, args, opts = {}) {
       return;
     }
 
-    let out = '';
-    let err = '';
     p.stdout.setEncoding('utf8');
     p.stderr.setEncoding('utf8');
     p.stdout.on('data', (d) => {
@@ -76,6 +83,7 @@ export function run(cmd, args, opts = {}) {
     }
 
     p.on('close', (code, signal) => {
+      rc = code;
       if (code !== 0) {
         return finish(
           reject,
