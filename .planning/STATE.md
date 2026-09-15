@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-25-PLAN.md
-last_updated: "2026-09-15T12:54:58.342Z"
-last_activity: "2026-09-15 -- Completed 01-25 (bottom-left key hint panel from KEY_HINTS dims to 0.3 after 4 s, CSS hover restores; pause-menu toggle persists bt.keyHints in try/catch; HUD buttons opacity 0.6; one-time touch hint in the right half; vitest 414/414, playwright 73 passed 0 failed, SIZE_GATE_OK; CTRL-06/TECH-06 left open)"
+stopped_at: Completed 01-26-PLAN.md
+last_updated: "2026-09-15T13:13:43.473Z"
+last_activity: "2026-09-15 -- Completed 01-26 (saved bt.npcs count 0-10 + names applied at start; names NFC, control/bidi/zero-width stripped, <= 16 code points; textContent tags over heads follow walking and ragdoll NPCs; corrupt/oversized/throwing storage falls back to 3 unnamed; forcedNpcCount > ?npcs > stored > 3; no network; vitest 439/439, playwright 79 passed 0 failed, SIZE_GATE_OK; CTRL-07/TECH-06 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 20
-  percent: 74
+  completed_plans: 21
+  percent: 78
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 21 of 27 (01-01..01-16, 01-22..01-25 complete; next 01-26, 01-27, then 01-17)
+Plan: 22 of 27 (01-01..01-16, 01-22..01-26 complete; next 01-27, then 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-25 (bottom-left key hint panel from KEY_HINTS dims to 0.3 after 4 s, CSS hover restores; pause-menu toggle persists bt.keyHints in try/catch; HUD buttons opacity 0.6; one-time touch hint in the right half; vitest 414/414, playwright 73 passed 0 failed, SIZE_GATE_OK; CTRL-06/TECH-06 left open)
+Last activity: 2026-09-15 -- Completed 01-26 (saved bt.npcs count 0-10 + names applied at start; names NFC, control/bidi/zero-width stripped, <= 16 code points; textContent tags over heads follow walking and ragdoll NPCs; corrupt/oversized/throwing storage falls back to 3 unnamed; forcedNpcCount > ?npcs > stored > 3; no network; vitest 439/439, playwright 79 passed 0 failed, SIZE_GATE_OK; CTRL-07/TECH-06 left open)
 
-Progress: [███████░░░] 74%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [███████░░░] 74%
 | Phase 01 P23 | 19min | 3 tasks | 8 files |
 | Phase 01 P24 | 14min | 2 tasks | 7 files |
 | Phase 01 P25 | 10min | 2 tasks | 7 files |
+| Phase 01 P26 | 15min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -142,6 +143,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-24: pointerPick never swings for clicks inside [data-hud-button], [data-hud-panel], #pause-menu, button, input, textarea, select (panel contract for 01-25); context icon still 'none' with nothing in range (planner note #7, check on the phones)
 - [Phase 01]: 01-25: key hint panel (#key-hints, bottom-left, z 150) renders KEY_HINTS from keyMap.ts, dims to 0.3 after KEY_HINT_DIM_MS = 4000 with CSS-only hover restore; #key-hints-toggle in the pause menu persists bt.keyHints, where only the literal '0' means off (try/catch, session fallback when storage throws)
 - [Phase 01]: 01-25: touch hint (#touch-hint, right half, pointer-events none) is decided once at loop start, bt.touchHintSeen = '1' is written when it is shown, and it hides after TOUCH_HINT_MS = 6000 or on the first touch; [data-hud-button] opacity 0.6 (0.95 while :active); suppressKeyHints(on) is the bench/soak hook for 01-17/01-18
+- [Phase 01]: 01-26: NPC start count precedence is finite createGame opts.forcedNpcCount > ?npcs= > valid stored bt.npcs ({"v":1,"count","names"[10]}, raw <= 4096) > 3; forced/query report source 'query' and still take names from the stored record
+- [Phase 01]: 01-26: sanitizeNpcName = slice 256 units, NFC, tab/CR/LF to space, strip C0/C1, U+00AD, U+061C, U+180E, U+200B-200F, U+2028-202E, U+2060-206F, U+FEFF, collapse whitespace, trim, 16 code points; npcCountFromQuery now lives in src/logic/npcSettings.ts and returns null when absent
+- [Phase 01]: 01-26: name tags are a DOM layer #npc-labels (z 90, pointer-events none, textContent only) projected in frameUpdate after cameraView.update (camera.updateMatrixWorld first); anchor foot + 1.85 m, ragdoll torso + 0.9 m; D-31 real-name content risk accepted for the play-test only, review before Phase 8
 
 ### Pending Todos
 
@@ -161,6 +165,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T12:54:58.330Z
-Stopped at: Completed 01-25-PLAN.md
+Last session: 2026-09-15T13:13:43.460Z
+Stopped at: Completed 01-26-PLAN.md
 Resume file: None

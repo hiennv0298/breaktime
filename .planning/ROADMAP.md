@@ -97,7 +97,7 @@ Plans:
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 01-26-PLAN.md — Saved NPC count + names applied at start, sanitised names as textContent labels over heads (W11)
+- [x] 01-26-PLAN.md — Saved NPC count + names applied at start, sanitised names as textContent labels over heads (W11)
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 20/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 21/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
