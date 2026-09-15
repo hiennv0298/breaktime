@@ -26,10 +26,17 @@ async function boot(): Promise<void> {
 
   setBootState('loading');
   // Loaded lazily so the unsupported path above never downloads three or Rapier.
-  const [{ createLoadingView, runLoadTasks }, { gameLoadTasks }, { waitForPlay, onPlayGesture }] = await Promise.all([
+  // The SFX module is three-free but still lazy, so the unsupported path never downloads it (D-15).
+  const [
+    { createLoadingView, runLoadTasks },
+    { gameLoadTasks },
+    { waitForPlay, onPlayGesture },
+    { sfxLoadTask, unlockFromGesture },
+  ] = await Promise.all([
     import('./boot/loading'),
     import('./game/assets'),
     import('./boot/playGate'),
+    import('./audio/sfx'),
   ]);
 
   const view = createLoadingView();
@@ -38,7 +45,7 @@ async function boot(): Promise<void> {
   registerDebug('loadProgress', () => loadProgress);
   registerDebug('rapierFlavor', () => rapierFlavor);
 
-  const loaded = await runLoadTasks(gameLoadTasks(caps), (p) => {
+  const loaded = await runLoadTasks([...gameLoadTasks(caps), sfxLoadTask()], (p) => {
     loadProgress = p;
     view.set(p);
   });
@@ -47,7 +54,9 @@ async function boot(): Promise<void> {
   view.hide();
   setBootState('ready-to-play');
 
-  // Runs synchronously inside the Chơi click, so the fullscreen request keeps its user activation (D-23, D-26).
+  // Both run synchronously inside the Chơi click and keep its user activation (D-23). Audio goes first: the
+  // fullscreen request may consume the transient activation, and iOS only unlocks Web Audio inside the gesture (D-15).
+  onPlayGesture(unlockFromGesture);
   onPlayGesture(requestFullscreenIfSupported);
   await waitForPlay({ autoplay: new URLSearchParams(location.search).has('autoplay') });
 
