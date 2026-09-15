@@ -3,7 +3,10 @@ import {
   KEY_HINT_DIM_MS,
   KEY_HINT_DIM_OPACITY,
   KEY_HINTS_STORAGE_KEY,
+  NPC_LABELS_STORAGE_KEY,
   parseKeyHintsPref,
+  parseNpcLabelsPref,
+  serializeNpcLabelsPref,
   serializeKeyHintsPref,
   shouldShowTouchHint,
   TOUCH_HINT_MS,
@@ -27,6 +30,25 @@ describe('key hint preference (D-28, T-01-25-01)', () => {
     expect(serializeKeyHintsPref(true)).toBe('1');
     expect(serializeKeyHintsPref(false)).toBe('0');
     for (const on of [true, false]) expect(parseKeyHintsPref(serializeKeyHintsPref(on))).toBe(on);
+  });
+});
+
+describe('NPC name tag preference (plan 02-04, D-10)', () => {
+  it('uses the bt.npcLabels key', () => {
+    expect(NPC_LABELS_STORAGE_KEY).toBe('bt.npcLabels');
+  });
+
+  it("tags are on unless the stored value is exactly '0'", () => {
+    expect(parseNpcLabelsPref('0')).toBe(false);
+    for (const raw of [null, '1', 'false', '', ' 0', '00', 'off']) {
+      expect(parseNpcLabelsPref(raw), JSON.stringify(raw)).toBe(true);
+    }
+  });
+
+  it('serializes to 1 / 0 and round-trips', () => {
+    expect(serializeNpcLabelsPref(true)).toBe('1');
+    expect(serializeNpcLabelsPref(false)).toBe('0');
+    for (const on of [true, false]) expect(parseNpcLabelsPref(serializeNpcLabelsPref(on))).toBe(on);
   });
 });
 

@@ -238,6 +238,36 @@ describe('isTypingTarget', () => {
   });
 });
 
+describe('npc-add / npc-remove (plan 02-04, D-02)', () => {
+  const NPC_KEYS: ReadonlyArray<[string, KeyIntent]> = [
+    ['Equal', 'npc-add'],
+    ['NumpadAdd', 'npc-add'],
+    ['Minus', 'npc-remove'],
+    ['NumpadSubtract', 'npc-remove'],
+  ];
+
+  it.each(NPC_KEYS)('%s -> %s', (code, intent) => {
+    expect(classifyKey(code, NONE)).toBe(intent);
+  });
+
+  it.each(NPC_KEYS)('Ctrl / Meta / Alt + %s -> null (browser zoom and shortcuts stay browser keys)', (code) => {
+    expect(classifyKey(code, CTRL)).toBeNull();
+    expect(classifyKey(code, META)).toBeNull();
+    expect(classifyKey(code, ALT)).toBeNull();
+  });
+
+  it("Shift is not a modifier here, so Shift+Equal ('+' on US layouts) is still npc-add", () => {
+    // KeyMods has no shiftKey; a real KeyboardEvent with shiftKey true passes the same three flags.
+    const shiftEqual = { ctrlKey: false, metaKey: false, altKey: false, shiftKey: true };
+    expect(classifyKey('Equal', shiftEqual)).toBe('npc-add');
+  });
+
+  it('axisFromHeld ignores the four codes', () => {
+    expect(axisFromHeld(new Set(['Equal', 'KeyW']))).toEqual({ x: 0, y: 1 });
+    expect(axisFromHeld(new Set(['Equal', 'NumpadAdd', 'Minus', 'NumpadSubtract']))).toEqual({ x: 0, y: 0 });
+  });
+});
+
 describe('KEY_HINTS (D-28 rows, rendered by plan 01-25)', () => {
   it('is exactly the four rows in order', () => {
     expect(KEY_HINTS).toEqual([
