@@ -1,0 +1,50 @@
+/* Screen layout for both orientations (plan 01-09, D-16, D-19, CTRL-03). Landscape first; portrait stays playable
+   and the game never asks the player to rotate the device. body.portrait is toggled by the renderer resize guard.
+   Landscape base positions for #btn-context, #btn-pause and #joystick-base live in hud.css (plan 01-08).
+   Every HUD hit area is at least 56 px and offset by the safe-area insets. */
+
+/* ---------- Rotate buttons: landscape, top-right, left of the pause button (D-19) ---------- */
+#btn-rot-left,
+#btn-rot-right {
+  top: calc(env(safe-area-inset-top) + 12px);
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+}
+#btn-rot-right { right: calc(env(safe-area-inset-right) + 80px); } /* pause (56) + 12 gap + 12 edge */
+#btn-rot-left { right: calc(env(safe-area-inset-right) + 148px); }
+#btn-rot-left svg,
+#btn-rot-right svg { width: 30px; height: 30px; }
+#btn-rot-left:active,
+#btn-rot-right:active { transform: scale(0.94); }
+
+/* ---------- Portrait (D-16): camera pulls back (viewParams), buttons stack toward the bottom ---------- */
+body.portrait #btn-pause {
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: calc(env(safe-area-inset-right) + 12px);
+}
+
+/* Context button: bottom, centre-right, within reach of the right thumb. */
+body.portrait #btn-context {
+  right: max(calc(env(safe-area-inset-right) + 16px), calc(25% - 48px));
+  bottom: calc(env(safe-area-inset-bottom) + 40px);
+}
+
+/* Rotate buttons: bottom-left, one row above the area where the left thumb drives the joystick. */
+body.portrait #btn-rot-left,
+body.portrait #btn-rot-right {
+  top: auto;
+  right: auto;
+  bottom: calc(env(safe-area-inset-bottom) + 232px);
+}
+body.portrait #btn-rot-left { left: calc(env(safe-area-inset-left) + 16px); }
+body.portrait #btn-rot-right { left: calc(env(safe-area-inset-left) + 84px); }
+
+/* The joystick maths uses a fixed 60 px radius: the base must never scale with the narrow portrait width. */
+body.portrait #joystick-base {
+  width: 120px;
+  height: 120px;
+  max-width: 120px;
+  max-height: 120px;
+}

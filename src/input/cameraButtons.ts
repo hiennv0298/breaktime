@@ -83,12 +83,6 @@ export function attachCameraButtons(root: HTMLElement): () => void {
   window.addEventListener('pointerdown', onAnyPointer, { capture: true });
   mq?.addEventListener('change', applyVisibility);
 
-  // Temporary inline top-right placement; layout.css takes over (portrait stacking, safe areas).
-  left.style.top = '12px';
-  left.style.right = '148px';
-  right.style.top = '12px';
-  right.style.right = '80px';
-
   applyVisibility();
   root.append(left, right);
 

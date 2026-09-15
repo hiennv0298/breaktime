@@ -86,10 +86,17 @@ async function expectFilled(page: Page, width: number, height: number): Promise<
   }
 }
 
-async function expectDistance(page: Page, want: number): Promise<void> {
+/** Distance and pitch ease toward viewParams: poll until both have settled (within 0.05). */
+async function expectView(page: Page, distance: number, pitchDeg: number): Promise<void> {
   await expect
-    .poll(async () => (await bt(page, 'camera'))?.distance ?? -1, { timeout: 3000, intervals: [50] })
-    .toBeCloseTo(want, 1);
+    .poll(
+      async () => {
+        const c = await bt(page, 'camera');
+        return !!c && Math.abs(c.distance - distance) < 0.05 && Math.abs(c.pitchDeg - pitchDeg) < 0.05;
+      },
+      { timeout: 3000, intervals: [50] },
+    )
+    .toBe(true);
 }
 
 test.describe('orientation', () => {
@@ -102,7 +109,7 @@ test.describe('orientation', () => {
 
     await expectFilled(page, 844, 390);
     expect((await layout(page)).portrait).toBe(false);
-    await expectDistance(page, 11);
+    await expectView(page, 11, 55);
     const r0 = await bt(page, 'renderer');
     expect(r0!.width).toBe(844);
     expect(r0!.height).toBe(390);
@@ -115,15 +122,13 @@ test.describe('orientation', () => {
     const r1 = await bt(page, 'renderer');
     expect(r1!.width).toBe(390);
     expect(r1!.height).toBe(844);
-    await expectDistance(page, 15);
-    expect((await bt(page, 'camera'))!.pitchDeg).toBeCloseTo(60, 1);
+    await expectView(page, 15, 60);
 
     await page.setViewportSize({ width: 844, height: 390 });
     await page.waitForTimeout(300);
     await expectFilled(page, 844, 390);
     expect((await layout(page)).portrait).toBe(false);
-    await expectDistance(page, 11);
-    expect((await bt(page, 'camera'))!.pitchDeg).toBeCloseTo(55, 1);
+    await expectView(page, 11, 55);
 
     // The game never asks the player to rotate the device (D-16).
     const text = (await page.evaluate(() => document.body.innerText)).toLowerCase();
@@ -149,13 +154,35 @@ test.describe('orientation', () => {
     expect(after - before, `storm took ${storm} ms`).toBeLessThanOrEqual(2);
     // Ended back in landscape: still filled and still correct.
     await expectFilled(page, 844, 390);
-    await expectDistance(page, 11);
+    await expectView(page, 11, 55);
 
     // Negative control: a real, settled resize does count, so the counter is live.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(400);
     expect((await bt(page, 'renderer'))!.resizeCount).toBeGreaterThan(after);
 
+    expectClean(problems);
+  });
+
+  test('page hardening cancels zoom, pull-to-refresh and long-press defaults', async ({ page, baseURL }) => {
+    const problems = await startPlaying(page, baseURL!);
+    const prevented = await page.evaluate(() => {
+      const canvas = document.querySelector('canvas')!;
+      const fire = (e: Event): boolean => {
+        canvas.dispatchEvent(e);
+        return e.defaultPrevented;
+      };
+      const touch = new Touch({ identifier: 7, target: canvas, clientX: 200, clientY: 200 });
+      return {
+        contextmenu: fire(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })),
+        dblclick: fire(new MouseEvent('dblclick', { bubbles: true, cancelable: true })),
+        gesturestart: fire(new Event('gesturestart', { bubbles: true, cancelable: true })),
+        touchmove: fire(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [touch], targetTouches: [touch], changedTouches: [touch] })),
+        // Negative control: an unrelated cancelable event is left alone, so the checks above are not vacuous.
+        unrelated: fire(new MouseEvent('mouseover', { bubbles: true, cancelable: true })),
+      };
+    });
+    expect(prevented).toEqual({ contextmenu: true, dblclick: true, gesturestart: true, touchmove: true, unrelated: false });
     expectClean(problems);
   });
 });

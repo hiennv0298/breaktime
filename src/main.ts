@@ -1,11 +1,16 @@
 import './ui/hud.css';
+import './ui/layout.css';
 import { mountBuildBadge } from './boot/buildInfo';
 import { detect } from './boot/capabilities';
+import { requestFullscreenIfSupported } from './boot/fullscreen';
+import { installPageHardening } from './boot/pageHardening';
 import { registerDebug, setBootState } from './debug/testHook';
 import { showBootError, showUnsupported } from './ui/unsupported';
 import type { RenderCtx } from './render/renderer';
 import type { RapierApi } from './physics/rapier';
 
+// No pinch / double-tap zoom, pull-to-refresh or long-press menus from the very first frame (RESEARCH Pattern 5).
+installPageHardening();
 mountBuildBadge();
 setBootState('booting');
 
@@ -21,7 +26,7 @@ async function boot(): Promise<void> {
 
   setBootState('loading');
   // Loaded lazily so the unsupported path above never downloads three or Rapier.
-  const [{ createLoadingView, runLoadTasks }, { gameLoadTasks }, { waitForPlay }] = await Promise.all([
+  const [{ createLoadingView, runLoadTasks }, { gameLoadTasks }, { waitForPlay, onPlayGesture }] = await Promise.all([
     import('./boot/loading'),
     import('./game/assets'),
     import('./boot/playGate'),
@@ -42,6 +47,8 @@ async function boot(): Promise<void> {
   view.hide();
   setBootState('ready-to-play');
 
+  // Runs synchronously inside the Chơi click, so the fullscreen request keeps its user activation (D-23, D-26).
+  onPlayGesture(requestFullscreenIfSupported);
   await waitForPlay({ autoplay: new URLSearchParams(location.search).has('autoplay') });
 
   const [{ createRenderer }, { createPhysics }, { createGame }, { startLoop }, { attachCameraKeys }, { attachCameraButtons }] =
