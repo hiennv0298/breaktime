@@ -14,6 +14,7 @@ import { createCameraView, getCameraYaw } from '../render/cameraView';
 import { setHighlighted } from '../render/highlight';
 import { parseOfficeAssets } from '../render/officeAssets';
 import type { RenderCtx } from '../render/renderer';
+import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
@@ -43,7 +44,10 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
  * The nearest prop in front of the player glows; E, the context button or a left-click on it pushes it (D-18, D-20).
  */
 export async function createGame(ctx: GameCtx): Promise<Game> {
-  const assets = await parseOfficeAssets(loadedBuffer(ctx, 'office'), loadedBuffer(ctx, 'food'));
+  const [assets, characterAsset] = await Promise.all([
+    parseOfficeAssets(loadedBuffer(ctx, 'office'), loadedBuffer(ctx, 'food')),
+    parseCharacterAsset(loadedBuffer(ctx, 'character')),
+  ]);
 
   const room = buildRoom(ctx, assets);
   const props = createProps(ctx, PROP_PLACEMENTS, assets, { surfaceTop: (id) => room.surfaceTop(id) });
@@ -58,7 +62,7 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   attachJoystick(uiRoot, input);
   attachTouchButtons(uiRoot, input);
 
-  const player = createPlayer(ctx, PLAYER_SPAWN);
+  const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
   const cameraView = createCameraView(ctx.camera);
 
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
@@ -170,7 +174,9 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       props.fixedUpdate();
     },
     frameUpdate(dt) {
-      player.frameUpdate(dt);
+      // Animations stand still while paused (the loop still renders paused frames).
+      const animDt = getPauseState().isPaused() ? 0 : dt;
+      player.frameUpdate(animDt);
       props.sync();
       cameraView.update(dt, player.pos());
       room.update(getCameraYaw());
