@@ -34,7 +34,7 @@ Làm sớm hơn thì phải làm lại.
 **Goal**: Chứng minh Three.js + Rapier đạt ngân sách size/fps trên điện thoại thật, và mọi commit sau đều chơi thử được qua một URL HTTPS
 **Mode:** mvp
 **Depends on**: Nothing (first phase)
-**Requirements**: TECH-01, TECH-02, TECH-03, TECH-04, TECH-05, TECH-06, TECH-07, CTRL-01, CTRL-02, CTRL-03, CTRL-04, CTRL-05, PLAT-01, PLAT-02
+**Requirements**: TECH-01, TECH-02, TECH-03, TECH-04, TECH-05, TECH-06, TECH-07, CTRL-01, CTRL-02, CTRL-03, CTRL-04, CTRL-05, CTRL-06, CTRL-07, PLAT-01, PLAT-02
 **Success Criteria** (what must be TRUE):
 
   1. Operator mở URL HTTPS trên điện thoại Android và iPhone, đi quanh một phòng văn phòng low-poly bằng joystick ảo; trên desktop thì bằng WASD
@@ -43,7 +43,7 @@ Làm sớm hơn thì phải làm lại.
   4. Chơi 15 phút trên Safari iOS không crash
   5. Một lệnh deploy đẩy bản mới lên VPS; doibung.com vẫn trả 200 trong và sau khi deploy
 
-**Plans**: 21 plans (13 waves; Walking Skeleton = 01, 02, 03, 04, 06, 07, 12 — see `phases/01-spike-k-thu-t-ng-deploy/01-SKELETON.md`)
+**Plans**: 27 plans (17 waves; 01-22..01-27 added 15/09/2026 after the live play-test (D-27..D-31) and run before 01-17; Walking Skeleton = 01, 02, 03, 04, 06, 07, 12 — see `phases/01-spike-k-thu-t-ng-deploy/01-SKELETON.md`)
 Plans:
 **Wave 1**
 
@@ -87,23 +87,41 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 01-17-PLAN.md — `?bench=1` deterministic 60 s benchmark + results screen (W9)
+- [ ] 01-22-PLAN.md — Key map D-27: arrows/WASD move, Space action (E secondary), Esc or lone Ctrl opens settings, Z/C-only rotation, typing guard (W9)
+- [ ] 01-23-PLAN.md — One draw call per Blocky character (rigid SkinnedMesh), routes for NPCs 9–10, ?npcs 0..10, budget measured at 3 and 10 NPCs (W9)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 01-18-PLAN.md — `?soak=1` 15-min soak, crash beacon, leak proxy, deploy measurement build (W10)
+- [ ] 01-24-PLAN.md — Swing always plays on Space/E/context/click, hit only in range, 350 ms cooldown (W10)
+- [ ] 01-25-PLAN.md — Key hint panel (bottom-left, fades to 30%, settings toggle), translucent touch buttons, one-time touch hint (W10)
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 01-19-PLAN.md — Real-device gate: device log, operator measurements, VERDICT incl. ≥ 20 objects on Android (W11)
+- [ ] 01-26-PLAN.md — Saved NPC count + names applied at start, sanitised names as textContent labels over heads (W11)
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 01-20-PLAN.md — Conditional single D-07 optimisation pass + re-measure (entry guard exits on PASS) (W12)
+- [ ] 01-27-PLAN.md — Settings section: NPC 0–10 stepper, name fields, Áp dụng with safe in-place respawn (grow-only pool) (W12)
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 01-21-PLAN.md — Conditional verdict after D-07, or STOP + PlayCanvas evaluation (entry guard) (W13)
+- [ ] 01-17-PLAN.md — `?bench=1` deterministic 60 s benchmark with 10 NPCs + results screen (W13)
+
+**Wave 14** *(blocked on Wave 13 completion)*
+
+- [ ] 01-18-PLAN.md — `?soak=1` 15-min soak, crash beacon, leak proxy, deploy measurement build (W14)
+
+**Wave 15** *(blocked on Wave 14 completion)*
+
+- [ ] 01-19-PLAN.md — Real-device gate: device log, operator measurements, controls & settings checklist, VERDICT incl. ≥ 20 objects on Android (W15)
+
+**Wave 16** *(blocked on Wave 15 completion)*
+
+- [ ] 01-20-PLAN.md — Conditional single D-07 optimisation pass + re-measure (entry guard exits on PASS; character merge already done in 01-23) (W16)
+
+**Wave 17** *(blocked on Wave 16 completion)*
+
+- [ ] 01-21-PLAN.md — Conditional verdict after D-07, or STOP + PlayCanvas evaluation (entry guard) (W17)
 
 **UI hint**: yes
 
@@ -231,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 16/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 16/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |

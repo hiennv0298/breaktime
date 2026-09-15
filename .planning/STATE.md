@@ -9,7 +9,7 @@ last_activity: "2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard 
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 21
+  total_plans: 27
   completed_plans: 16
   percent: 76
 ---
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 17 of 21 (01-01..01-16 complete; next 01-17)
+Plan: 17 of 27 (01-01..01-16 complete; next 01-22/01-23, then 01-24..01-27, then 01-17)
 Status: Ready to execute
 Last activity: 2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard kit in 5 InstancedMesh, 60 pooled shard bodies, tier debris cap 20/40/60, break/drop SFX, ?scenario=smash breaks 11/11 and moves 33/33; forces per kg; peak draw calls 105 @3 NPCs / 134-135 @8, HUD bodies 116 / 151, live shards 60 (20 at q=low); vitest 300/300, playwright 55 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06 left open)
 
