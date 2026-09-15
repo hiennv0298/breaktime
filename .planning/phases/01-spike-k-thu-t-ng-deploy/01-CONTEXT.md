@@ -7,7 +7,7 @@
 ## Phase Boundary
 
 Chứng minh stack **Three.js + Rapier (WASM) + TypeScript/Vite** chạy đạt ngân sách size/fps trên **điện thoại thật**
-và dựng đường deploy một lệnh lên VPS. Sau phase này, mọi commit đều chơi thử được qua `https://breaktime.doibung.com`.
+và dựng đường deploy một lệnh lên VPS. Sau phase này, mọi commit đều chơi thử được qua `https://game.doibung.com`.
 
 Nội dung chơi được: một căn phòng open-space, nhân vật điều khiển được trên desktop và mobile, tát/đẩy NPC ngã
 ragdoll kiểu slapstick, ≥ 20 đồ vật văng/vỡ, 3 NPC đi theo đường cố định, SFX cơ bản, chế độ benchmark.
@@ -23,13 +23,13 @@ Requirements: TECH-01..07, CTRL-01..05, PLAT-01, PLAT-02.
 ## Implementation Decisions
 
 ### Domain & deploy VPS
-- **D-01:** Bản chơi thử chạy ở **`breaktime.doibung.com`**. Operator phải thêm bản ghi DNS `A breaktime → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS.
+- **D-01:** Bản chơi thử chạy ở **`game.doibung.com`**. Operator phải thêm bản ghi DNS `A game → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS. **(Đổi 15/09/2026: operator chuyển domain từ `breaktime.doibung.com` sang `game.doibung.com`; subdomain chưa được tạo lúc đổi. Tên nội bộ `breaktime` — thư mục `/srv/sites/breaktime`, file `breaktime.caddy` — giữ nguyên.)**
 - **D-02:** Gắn game vào Caddy của stack `doibung` bằng **cơ chế import thư mục sites**, cấu hình **trực tiếp trên VPS qua `ssh doibung`** (operator chốt 14/09/2026). **KHÔNG sửa repo `d:\whattoeat` ở máy local**; máy local chỉ dùng để chạy và test game.
   - Trên server: Caddyfile đang chạy (`/opt/doibung/Caddyfile.nodb`) thêm `import /etc/caddy/sites/*.caddy`; compose đang tạo container caddy mount thư mục host (ví dụ `/srv/sites`) vào caddy **read-only**, gồm file site `*.caddy` + thư mục web tĩnh của từng dự án
   - Recreate container caddy **một lần** (doibung.com gián đoạn vài giây; volume `caddy_data` giữ nguyên cert). Trước khi sửa: sao lưu file gốc trên server; sau khi sửa: kiểm doibung.com trả 200
   - Mọi file của break-time nằm **ngoài `/opt/doibung`** (dưới `/srv/sites`) để deploy whattoeat không xoá được game
   - ⚠️ **Rủi ro còn lại (đã chấp nhận):** deploy whattoeat tiếp theo (`rsync --delete` từ `d:\whattoeat` vào `/opt/doibung`) sẽ **ghi đè 2 dòng sửa trong Caddyfile/compose** → game mất khỏi Caddy. Plan phải có: (a) một script/lệnh kiểm tra idempotent "Caddy còn import sites không" chạy trong `npm run deploy` của break-time, tự báo lỗi rõ ràng nếu dòng import biến mất; (b) ghi chú bàn giao cho operator về việc này. Không tự sửa repo whattoeat.
-- **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://breaktime.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
+- **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://game.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
 - **D-04:** Server giữ **bản mới nhất ở `/`** và **bản theo commit ở `/b/<sha>/`**, giữ khoảng 10 bản gần nhất, tự dọn bản cũ. Vite dùng base tương đối để một build chạy được ở cả hai đường dẫn. Mục đích: mở 2 bản trên cùng điện thoại để so fps, và quay lại bản cũ khi bản mới lỗi.
 - **D-05:** Bản chơi thử **công khai hoàn toàn**: không mật khẩu, không chặn index (operator chọn).
 

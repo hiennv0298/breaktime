@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # deploy/remote/activate-site.sh — runs on the VPS as root, sent over ssh stdin (bash -s).
 # Precondition: the caller uploaded the new site file to /srv/sites/.breaktime.caddy.new and
-# checked DNS for breaktime.doibung.com (Let's Encrypt failure limit).
+# checked DNS for game.doibung.com (Let's Encrypt failure limit).
 # Validates the site file on the running doibung Caddy, swaps it in, reloads through the admin
 # API on 127.0.0.1:2019 and restores the previous file when the reload fails.
 set -Eeuo pipefail
@@ -52,8 +52,8 @@ if ! reload_caddy; then
 fi
 
 cfg=$(docker exec "$CADDY" wget -qO- http://127.0.0.1:2019/config/ 2>/dev/null || true)
-if ! printf '%s' "$cfg" | grep -q 'breaktime.doibung.com'; then
-  echo "__ERROR__ reload rc 0 but the live admin config has no breaktime.doibung.com (is the sites import missing? run npm run infra:check)" >&2
+if ! printf '%s' "$cfg" | grep -q 'game.doibung.com'; then
+  echo "__ERROR__ reload rc 0 but the live admin config has no game.doibung.com (is the sites import missing? run npm run infra:check)" >&2
   exit 22
 fi
 

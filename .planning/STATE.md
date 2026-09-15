@@ -121,7 +121,7 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 1] **Model máy đo chưa ghi**: operator có Android tầm trung + iPhone (01-CONTEXT D-06) — phải ghi model/OS/trình duyệt trước lần đo đầu
-- [Phase 1] **DNS `A breaktime → 187.53.128.67`** là việc tay của operator, phải xong trước khi deploy lần đầu (D-01)
+- [Phase 1] **DNS `A game → 187.53.128.67`** là việc tay của operator, phải xong trước khi deploy lần đầu (D-01)
 - [Phase 1] Gắn game vào Caddy: sửa **trực tiếp trên VPS qua `ssh doibung`**, không sửa repo `d:\whattoeat` (D-02) + recreate caddy doibung 1 lần — kiểm doibung.com trả 200 trước/sau
 - [Phase 1] Deploy whattoeat kế tiếp (`rsync --delete`) sẽ ghi đè dòng `import` trong Caddyfile trên server → `npm run deploy` của break-time phải tự phát hiện và báo
 - VPS chỉ **1 vCPU / 3,6 GB RAM** (đo 14/09/2026) và đang chạy cả Postgres của doibung. Static site thì không sao, nhưng **không build game trên VPS**: build ở máy local rồi đẩy `dist/` lên
@@ -130,7 +130,7 @@ None yet.
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Plan | 01-12 go-live (first deploy to breaktime.doibung.com) | Pending, deferred by operator until DNS resolves; does not block 01-14+ | 2026-09-15 |
+| Plan | 01-12 go-live (first deploy to game.doibung.com) | Pending, deferred by operator until DNS resolves; does not block 01-14+ | 2026-09-15 |
 
 ## Session Continuity
 

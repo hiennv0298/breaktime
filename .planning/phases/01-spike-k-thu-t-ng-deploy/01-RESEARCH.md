@@ -10,13 +10,13 @@
 ### Locked Decisions
 
 ### Domain & deploy VPS
-- **D-01:** Bản chơi thử chạy ở **`breaktime.doibung.com`**. Operator phải thêm bản ghi DNS `A breaktime → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS.
+- **D-01:** Bản chơi thử chạy ở **`game.doibung.com`**. Operator phải thêm bản ghi DNS `A game → 187.53.128.67` (việc tay, người làm). Caddy tự xin HTTPS.
 - **D-02:** Gắn game vào Caddy của stack `doibung` bằng **cơ chế import thư mục sites**, cấu hình **trực tiếp trên VPS qua `ssh doibung`** (operator chốt 14/09/2026). **KHÔNG sửa repo `d:\whattoeat` ở máy local**; máy local chỉ dùng để chạy và test game.
   - Trên server: Caddyfile đang chạy (`/opt/doibung/Caddyfile.nodb`) thêm `import /etc/caddy/sites/*.caddy`; compose đang tạo container caddy mount thư mục host (ví dụ `/srv/sites`) vào caddy **read-only**, gồm file site `*.caddy` + thư mục web tĩnh của từng dự án
   - Recreate container caddy **một lần** (doibung.com gián đoạn vài giây; volume `caddy_data` giữ nguyên cert). Trước khi sửa: sao lưu file gốc trên server; sau khi sửa: kiểm doibung.com trả 200
   - Mọi file của break-time nằm **ngoài `/opt/doibung`** (dưới `/srv/sites`) để deploy whattoeat không xoá được game
   - ⚠️ **Rủi ro còn lại (đã chấp nhận):** deploy whattoeat tiếp theo (`rsync --delete` từ `d:\whattoeat` vào `/opt/doibung`) sẽ **ghi đè 2 dòng sửa trong Caddyfile/compose** → game mất khỏi Caddy. Plan phải có: (a) một script/lệnh kiểm tra idempotent "Caddy còn import sites không" chạy trong `npm run deploy` của break-time, tự báo lỗi rõ ràng nếu dòng import biến mất; (b) ghi chú bàn giao cho operator về việc này. Không tự sửa repo whattoeat.
-- **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://breaktime.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
+- **D-03:** Deploy bằng **script local `npm run deploy`**, chạy tuần tự: build → kiểm kích thước (vượt trần thì dừng) → test chặn (D-24) → rsync qua `ssh doibung` → `caddy reload` nếu file site đổi → smoke test **cả** `https://game.doibung.com` **và** `https://doibung.com` (phải trả 200). Không dùng CI, không đưa private key root lên đâu.
 - **D-04:** Server giữ **bản mới nhất ở `/`** và **bản theo commit ở `/b/<sha>/`**, giữ khoảng 10 bản gần nhất, tự dọn bản cũ. Vite dùng base tương đối để một build chạy được ở cả hai đường dẫn. Mục đích: mở 2 bản trên cùng điện thoại để so fps, và quay lại bản cũ khi bản mới lỗi.
 - **D-05:** Bản chơi thử **công khai hoàn toàn**: không mật khẩu, không chặn index (operator chọn).
 
@@ -93,7 +93,7 @@
 | CTRL-04 | Pause ESC/Space and ⏸ button | Pause state in pure game-state module; auto-pause on `visibilitychange`. |
 | CTRL-05 | Rotate camera in 90° steps | Camera yaw target snaps to k·90°, smooth damp; mobile ⟲ ⟳ buttons. |
 | PLAT-01 | One-command deploy, doibung.com not interrupted | Node `scripts/deploy.mjs`: Windows OpenSSH + `tar` stream (verified end-to-end read-only), releases + atomic symlink, flock, server-state drift check, doibung.com polling during deploy (§Pattern 11/12). |
-| PLAT-02 | HTTPS on its own subdomain | `breaktime.doibung.com` site file imported by the doibung Caddy (v2.11.4 verified). Site config tested locally in a `caddy:2.11.4-alpine` container (§Caddy). Needs DNS A record (NXDOMAIN today). |
+| PLAT-02 | HTTPS on its own subdomain | `game.doibung.com` site file imported by the doibung Caddy (v2.11.4 verified). Site config tested locally in a `caddy:2.11.4-alpine` container (§Caddy). Needs DNS A record (NXDOMAIN today). |
 </phase_requirements>
 
 ## Project Constraints (from CLAUDE.md)
@@ -119,7 +119,7 @@ Blocky Characters 2.0 has **no skinned skeleton**. Each character is 6 rigid mes
 
 On the server, read-only inspection found things the plan must handle. Caddy is **v2.11.4**. The caddy container carries label `config_files=/opt/doibung/docker-compose.nodb.yml`, while app and postgres were created from `docker-compose.withdb.yml`. `docker compose config --hash` shows the nodb file's `app` hash differs from the running app. **Running `docker compose -f docker-compose.nodb.yml up -d caddy` without `--no-deps` would recreate the app without `DATABASE_URL`.** Caddy's admin API listens on `127.0.0.1:2019` only; busybox `wget localhost` resolves to `::1` and is refused. SELinux is disabled, so bind mounts need no `:z`. `rsync` exists on the server but **not** locally, so the upload is a `tar` stream over Windows OpenSSH, verified working. The full candidate site config was run in a local `caddy:2.11.4-alpine` container and verified: relative symlink `current`, `/b/<sha>/`, 308 on missing slash, 404 for bad sha, precompressed br/gzip, `application/wasm`, hidden `.map`/`.env`, cache headers, and an empty import glob only warning.
 
-**Primary recommendation:** Build the walking skeleton first. That means scaffold, capability gate, one room, WASD/joystick capsule, one Rapier push, size report, Playwright smoke, a one-time server apply (mount + import, zero sites), and first `npm run deploy` to `breaktime.doibung.com`. Only then layer Blocky NPCs, ragdoll, breakables, bench/soak, quality tiers, and the real-device gate.
+**Primary recommendation:** Build the walking skeleton first. That means scaffold, capability gate, one room, WASD/joystick capsule, one Rapier push, size report, Playwright smoke, a one-time server apply (mount + import, zero sites), and first `npm run deploy` to `game.doibung.com`. Only then layer Blocky NPCs, ragdoll, breakables, bench/soak, quality tiers, and the real-device gate.
 
 ## Architectural Responsibility Map
 
@@ -223,7 +223,7 @@ slopcheck 0.6.1 ran this session (`slopcheck scan package.json --json`). No `pos
  │     breaktime.caddy                    Caddyfile.nodb: "import /etc/caddy/sites/*.caddy"             │ │
  │     breaktime/current -> releases/<sha>                                                              │ │
  │     breaktime/releases/<sha>/…         Caddy :443 ─► doibung.com → reverse_proxy app:3000 (untouched)│ │
- │                                                  └► breaktime.doibung.com → file_server (precompressed)│ │
+ │                                                  └► game.doibung.com → file_server (precompressed)│ │
  └──────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
                                                                              ▼                        │
                      smoke: breaktime / 200 + version.json sha · /b/<sha>/ 200 · immutable header on asset  │
@@ -231,7 +231,7 @@ slopcheck 0.6.1 ran this session (`slopcheck scan package.json --json`). No `pos
                                                                              ▼
                                                      print URLs + sizes; exit 0
 
- PLAYER (phone/desktop) ─► https://breaktime.doibung.com/ (or /b/<sha>/)
+ PLAYER (phone/desktop) ─► https://game.doibung.com/ (or /b/<sha>/)
    index.html (no-cache, CSP meta) ─► capability gate (WebGL2? WASM SIMD?) ──no──► "unsupported" screen
         │ yes
    loading screen: import(rapier-simd-compat) ∥ fetch office.glb, character.glb, textures, sfx  (weighted progress)
@@ -500,7 +500,7 @@ test('loads clean, stays on origin, bench completes', async ({ page, baseURL }) 
 ### Pattern 11: Caddy site file (tested locally in `caddy:2.11.4-alpine`)
 ```caddy
 # deploy/caddy/breaktime.caddy  → server: /srv/sites/breaktime.caddy (container: /etc/caddy/sites/breaktime.caddy)
-breaktime.doibung.com {
+game.doibung.com {
 	encode zstd gzip                       # fallback for files without sidecars; precompressed wins when present (verified)
 
 	@buildNoSlash path_regexp nos ^/b/([0-9a-f]{7,40})$
@@ -568,7 +568,7 @@ Facts measured read-only on 2026-09-14:
 - `doibung-caddy-1`: image `caddy:2-alpine` = v2.11.4. `mem_limit` 128 MiB, using 33 MiB. Cmd `caddy run --config /etc/caddy/Caddyfile --adapter caddyfile`. Admin API at **127.0.0.1:2019 only**. Mounts: `doibung_caddy_data:/data`, `doibung_caddy_config:/config`, bind `/opt/doibung/Caddyfile.nodb → /etc/caddy/Caddyfile (ro)`. Live file md5 = host file md5 = local `d:/whattoeat/Caddyfile.nodb` md5 (`4b5890ff…`).
 - Labels: caddy `config_files=/opt/doibung/docker-compose.nodb.yml`; app and postgres `config_files=/opt/doibung/docker-compose.withdb.yml`. `docker compose ls` shows both files for project `doibung`.
 - `docker compose config --hash`: withdb → app `3d8218…` (= running), caddy `78c67f…` (= running), postgres `db14d6…` (= running). nodb → caddy `78c67f…` but **app `bee15e…` ≠ running**.
-- `/srv` is empty. `breaktime.doibung.com` is NXDOMAIN on 1.1.1.1. doibung.com DNS is at Hostinger (`*.dns-parking.com`). doibung.com cert: Let's Encrypt YE2, notAfter 2026-12-10. doibung.com 200, www 301 → https://doibung.com/.
+- `/srv` is empty. `game.doibung.com` is NXDOMAIN on 1.1.1.1. doibung.com DNS is at Hostinger (`*.dns-parking.com`). doibung.com cert: Let's Encrypt YE2, notAfter 2026-12-10. doibung.com 200, www 301 → https://doibung.com/.
 
 `deploy/infra/apply-caddy-sites.sh` (sent as `ssh doibung 'bash -s' < file` from Node; each step prints a marker Node requires):
 1. **Preflight:** container exists and is running. Record `docker compose -f docker-compose.withdb.yml config --hash app,postgres` (must match running labels). Record the doibung.com cert SHA-256 fingerprint via `openssl s_client`. `docker compose -f docker-compose.withdb.yml config --quiet` rc 0 (checks `.env` vars).
@@ -581,7 +581,7 @@ Facts measured read-only on 2026-09-14:
 8. **Verify:** new container Mounts include `/srv/sites → /etc/caddy/sites` RW=false. `docker exec … grep -xF 'import /etc/caddy/sites/*.caddy' /etc/caddy/Caddyfile`. Admin config (127.0.0.1) contains `doibung.com`. app/postgres container IDs unchanged. doibung.com 200 and www 301 from local Node. **Cert fingerprint identical** to step 1 (cert reused from `caddy_data`). Poller summary: max consecutive non-200 duration (expected a few seconds).
 9. **Rollback** (`rollback-caddy-sites.sh <BACKUP_DIR>`, dir name validated `^/root/breaktime-infra-backup/[0-9TZ-]+$`): restore 3 files, same `up -d --no-deps caddy`, same verification.
 
-First site activation (inside `npm run deploy`, only when `/srv/sites/breaktime.caddy` differs or is missing): require DNS `breaktime.doibung.com` A = 187.53.128.67 on both 1.1.1.1 and 8.8.8.8 (Node `dns.Resolver`). This avoids Let's Encrypt "5 authorization failures per identifier per account per hour" (letsencrypt.org rate limits). Then validate the site file alone: `docker exec -i doibung-caddy-1 caddy validate --config - --adapter caddyfile` with stdin = site file. Back up the old site file, move the new one in, run `docker exec doibung-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile --address 127.0.0.1:2019`. If reload rc≠0, restore the old file and reload again. Then poll `https://breaktime.doibung.com/version.json` up to 120 s while ACME completes.
+First site activation (inside `npm run deploy`, only when `/srv/sites/breaktime.caddy` differs or is missing): require DNS `game.doibung.com` A = 187.53.128.67 on both 1.1.1.1 and 8.8.8.8 (Node `dns.Resolver`). This avoids Let's Encrypt "5 authorization failures per identifier per account per hour" (letsencrypt.org rate limits). Then validate the site file alone: `docker exec -i doibung-caddy-1 caddy validate --config - --adapter caddyfile` with stdin = site file. Back up the old site file, move the new one in, run `docker exec doibung-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile --address 127.0.0.1:2019`. If reload rc≠0, restore the old file and reload again. Then poll `https://game.doibung.com/version.json` up to 120 s while ACME completes.
 
 **Drift check** (`deploy/remote/state-check.sh`, read-only, runs at the start of every deploy). Output is `KEY=VALUE`, and the last line must be `END=1`:
 ```bash
@@ -593,7 +593,7 @@ echo "HOST_MOUNT_NODB=$(c grep -cF '/srv/sites:/etc/caddy/sites:ro' /opt/doibung
 echo "HOST_MOUNT_WITHDB=$(c grep -cF '/srv/sites:/etc/caddy/sites:ro' /opt/doibung/docker-compose.withdb.yml)"
 echo "LIVE_MOUNT=$(c docker inspect -f '{{range .Mounts}}{{.Source}}>{{.Destination}}>{{.RW}} {{end}}' doibung-caddy-1 | grep -c '/srv/sites>/etc/caddy/sites>false')"
 echo "LIVE_IMPORT=$(c docker exec doibung-caddy-1 grep -cxF 'import /etc/caddy/sites/*.caddy' /etc/caddy/Caddyfile)"
-echo "LIVE_SITE=$(c docker exec doibung-caddy-1 wget -qO- http://127.0.0.1:2019/config/ | grep -c 'breaktime.doibung.com')"
+echo "LIVE_SITE=$(c docker exec doibung-caddy-1 wget -qO- http://127.0.0.1:2019/config/ | grep -c 'game.doibung.com')"
 echo "SITE_FILE_SHA=$(c sha256sum /srv/sites/breaktime.caddy | cut -c1-64)"
 echo "END=1"
 ```
@@ -671,7 +671,7 @@ Verified structure (GLB JSON): `character-x` → `root` → {`leg-left` (t 0.2,1
 - **`docker compose -f docker-compose.nodb.yml up -d` (without `--no-deps`) on the server:** recreates the app without `DATABASE_URL` (hash mismatch measured).
 - **Absolute symlink for `current`** (`/srv/sites/...`): that path doesn't exist inside the container. Use a relative `releases/<sha>`.
 - **`wget http://localhost:2019` inside the caddy container:** resolves to ::1 and is refused. Use `127.0.0.1`.
-- **Adding `breaktime.doibung.com` to Caddy before DNS exists:** ACME failures, Let's Encrypt limit 5 failed authorizations/hour per identifier.
+- **Adding `game.doibung.com` to Caddy before DNS exists:** ACME failures, Let's Encrypt limit 5 failed authorizations/hour per identifier.
 - **Relying on Caddy `encode` for big JS/WASM:** on-the-fly compression per request on 1 vCPU shared with doibung. Ship `.br`/`.gz` sidecars.
 - **Per-character GLB copies:** 18× duplicated animations. Ship one GLB + textures.
 - **OGG SFX on iOS:** fails on iOS < 18.4. Use MP3.
@@ -868,7 +868,7 @@ export default defineConfig({
    - What's unclear: iOS version (affects OGG, WakeLock, SIMD ≥ 16.4) and Android GPU.
    - Recommendation: a first human task records model/OS/browser/Low Power Mode/refresh rate into `.planning/phases/01-.../device-log.md` before any measurement.
 4. **DNS timing (D-01)**
-   - What we know: `breaktime.doibung.com` is NXDOMAIN today; DNS is Hostinger.
+   - What we know: `game.doibung.com` is NXDOMAIN today; DNS is Hostinger.
    - What's unclear: when the operator adds it.
    - Recommendation: `infra:apply` does not need DNS; first site activation blocks on the DNS check.
 5. **ffmpeg availability**
@@ -897,11 +897,11 @@ export default defineConfig({
 | VPS: Docker/Compose | caddy recreate | ✓ | 29.8.0 / v5.5.1 | — |
 | VPS: Caddy | serving | ✓ | v2.11.4 in `doibung-caddy-1` | — |
 | VPS: openssl, flock, bash 5.2, coreutils 9.5, rsync 3.4.4 | scripts | ✓ | — | — |
-| DNS `breaktime.doibung.com` | HTTPS | ✗ (NXDOMAIN) | — | operator adds A record; no fallback |
+| DNS `game.doibung.com` | HTTPS | ✗ (NXDOMAIN) | — | operator adds A record; no fallback |
 | Real Android mid-range + iPhone | TECH-03/04 gate | ✓ (per D-06), models unrecorded | — | none (blocking gate) |
 
 **Missing dependencies with no fallback:**
-- DNS A record `breaktime → 187.53.128.67` (blocks PLAT-02 and the first site activation, not `infra:apply`).
+- DNS A record `game → 187.53.128.67` (blocks PLAT-02 and the first site activation, not `infra:apply`).
 - Real-device measurements (block phase completion by design).
 
 **Missing dependencies with fallback:**
@@ -922,7 +922,7 @@ export default defineConfig({
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
 | TECH-01 | Loads in Chromium desktop + mobile emulation; unsupported screen without WebGL | e2e | `npx playwright test tests/e2e/smoke.spec.ts tests/e2e/unsupported.spec.ts` | ❌ Wave 0 |
-| TECH-01 | Real browsers: Chrome/Edge/Firefox desktop, Chrome Android, Safari iOS | manual | Operator checklist at `https://breaktime.doibung.com/b/<sha>/` | ❌ (checklist in plan) |
+| TECH-01 | Real browsers: Chrome/Edge/Firefox desktop, Chrome Android, Safari iOS | manual | Operator checklist at `https://game.doibung.com/b/<sha>/` | ❌ (checklist in plan) |
 | TECH-02 | First-load raw ≤ 20 MB (fail), ≤ 8 MB (warn + reason); no `.map`/`.env`; ≤ 1,500 files | e2e + script | `npx playwright test tests/e2e/first-load.spec.ts && node scripts/size-report.mjs --gate` | ❌ Wave 0 |
 | TECH-03 | Bench completes and reports stats (headless) | e2e | `npx playwright test tests/e2e/smoke.spec.ts -g bench` | ❌ Wave 0 |
 | TECH-03 | ≥ 30 fps avg (and 1% low recorded) on Android; 60 on desktop | manual (real device) | `?bench=1` screenshot on both phones + desktop | manual-only (no GPU headless, D-24) |
@@ -938,7 +938,7 @@ export default defineConfig({
 | CTRL-05 | Rotate keys/buttons change camera yaw by exactly 90° | unit + e2e | `npx vitest run tests/unit/cameraRig.test.ts` + e2e yaw assert | ❌ Wave 0 |
 | PLAT-01 | One command deploys; doibung.com only 200 during/after | deploy smoke (script) | `npm run deploy` (poller report must show non200=0; exits non-zero otherwise) | ❌ Wave 0 |
 | PLAT-01 | Drift detection fails loudly | unit + manual drill | `npx vitest run tests/unit/parseStateCheck.test.ts`; one manual drill running state-check against a fixture output with `HOST_IMPORT=0` | ❌ Wave 0 |
-| PLAT-02 | HTTPS valid on `breaktime.doibung.com`; `/b/<sha>/` served; immutable headers | deploy smoke | inside `npm run deploy` (Node `fetch` with TLS verification; header asserts) | ❌ Wave 0 |
+| PLAT-02 | HTTPS valid on `game.doibung.com`; `/b/<sha>/` served; immutable headers | deploy smoke | inside `npm run deploy` (Node `fetch` with TLS verification; header asserts) | ❌ Wave 0 |
 
 ### Sampling Rate
 - **Per task commit:** `npx tsc --noEmit && npx vitest run` (< 10 s).

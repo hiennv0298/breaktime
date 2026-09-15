@@ -126,24 +126,24 @@ describe('runSmoke with a fake fetch', () => {
 
   function fakeServer(overrides = {}) {
     const routes = {
-      'https://breaktime.doibung.com/version.json': () => ({ status: 200, body: JSON.stringify({ sha: SHA }) }),
-      'https://breaktime.doibung.com/': () => ({
+      'https://game.doibung.com/version.json': () => ({ status: 200, body: JSON.stringify({ sha: SHA }) }),
+      'https://game.doibung.com/': () => ({
         status: 200,
         headers: { 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' },
         body: `<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval'"><script src="./${ENTRY}"></script>`,
       }),
-      [`https://breaktime.doibung.com/b/${SHA}/`]: () => ({ status: 200, body: '<html></html>' }),
-      [`https://breaktime.doibung.com/b/${SHA}/version.json`]: () => ({
+      [`https://game.doibung.com/b/${SHA}/`]: () => ({ status: 200, body: '<html></html>' }),
+      [`https://game.doibung.com/b/${SHA}/version.json`]: () => ({
         status: 200,
         body: JSON.stringify({ sha: SHA }),
       }),
-      [`https://breaktime.doibung.com/b/${SHA}`]: () => ({ status: 308, headers: { location: `/b/${SHA}/` } }),
-      [`https://breaktime.doibung.com/${ENTRY}`]: () => ({
+      [`https://game.doibung.com/b/${SHA}`]: () => ({ status: 308, headers: { location: `/b/${SHA}/` } }),
+      [`https://game.doibung.com/${ENTRY}`]: () => ({
         status: 200,
         headers: { 'cache-control': 'public, max-age=31536000, immutable' },
         body: 'x',
       }),
-      'https://breaktime.doibung.com/b/zzz/': () => ({ status: 404, body: '' }),
+      'https://game.doibung.com/b/zzz/': () => ({ status: 404, body: '' }),
       'https://doibung.com/': () => ({ status: 200, body: '<html>doibung</html>' }),
       'https://www.doibung.com/': () => ({ status: 301, headers: { location: 'https://doibung.com/' } }),
       ...overrides,
@@ -181,7 +181,7 @@ describe('runSmoke with a fake fetch', () => {
 
   it('fails version.json after the retry window when the sha never matches', async () => {
     const { fetchImpl } = fakeServer({
-      'https://breaktime.doibung.com/version.json': () => ({ status: 200, body: '{"sha":"ffffffffffff"}' }),
+      'https://game.doibung.com/version.json': () => ({ status: 200, body: '{"sha":"ffffffffffff"}' }),
     });
     let slept = 0;
     let now = 0;
@@ -205,7 +205,7 @@ describe('runSmoke with a fake fetch', () => {
     let now = 0;
     let n = 0;
     const { fetchImpl } = fakeServer({
-      'https://breaktime.doibung.com/version.json': () => {
+      'https://game.doibung.com/version.json': () => {
         n += 1;
         return now >= 60_000 ? { status: 200, body: JSON.stringify({ sha: SHA }) } : new Error('cert not ready');
       },
@@ -227,7 +227,7 @@ describe('runSmoke with a fake fetch', () => {
     const { fetchImpl } = fakeServer({
       'https://doibung.com/': () => ({ status: 502, body: '' }),
       'https://www.doibung.com/': () => ({ status: 200, body: 'www' }),
-      'https://breaktime.doibung.com/b/zzz/': () => ({ status: 200, body: '<html>' }),
+      'https://game.doibung.com/b/zzz/': () => ({ status: 200, body: '<html>' }),
     });
     const results = await runSmoke({ sha: SHA, firstActivation: false, fetchImpl, sleep: async () => {} });
     const failedNames = results.filter((r) => !r.ok).map((r) => r.name);
@@ -239,7 +239,7 @@ describe('runSmoke with a fake fetch', () => {
 
   it('fails the asset check when index.html references no entry script', async () => {
     const { fetchImpl } = fakeServer({
-      'https://breaktime.doibung.com/': () => ({
+      'https://game.doibung.com/': () => ({
         status: 200,
         headers: { 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' },
         body: "<meta content=\"'wasm-unsafe-eval'\">",

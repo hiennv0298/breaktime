@@ -1,6 +1,6 @@
 # deploy/caddy/breaktime.caddy -> server: /srv/sites/breaktime.caddy (container: /etc/caddy/sites/breaktime.caddy)
 # Public test build (D-05): no auth, no robots header. Latest build at /, per-commit builds at /b/<sha>/ (D-04).
-breaktime.doibung.com {
+game.doibung.com {
 	# Fallback only for files without sidecars; precompressed br/gzip sidecars win when present.
 	encode zstd gzip
 

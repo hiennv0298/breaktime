@@ -68,7 +68,7 @@ export function evaluateState(values, { requireSite } = { requireSite: false }) 
     const n = count(v.LIVE_SITE);
     if (!(n >= 1)) {
       failures.push(
-        `LIVE_SITE=${v.LIVE_SITE ?? '(missing)'}: config Caddy đang chạy không có breaktime.doibung.com` +
+        `LIVE_SITE=${v.LIVE_SITE ?? '(missing)'}: config Caddy đang chạy không có game.doibung.com` +
           (siteFile ? ' dù /srv/sites/breaktime.caddy tồn tại' : ''),
       );
     }

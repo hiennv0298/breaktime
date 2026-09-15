@@ -6,7 +6,7 @@
 
 ## Capability Proven End-to-End
 
-A phone or desktop browser opens `https://breaktime.doibung.com` (or `/b/<sha>/`), sees a real loading bar and a "Chơi" button, then walks a Rapier-physics player through a three.js room with WASD (desktop) and pushes a physics box with E, from a build that `npm run deploy` gated, uploaded and activated while `doibung.com` kept answering 200.
+A phone or desktop browser opens `https://game.doibung.com` (or `/b/<sha>/`), sees a real loading bar and a "Chơi" button, then walks a Rapier-physics player through a three.js room with WASD (desktop) and pushes a physics box with E, from a build that `npm run deploy` gated, uploaded and activated while `doibung.com` kept answering 200.
 
 There is no database in this project. The "real read/write" of the skeleton is the physics world: input writes the kinematic player body, Rapier steps, and the renderer reads body transforms back every frame.
 
@@ -34,7 +34,7 @@ There is no database in this project. The "real read/write" of the skeleton is t
 - [ ] Routing — single page served at `/` and `/b/<sha>/` (relative `base: './'`), `/b/<sha>` 308 redirect, bad sha 404 — 01-01, 01-06
 - [ ] Data read/write — N/A (no database); physics world is written by input and read by the renderer every frame — 01-02, 01-03
 - [ ] UI — "Chơi" gate, WASD movement, E interaction on a physics box — 01-02, 01-03
-- [ ] Deployment — live on `https://breaktime.doibung.com` via `npm run deploy`, doibung.com 200 throughout — 01-04, 01-06, 01-07, 01-12
+- [ ] Deployment — live on `https://game.doibung.com` via `npm run deploy`, doibung.com 200 throughout — 01-04, 01-06, 01-07, 01-12
 
 ## Out of Scope (Deferred to Later Slices)
 

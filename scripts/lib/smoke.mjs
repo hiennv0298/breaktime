@@ -2,7 +2,7 @@
 // Default TLS verification only: a MITM or wrong certificate must fail the smoke (T-01-07-04).
 import { validateSha } from './releases.mjs';
 
-const BREAKTIME = 'https://breaktime.doibung.com';
+const BREAKTIME = 'https://game.doibung.com';
 const DOIBUNG = 'https://doibung.com/';
 const WWW = 'https://www.doibung.com/';
 const REQUEST_TIMEOUT_MS = 15000;
