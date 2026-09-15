@@ -44,12 +44,15 @@ async function boot(): Promise<void> {
 
   await waitForPlay({ autoplay: new URLSearchParams(location.search).has('autoplay') });
 
-  const [{ createRenderer }, { createPhysics }, { createGame }, { startLoop }] = await Promise.all([
-    import('./render/renderer'),
-    import('./physics/rapier'),
-    import('./game/game'),
-    import('./game/loop'),
-  ]);
+  const [{ createRenderer }, { createPhysics }, { createGame }, { startLoop }, { attachCameraKeys }, { attachCameraButtons }] =
+    await Promise.all([
+      import('./render/renderer'),
+      import('./physics/rapier'),
+      import('./game/game'),
+      import('./game/loop'),
+      import('./input/cameraKeys'),
+      import('./input/cameraButtons'),
+    ]);
 
   let renderCtx: RenderCtx;
   try {
@@ -60,6 +63,10 @@ async function boot(): Promise<void> {
     setBootState('unsupported');
     return;
   }
+
+  // Camera rotation (D-19, CTRL-05): Z / C / arrows on desktop, ⟲ ⟳ on touch. They live for the page lifetime.
+  attachCameraKeys();
+  attachCameraButtons(document.getElementById('app') ?? document.body);
 
   const physics = createPhysics(rapier.R);
   const ctx = { ...renderCtx, physics, loaded };
