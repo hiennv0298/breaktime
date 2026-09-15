@@ -72,6 +72,7 @@ Progress: [█████████░] 89%
 | Phase 01 P17 | 22min | 2 tasks | 11 files |
 | Phase 01 P18 | 65min | 3 tasks | 18 files |
 | Phase 02 P01 | 6min | 2 tasks | 5 files |
+| Phase 02 P02 | 9min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-18: measurement build 1ecc53ce473e live (DEPLOY_OK, poller 38/38 200, SITE_FILE_UNCHANGED) on the third attempt after an SSH reset at upload and a swing mashing flake (300.1 ms vs < 300); operator approved 60 -> 40 ms waits, SWING_COOLDOWN_MS and assertions unchanged
 - [Phase 02]: 02-01 (pure logic, ran before the Phase 1 device gate per D-12): anger per slap hot 100 / normal 60 / calm 42 + seeded integer jitter 0..5 (clamped; non-finite draw = 0) gives exactly 1 / 2 / 3 slaps for seeds 0..999; decay 8/s only after 6 s standing, clock paused by holdDecay (caller passes physics !== 'animated'); ?fight=always literal forces hot
 - [Phase 02]: 02-01: arbitrate ranks anger desc (any non-finite anger = 0), dist asc (non-finite last), id asc; pursue holders that still want it keep it (over-full held sets trimmed by rank); strike survives only if the holder still wants strike and holds pursue in the new set, else goes to the best-ranked new pursue holder that wants strike; first duplicate id wins
+- [Phase 02]: 02-02 (pure logic, before the Phase 1 device gate per D-12): strikeHits = edge <= 1.2 m and within a 100 deg cone of the NPC walker facing (sin yaw, cos yaw), EPS 1e-9, non-finite -> false; walking away during the 0.6 s wind-up ends at edge 2.92 m (miss)
+- [Phase 02]: 02-02: player knockdown = playerStun over getUpFsm with opts.timeoutSec 2.5 (NPC default 4.0 unchanged) plus a hard cap forcing recover at lockSec >= 2.55, so the input lock is <= 3.0 s; invulnerable 1.5 s; hits accepted only in 'free' (rejected = unchanged copy); non-finite/<= 0 dt = unchanged copy; no HP field
+- [Phase 02]: 02-02: collisionGroups.ts reproduces ragdoll.ts ragdollGroups (NPC index 0..14 -> bits 1..15) and gives the player ragdoll bit 0 (0x0001fffe); ragdoll.ts untouched until 02-11; freeSpotCandidates = clamped landing point + 5 rings x 8 dirs from +X (41 points, last ring exactly 2.0 m), either coordinate non-finite -> origin
 
 ### Roadmap Evolution
 
