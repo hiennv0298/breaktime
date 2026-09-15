@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-16-PLAN.md
-last_updated: "2026-09-15T10:40:40.568Z"
-last_activity: "2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard kit in 5 InstancedMesh, 60 pooled shard bodies, tier debris cap 20/40/60, break/drop SFX, ?scenario=smash breaks 11/11 and moves 33/33; forces per kg; peak draw calls 105 @3 NPCs / 134-135 @8, HUD bodies 116 / 151, live shards 60 (20 at q=low); vitest 300/300, playwright 55 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06 left open)"
+stopped_at: Completed 01-22-PLAN.md
+last_updated: "2026-09-15T11:55:54.187Z"
+last_activity: "2026-09-15 -- Completed 01-22 (key map D-27: arrows/WASD move, Space/E action, Esc or lone Ctrl pause, Z/C-only rotate, modifier + typing guards; pure src/logic/keyMap.ts 90 unit cases; vitest 390/390, playwright 57 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-04/TECH-06 left open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 16
-  percent: 76
+  completed_plans: 17
+  percent: 63
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 17 of 27 (01-01..01-16 complete; next 01-22/01-23, then 01-24..01-27, then 01-17)
+Plan: 18 of 27 (01-01..01-16 and 01-22 complete; next 01-23, then 01-24..01-27, then 01-17)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-16 (breakables: shared 5-shape shard kit in 5 InstancedMesh, 60 pooled shard bodies, tier debris cap 20/40/60, break/drop SFX, ?scenario=smash breaks 11/11 and moves 33/33; forces per kg; peak draw calls 105 @3 NPCs / 134-135 @8, HUD bodies 116 / 151, live shards 60 (20 at q=low); vitest 300/300, playwright 55 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-06 left open)
+Last activity: 2026-09-15 -- Completed 01-22 (key map D-27: arrows/WASD move, Space/E action, Esc or lone Ctrl pause, Z/C-only rotate, modifier + typing guards; pure src/logic/keyMap.ts 90 unit cases; vitest 390/390, playwright 57 passed 0 failed, SIZE_GATE_OK; CTRL-01/CTRL-04/TECH-06 left open)
 
-Progress: [████████░░] 76%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [████████░░] 76%
 | Phase 01 P15 | 32min | 2 tasks | 17 files |
 | Phase 01 P12 | 34min | 3 tasks | 5 files |
 | Phase 01 P16 | 36min | 2 tasks | 10 files |
+| Phase 01 P22 | 12min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-12: only a site-file change reloads Caddy; the first-time reload coincided with one ~1 s fetch failed on doibung.com (step 16 fail), the operator-approved re-run skipped the reload (SITE_FILE_UNCHANGED) and passed DEPLOY_OK 3d3cb78f560f with non200=0
 - [Phase 01]: 01-16: break/drop forces in N per kg of the prop (density-1 props: mug off desk 0.50 N but ~255 N/kg); BREAK_FORCE mug 96 / plantSmall 112 / pottedPlant 144 / monitor 160 N/kg, event threshold 8 N/kg x mass, drop SFX min 60 N/kg in play
 - [Phase 01]: 01-16: ?scenario=smash arms breakables at 0.5x threshold (unarmed 10/11 at 8 NPCs, armed 11/11); broken props are disabled not removed; shard tint sampled from palette texel
+- [Phase 01]: 01-22: key bindings are pure data in src/logic/keyMap.ts (classifyKey / axisFromHeld / createCtrlTap / isTypingTarget / KEY_HINTS); keyboard.ts, cameraKeys.ts and debugHud.ts all read it
+- [Phase 01]: 01-22: any key with Ctrl/Meta/Alt held is not a game key and is never default-prevented; a Control keydown itself stays 'ctrl'; lone Ctrl tap is disarmed by any other keydown, pointerdown (capture) or wheel, reset on blur/hidden
+- [Phase 01]: 01-22: typing targets (text-like INPUT, TEXTAREA, SELECT, contenteditable) are ignored by movement/action/rotate/HUD/pause; only Escape passes in keyboard.ts; keyup always releases held codes
 
 ### Pending Todos
 
@@ -145,6 +149,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T10:40:40.556Z
-Stopped at: Completed 01-16-PLAN.md
+Last session: 2026-09-15T11:57:00.000Z
+Stopped at: Completed 01-22-PLAN.md
 Resume file: None
