@@ -360,3 +360,116 @@ VERIFY_RC=0
 ```
 
 The verify command passes, but a plan acceptance criterion is still unmet: there is no DEPLOY_OK, and the deploy poller recorded 1 non-200 (not zero). 01-12 is NOT complete. It waits for an operator decision.
+
+(Superseded: the operator chose option 1, re-run `npm run deploy` once. See "## Second deploy" below.)
+
+## Second deploy
+
+Operator decision, typed in the orchestrator session: option 1, re-run `npm run deploy` exactly once. No infra:apply, rollback, docker or caddy command was run by hand.
+
+Before (2026-09-15T09:55:05.073Z, Node with default TLS): `DOIBUNG_STATUS=200 CURRENT_SHA=1b318ec49460 CERT_FP_PRE=B3:78:E0:E4:99:D1:C8:B1:8E:18:F6:94:D9:6E:12:A6:86:AE:4C:73:46:32:F9:B2:88:8A:99:B5:23:4C:55:91`. The tree was clean (`git status --porcelain` printed 0 lines). HEAD was 3d3cb78f560f.
+
+**Result: `DEPLOY_OK 3d3cb78f560f https://game.doibung.com/ https://game.doibung.com/b/3d3cb78f560f/`, exit 0 (DEPLOY_RC=0), 09:55:17Z – 09:57:48Z.**
+
+- sha: 3d3cb78f560f. It is the evidence commit on top of 1b318ec. Game code is identical: same DIST_RAW=7258044 and FIRST_LOAD_TOTAL_RAW=3360593.
+- Gates: TYPECHECK_OK files=735 · BUILD_OK · SIZE_GATE_OK totalRaw=7258044 files=52 · Vitest 26 files / 280 passed · Playwright 52 passed (2.0m) · FIRST_LOAD_TOTAL_RAW=3360593 FIRST_LOAD_LEVEL=ok
+- DNS preflight: game.doibung.com → 187.53.128.67 on 8.8.8.8 and 1.1.1.1
+- Upload 86/86 · `__ACTIVATED__ 3d3cb78f560f releases=2` · CLEANUP_NOTHING
+- **Step 13 skipped the Caddy reload:** `SITE_FILE_UNCHANGED sha256=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8`. No `__SITE_RELOADED__`, no `caddy reload`.
+- Smoke 9/9 OK (version.json sha on attempt 1 with the 20 s window, so this was not a first activation)
+- **Poller: `POLLER https://doibung.com/ count=5 non200=0 maxConsecutiveNon200Ms=0`** (SUMMARY `poller=5/5 200`). The window is short (about 5 s, from upload to smoke) because there was no site reload and no ACME wait. It is zero non-200 over 5 samples, not a long soak.
+- Step 17 final state check: STATE_CHECK_OK, LIVE_SITE=1
+
+Task 3 verify command (exact plan `<automated>` chain, run from a .sh file, 2026-09-15T09:58:19Z):
+
+```
+HOST_IMPORT=1
+HOST_MOUNT_NODB=1
+HOST_MOUNT_WITHDB=1
+LIVE_MOUNT=1
+LIVE_IMPORT=1
+LIVE_SITE=1
+SITE_FILE_SHA=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8
+CADDY_RUNNING=true
+STATE_CHECK_PARSED
+INFRA_CHECK_OK
+LIVE_OK 3d3cb78f560f 200 200 301
+TOKEN_FROM_OPERATOR APPROVE-CADDY-4ebe4eba APPROVE-CADDY-4ebe4eba
+VERIFY_RC=0
+```
+
+Independent live checks (Node, default TLS, 2026-09-15T09:58:22.886Z):
+
+```
+VERSION_JSON={"sha":"3d3cb78f560f","time":"2026-09-15T09:55:24.581Z"}
+GAME_B_SHA_STATUS=200 OLD_B_1b318ec49460_STATUS=200 DOIBUNG_STATUS=200 WWW_STATUS=301 WWW_LOCATION=https://doibung.com/
+DOIBUNG_CERT fp=B3:78:E0:E4:99:D1:C8:B1:8E:18:F6:94:D9:6E:12:A6:86:AE:4C:73:46:32:F9:B2:88:8A:99:B5:23:4C:55:91 authorized=true FP_EQUALS_BEFORE=true
+GAME_CERT cn=game.doibung.com valid_to=Dec 14 08:50:33 2026 GMT authorized=true
+INDEPENDENT_OK
+INDEPENDENT_RC=0
+```
+
+- game.doibung.com/version.json sha == deployed sha 3d3cb78f560f
+- /b/3d3cb78f560f/ 200. The previous release is also still reachable: /b/1b318ec49460/ 200.
+- doibung.com 200 · www 301 → https://doibung.com/
+- The doibung.com certificate fingerprint equals CERT_FP_BEFORE from the preflight
+
+Rollback note update: two releases now exist (1b318ec49460, 3d3cb78f560f). A release rollback means redeploying 1b318ec. The infra rollback form in "## Rollback" is unchanged.
+
+Last 40 lines of the second deploy output (full log 76 lines):
+
+```
+== STEP 8/17 playwright + first-load
+52 passed (2.0m)
+FIRST_LOAD_TOTAL_RAW=3360593 FIRST_LOAD_LEVEL=ok
+== STEP 9/17 DNS preflight
+DNS game.doibung.com {"8.8.8.8":["187.53.128.67"],"1.1.1.1":["187.53.128.67"]}
+== STEP 10/17 doibung.com poller
+POLLER_STARTED https://doibung.com/ every 1000 ms
+== STEP 11/17 upload
+UPLOAD tarRc=0 sshRc=0 uploaded=86 local=86
+__UPLOADED__ 86
+== STEP 12/17 activate
+__ACTIVATED__ 3d3cb78f560f releases=2
+== STEP 13/17 site file
+SITE_FILE_UNCHANGED sha256=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8
+== STEP 14/17 cleanup keep 10
+CLEANUP_NOTHING
+== STEP 15/17 smoke
+SMOKE OK   breaktime /version.json sha — status 200 (attempts=1, window=20s)
+SMOKE OK   breaktime / — status 200
+SMOKE OK   breaktime /b/3d3cb78f560f/ — status 200
+SMOKE OK   breaktime /b/3d3cb78f560f/version.json sha — status 200
+SMOKE OK   breaktime /b/3d3cb78f560f (no slash) — status 308
+SMOKE OK   breaktime asset assets/index-BEZs522n.js — status 200
+SMOKE OK   breaktime /b/zzz/ (bad sha) — status 404
+SMOKE OK   https://doibung.com/ — status 200
+SMOKE OK   https://www.doibung.com/ — status 301
+== STEP 16/17 poller verdict
+POLLER https://doibung.com/ count=5 non200=0 maxConsecutiveNon200Ms=0
+== STEP 17/17 final state check
+HOST_IMPORT=1
+HOST_MOUNT_NODB=1
+HOST_MOUNT_WITHDB=1
+LIVE_MOUNT=1
+LIVE_IMPORT=1
+LIVE_SITE=1
+SITE_FILE_SHA=7adb9f7fcde9720bc90a408c22483d92133eb3396c3663ba4c241fb7bd17bef8
+CADDY_RUNNING=true
+STATE_CHECK_OK
+SUMMARY DIST_FILES=52 DIST_RAW=7258044 DIST_GZIP=2732782 DIST_BROTLI=2125389 FIRST_LOAD_TOTAL_RAW=3360593 FIRST_LOAD_LEVEL=ok poller=5/5 200
+DEPLOY_OK 3d3cb78f560f https://game.doibung.com/ https://game.doibung.com/b/3d3cb78f560f/
+DEPLOY_RC=0
+DEPLOY_END=2026-09-15T09:57:48Z
+```
+
+Lines 1–36 (steps 1–7) are the same shape as the first deploy: STEP 3 had LIVE_SITE=1 and SITE_FILE_SHA=7adb9f7f…, then TYPECHECK_OK files=735, BUILD_OK version.json sha=3d3cb78f560f, PRECOMPRESS_DONE files=17, SIZE_GATE_OK, and Vitest 280 passed.
+
+## Deviation
+
+**Must-have "the first `npm run deploy` exits 0 with DEPLOY_OK … doibung.com answered only 200 during the deploy" was met on the second run, not the first.**
+
+- First deploy (1b318ec49460): every gate, upload, activation and 9/9 smoke passed. It then failed at step 16/17 with one poller sample `fetch failed` at 2026-09-15T09:49:00.038Z (count=22, non200=1, maxConsecutiveNon200Ms=1013). That is a single connection error of about 1 s on doibung.com, not a non-200 HTTP status.
+- It happened during the first-time site activation. Step 13 wrote `/srv/sites/breaktime.caddy` and ran a graceful `caddy reload` that added the new TLS host game.doibung.com, and ACME then issued its certificate (valid_to Dec 14 08:50:33 2026). The reload is the most likely cause. It is not proven: deploy.mjs has no per-step timestamps and no server logs were read.
+- Second deploy (3d3cb78f560f, operator option 1): step 13 printed SITE_FILE_UNCHANGED and skipped the reload. The poller saw count=5 non200=0, and deploy printed DEPLOY_OK, exit 0. This is consistent with the hypothesis: the only run with a Caddy reload is the only run with a blip. A routine deploy (site file unchanged) does not touch Caddy.
+- Residual risk: any future change to `deploy/caddy/breaktime.caddy` triggers a reload again and may cause a similar blip of about 1 s on doibung.com. The step-16 gate will fail that deploy loudly, as it did here.
