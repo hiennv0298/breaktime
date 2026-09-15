@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-15-PLAN.md
-last_updated: "2026-09-15T09:22:46.071Z"
-last_activity: "2026-09-15 -- Completed 01-15 (slap E/click/context -> 60 ms hit-stop, shake 0.12 m/180 ms, seeded slap-* SFX, pooled 6-body Rapier ragdoll with 5 spherical joints flies ~8.8 m, settles and blends upright in 0.45 s, walks on from nearest route point; kick deferred until Rapier computes the re-enabled torso mass; draw calls 104/134 with 3/8 NPCs unchanged during ragdoll, HUD bodies 56/91 incl. 6 pooled per NPC; Vitest 280/280, Playwright 52 passed 0 failed, size gate OK 7.26 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); CTRL-01/CTRL-02/TECH-06 stay open)"
+stopped_at: Completed 01-12-PLAN.md
+last_updated: "2026-09-15T10:00:49.124Z"
+last_activity: "2026-09-15 -- Completed 01-12 (go live: game.doibung.com over Let's Encrypt HTTPS; infra:apply with operator token APPROVE-CADDY-4ebe4eba, backup /root/breaktime-infra-backup/20260915T094249Z, doibung cert FP unchanged; first deploy 1b318ec49460 failed step 16 on one ~1 s fetch failed during first-time caddy site reload; operator-approved single re-run DEPLOY_OK 3d3cb78f560f, SITE_FILE_UNCHANGED, poller non200=0, smoke 9/9, LIVE_OK; PLAT-02 complete, PLAT-01/TECH-01 left for verifier; real-phone check still open)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 14
-  percent: 67
+  completed_plans: 15
+  percent: 71
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 16 of 21 (01-12 go-live in progress: infra applied, first deploy failed at step 16 poller verdict, site live, awaiting operator decision)
-Status: Blocked on operator decision (01-12 Task 3)
-Last activity: 2026-09-15 -- Completed 01-15 (slap E/click/context -> 60 ms hit-stop, shake 0.12 m/180 ms, seeded slap-* SFX, pooled 6-body Rapier ragdoll with 5 spherical joints flies ~8.8 m, settles and blends upright in 0.45 s, walks on from nearest route point; kick deferred until Rapier computes the re-enabled torso mass; draw calls 104/134 with 3/8 NPCs unchanged during ragdoll, HUD bodies 56/91 incl. 6 pooled per NPC; Vitest 280/280, Playwright 52 passed 0 failed, size gate OK 7.26 MB, first load 3.36 MB; 01-12 go-live still pending (deferred until DNS resolves); CTRL-01/CTRL-02/TECH-06 stay open)
+Plan: 16 of 21 (01-01..01-15 complete; next 01-16)
+Status: Ready to execute
+Last activity: 2026-09-15 -- Completed 01-12 (go live: game.doibung.com over Let's Encrypt HTTPS; infra:apply with operator token APPROVE-CADDY-4ebe4eba, backup /root/breaktime-infra-backup/20260915T094249Z, doibung cert FP unchanged; first deploy 1b318ec49460 failed step 16 on one ~1 s fetch failed during first-time caddy site reload; operator-approved single re-run DEPLOY_OK 3d3cb78f560f, SITE_FILE_UNCHANGED, poller non200=0, smoke 9/9, LIVE_OK; PLAT-02 complete, PLAT-01/TECH-01 left for verifier; real-phone check still open)
 
-Progress: [███████░░░] 67%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P13 | 15min | 2 tasks | 5 files |
 | Phase 01 P14 | 33min | 3 tasks | 10 files |
 | Phase 01 P15 | 32min | 2 tasks | 17 files |
+| Phase 01 P12 | 34min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,8 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-15: __bt.audio.requested lists requested SFX names (audio is locked under ?autoplay, so played stays empty)
 - [Phase 01]: 01-15: Hit-stop freezes sim steps and animation dt on performance.now(); camera shake runs through the freeze but waits while paused
 - [Phase 01]: 01-15: 6 pooled ragdoll bodies per NPC count in world.bodies.len() (HUD bodies 56 with 3 NPCs, 91 with 8); draw calls unchanged during ragdoll (104 / 134)
+- [Phase 01]: 01-12: go-live on game.doibung.com (internal name breaktime) ran after 01-13..15 by operator choice; infra applied only with the operator-typed token APPROVE-CADDY-4ebe4eba (two earlier non-matching replies refused), backup /root/breaktime-infra-backup/20260915T094249Z
+- [Phase 01]: 01-12: only a site-file change reloads Caddy; the first-time reload coincided with one ~1 s fetch failed on doibung.com (step 16 fail), the operator-approved re-run skipped the reload (SITE_FILE_UNCHANGED) and passed DEPLOY_OK 3d3cb78f560f with non200=0
 
 ### Pending Todos
 
@@ -127,7 +130,6 @@ None yet.
 ### Blockers/Concerns
 
 - [Phase 1] **Model máy đo chưa ghi**: operator có Android tầm trung + iPhone (01-CONTEXT D-06) — phải ghi model/OS/trình duyệt trước lần đo đầu
-- [Phase 1] **01-12 first deploy DEPLOY_FAIL step 16/17 (poller verdict)**: `npm run deploy` of 1b318ec49460 passed every gate and all 9 smoke checks, activated the release and loaded the site file, but the doibung.com poller saw 1 sample of 22 `fetch failed` at 2026-09-15T09:49:00Z (maxConsecutiveNon200Ms=1013). Step 17 did not run, so there is no DEPLOY_OK. The release stays current and is live (01-07: no auto-rollback); game.doibung.com, /b/1b318ec49460/, doibung.com 200 and www 301 were checked independently. Suspected but unproven cause: the first-time `caddy reload` that adds a new TLS host. Needs an operator decision before re-running `npm run deploy` (a re-run skips the reload because SITE_FILE_SHA already matches). Evidence: 01-GO-LIVE.md "## First deploy"
 - [Phase 1] Deploy whattoeat kế tiếp (`rsync --delete`) sẽ ghi đè dòng `import` trong Caddyfile trên server → `npm run deploy` của break-time phải tự phát hiện và báo
 - VPS chỉ **1 vCPU / 3,6 GB RAM** (đo 14/09/2026) và đang chạy cả Postgres của doibung. Static site thì không sao, nhưng **không build game trên VPS**: build ở máy local rồi đẩy `dist/` lên
 
@@ -135,10 +137,10 @@ None yet.
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Plan | 01-12 go-live (first deploy to game.doibung.com) | DNS done, infra:apply done with operator token APPROVE-CADDY-4ebe4eba (backup /root/breaktime-infra-backup/20260915T094249Z, CERT_FP unchanged); first deploy DEPLOY_FAIL at step 16 (1 poller fetch failed) — awaiting operator decision | 2026-09-15 |
+| - | None | - | - |
 
 ## Session Continuity
 
-Last session: 2026-09-15T09:22:46.045Z
-Stopped at: Completed 01-15-PLAN.md
+Last session: 2026-09-15T10:00:49.113Z
+Stopped at: Completed 01-12-PLAN.md
 Resume file: None

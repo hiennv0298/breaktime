@@ -87,7 +87,7 @@
 ### Phát hành & vận hành (PLAT)
 
 - [ ] **PLAT-01**: Mỗi lần deploy, bản chơi thử tự lên VPS qua một lệnh duy nhất, không làm gián đoạn doibung.com
-- [ ] **PLAT-02**: Bản chơi thử có HTTPS ở một (sub)domain riêng
+- [x] **PLAT-02**: Bản chơi thử có HTTPS ở một (sub)domain riêng
 - [ ] **PLAT-03**: Code gọi cổng game qua một lớp PlatformAdapter (web riêng / CrazyGames), đổi cổng không sửa gameplay
 - [ ] **PLAT-04**: Build đạt giới hạn CrazyGames (tổng ≤ 250 MB, ≤ 1.500 file, tải đầu ≤ 50 MB) và được nộp Basic Launch
 - [ ] **PLAT-05**: Có bảng tổng kết số đo sau Basic Launch: playtime trung bình, D1 retention, conversion, so với mốc 10 phút / 10–15% / 80%
@@ -140,7 +140,7 @@
 | CTRL-04 | Phase 1 | Complete |
 | CTRL-05 | Phase 1 | Complete |
 | PLAT-01 | Phase 1 | Pending |
-| PLAT-02 | Phase 1 | Pending |
+| PLAT-02 | Phase 1 | Complete |
 | DETECT-01 | Phase 2 | Pending |
 | DETECT-02 | Phase 2 | Pending |
 | DETECT-03 | Phase 2 | Pending |
