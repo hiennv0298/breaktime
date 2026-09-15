@@ -18,7 +18,9 @@ import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
-import { createPlayer } from './player';
+import { createNpc, type Npc } from './npc';
+import { createPlayer, PLAYER_TEXTURE } from './player';
+import { NPC_ROUTES } from './waypoints';
 
 export interface GameCtx extends RenderCtx {
   physics: Physics;
@@ -33,6 +35,22 @@ export interface Game {
   timeScale(nowMs: number): number;
 }
 
+/** Coworkers in normal play (D-11). */
+export const DEFAULT_NPCS = 3;
+/** Benchmark ceiling (D-11, Tier 1): ?npcs is clamped to it so a URL cannot spawn unbounded bodies (T-01-14-01). */
+export const MAX_NPCS = 8;
+/** Spawn offset per extra NPC sharing a route, so capsules never start inside each other. */
+const SHARED_ROUTE_OFFSET = 0.3;
+
+/** ?npcs=N as an integer clamped to [0, 8]; missing or unparsable gives the default 3. */
+export function npcCountFromQuery(search: string): number {
+  const raw = new URLSearchParams(search).get('npcs');
+  if (raw === null) return DEFAULT_NPCS;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n)) return DEFAULT_NPCS;
+  return Math.max(0, Math.min(8, n));
+}
+
 function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
   const v = ctx.loaded.get(id);
   if (!(v instanceof ArrayBuffer)) throw new Error(`load task ${id} did not produce an ArrayBuffer`);
@@ -41,6 +59,7 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
 
 /**
  * Office slice (plan 01-10): Kenney open-space office + pantry, physics props, blob shadows, follow camera.
+ * Characters (plan 01-14): the player and 3 coworkers (?npcs=0..8) are Blocky characters from one shared GLB.
  * The nearest prop in front of the player glows; E, the context button or a left-click on it pushes it (D-18, D-20).
  */
 export async function createGame(ctx: GameCtx): Promise<Game> {
@@ -65,6 +84,28 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
   const cameraView = createCameraView(ctx.camera);
 
+  // Coworkers on hand-placed routes (D-11). Texture letters follow the player's: b, c, d, …
+  const npcs: Npc[] = [];
+  const npcCount = npcCountFromQuery(location.search);
+  const firstNpcLetter = PLAYER_TEXTURE.charCodeAt(0) + 1;
+  for (let i = 0; i < npcCount; i++) {
+    const route = NPC_ROUTES[i % NPC_ROUTES.length];
+    const startIndex = i % route.length;
+    const shared = Math.floor(i / NPC_ROUTES.length);
+    const start = route[startIndex];
+    npcs.push(
+      createNpc(ctx, {
+        id: 'npc-' + i,
+        asset: characterAsset,
+        texture: String.fromCharCode(firstNpcLetter + i),
+        route,
+        startIndex,
+        spawn: { x: start.x + shared * SHARED_ROUTE_OFFSET, z: start.z },
+      }),
+    );
+  }
+  const npcTexture = new Map(npcs.map((n, i) => [n, String.fromCharCode(firstNpcLetter + i)]));
+
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
   const shadows = createBlobShadows(ctx.scene);
   const playerFoot = { x: 0, y: 0, z: 0 };
@@ -77,6 +118,16 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   }, CAPSULE_RADIUS * 1.5);
   for (const rec of props.list()) {
     shadows.addCaster(() => rec.object.position, rec.radius * 1.2);
+  }
+  for (const npc of npcs) {
+    const foot = { x: 0, y: 0, z: 0 };
+    shadows.addCaster(() => {
+      const t = npc.body.translation();
+      foot.x = t.x;
+      foot.y = t.y - CAPSULE_HALF_HEIGHT - CAPSULE_RADIUS;
+      foot.z = t.z;
+      return foot;
+    }, CAPSULE_RADIUS * 1.5);
   }
 
   const testBox = props.get(TEST_BOX_ID);
@@ -147,6 +198,12 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     return { pos: [p.x, p.y, p.z] };
   });
   registerDebug('interactCount', () => interactCount);
+  registerDebug('npcs', () =>
+    npcs.map((n) => {
+      const p = n.pos();
+      return { id: n.id, pos: [p.x, p.y, p.z], mode: n.walker.mode, texture: npcTexture.get(n) };
+    }),
+  );
   registerDebug('highlight', () => {
     const size = viewport();
     const rec = target ? recordOf.get(target) : undefined;
@@ -163,6 +220,7 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     input,
     fixedUpdate(dt) {
       player.fixedUpdate(dt, input);
+      for (const npc of npcs) npc.fixedUpdate(dt);
       refreshTarget();
 
       const pressed = consumeInteract(input);
@@ -177,6 +235,7 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       // Animations stand still while paused (the loop still renders paused frames).
       const animDt = getPauseState().isPaused() ? 0 : dt;
       player.frameUpdate(animDt);
+      for (const npc of npcs) npc.frameUpdate(animDt);
       props.sync();
       cameraView.update(dt, player.pos());
       room.update(getCameraYaw());
