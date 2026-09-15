@@ -12,6 +12,8 @@ export interface Player {
   pos(): { x: number; y: number; z: number };
   /** Facing yaw in radians; facing direction in world XZ is (-sin yaw, -cos yaw). */
   yaw(): number;
+  /** Turn toward a world point and play the slap swing (plan 01-15). */
+  slapAt(x: number, z: number): void;
 }
 
 const SPEED = 3.2; // m/s
@@ -23,6 +25,8 @@ export const TURN_RATE = 12;
 const MODEL_YAW_OFFSET = Math.PI;
 /** Player keeps texture 'a'; NPCs start at 'b'. */
 export const PLAYER_TEXTURE = 'a';
+/** How long the slap swing ('attack-melee-right') overrides idle / walk. */
+const SLAP_SWING_SEC = 0.45;
 
 /** Shortest signed angle from `from` to `to`, in (-PI, PI]. */
 export function angleDelta(from: number, to: number): number {
@@ -44,6 +48,7 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
   const p0 = body.position();
   let lastX = p0.x;
   let lastZ = p0.z;
+  let swingLeft = 0;
   const footY = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
   character.root.position.set(p0.x, p0.y - footY, p0.z);
   character.root.rotation.y = modelYaw;
@@ -72,7 +77,12 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
       const k = dt > 0 ? 1 - Math.exp(-TURN_RATE * dt) : 0;
       modelYaw += angleDelta(modelYaw, target) * k;
       character.root.rotation.y = modelYaw;
-      character.setMotion(speed > WALK_THRESHOLD ? 'walk' : 'idle');
+      if (swingLeft > 0) {
+        character.setMotion('attack-melee-right', 0.05);
+        swingLeft -= dt;
+      } else {
+        character.setMotion(speed > WALK_THRESHOLD ? 'walk' : 'idle');
+      }
       if (dt > 0) character.mixer.update(dt);
     },
     pos() {
@@ -80,6 +90,13 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
     },
     yaw() {
       return facing;
+    },
+    slapAt(x, z) {
+      const p = body.position();
+      const dx = x - p.x;
+      const dz = z - p.z;
+      if (Number.isFinite(dx) && Number.isFinite(dz) && Math.hypot(dx, dz) > 1e-3) facing = Math.atan2(-dx, -dz);
+      swingLeft = SLAP_SWING_SEC;
     },
   };
 }

@@ -2,10 +2,12 @@ import { Vector3, type PerspectiveCamera } from 'three';
 import { registerDebug } from '../debug/testHook';
 import { subscribeQuality } from '../game/qualityManager';
 import { createCameraRig, viewParams } from '../logic/cameraRig';
+import { mulberry32 } from '../logic/rng';
 import { TIERS } from '../logic/quality';
 
 export interface CameraView {
-  update(dt: number, target: { x: number; y: number; z: number }): void;
+  /** `shakeDt` advances the shake (pass 0 while paused so a shake waits behind the pause menu); defaults to dt. */
+  update(dt: number, target: { x: number; y: number; z: number }, shakeDt?: number): void;
 }
 
 const FOLLOW_DAMPING = 8;
@@ -24,6 +26,27 @@ export function rotateCamera(dir: -1 | 1): void {
 /** Current (damped) camera yaw in radians from the rig (0 = camera behind the player on +Z, looking toward -Z). */
 export function getCameraYaw(): number {
   return rig.yawDeg() * DEG;
+}
+
+/** Shake ceilings: a caller can never turn the view into a blur (bounded like the slap constants). */
+const MAX_SHAKE_AMPLITUDE = 0.5; // m
+const MAX_SHAKE_MS = 1000;
+/** Fixed seed: the shake jitters the same way every run (bench replay, D-08). */
+const shakeRng = mulberry32(0x5eed5a4e);
+let shakeAmplitude = 0;
+let shakeDurationMs = 0;
+let shakeElapsedMs = 0;
+
+/** Light screen shake (D-12): a decaying random offset amplitude × (1 - t) over durationMs, applied after positioning. */
+export function shakeCamera(amplitude: number, durationMs: number): void {
+  if (!Number.isFinite(amplitude) || !Number.isFinite(durationMs) || amplitude <= 0 || durationMs <= 0) return;
+  shakeAmplitude = Math.min(MAX_SHAKE_AMPLITUDE, amplitude);
+  shakeDurationMs = Math.min(MAX_SHAKE_MS, durationMs);
+  shakeElapsedMs = 0;
+}
+
+function shakeActive(): boolean {
+  return shakeElapsedMs < shakeDurationMs;
 }
 
 let debugRegistered = false;
@@ -53,11 +76,12 @@ export function createCameraView(camera: PerspectiveCamera): CameraView {
       distance,
       pitchDeg,
       far: camera.far,
+      shakeActive: shakeActive(),
     }));
   }
 
   return {
-    update(dt, target) {
+    update(dt, target, shakeDt = dt) {
       const step = Number.isFinite(dt) && dt > 0 ? dt : 0;
       const want = viewParams(camera.aspect);
       if (!initialised) {
@@ -85,6 +109,23 @@ export function createCameraView(camera: PerspectiveCamera): CameraView {
         focus.z + Math.cos(yaw) * horizontal,
       );
       camera.lookAt(focus);
+
+      if (shakeActive()) {
+        const k = shakeAmplitude * (1 - shakeElapsedMs / shakeDurationMs);
+        let ox = shakeRng() * 2 - 1;
+        let oy = shakeRng() * 2 - 1;
+        let oz = shakeRng() * 2 - 1;
+        const len = Math.hypot(ox, oy, oz) || 1;
+        ox /= len;
+        oy /= len;
+        oz /= len;
+        // Shifted after lookAt, so the whole view jolts instead of re-aiming at the player.
+        camera.position.x += ox * k;
+        camera.position.y += oy * k;
+        camera.position.z += oz * k;
+        const sd = Number.isFinite(shakeDt) && shakeDt > 0 ? shakeDt : 0;
+        shakeElapsedMs += sd * 1000;
+      }
     },
   };
 }

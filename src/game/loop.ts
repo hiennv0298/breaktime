@@ -115,13 +115,17 @@ export function startLoop(ctx: GameCtx, game: Game): void {
     // An interact pressed while paused must not fire on resume.
     if (paused) game.input.interactQueued = false;
 
-    const steps = stepper(frameDt, paused ? 0 : game.timeScale(t));
+    // Hit-stop (plan 01-15) is timed on performance.now(), the clock performSlap triggers it with. A freeze runs 0 sim
+    // steps while rendering and the camera shake carry on.
+    const steps = stepper(frameDt, paused ? 0 : game.timeScale(performance.now()));
     for (let i = 0; i < steps; i++) {
       game.fixedUpdate(FIXED_DT);
       ctx.physics.step();
       simStep++;
+      // A slap inside this step freezes the rest of the frame's catch-up steps too.
+      if (game.timeScale(performance.now()) === 0) break;
     }
-    game.frameUpdate(frameDt, t);
+    game.frameUpdate(frameDt, performance.now());
     ctx.renderer.render(ctx.scene, ctx.camera);
     const workMs = performance.now() - workStart;
 

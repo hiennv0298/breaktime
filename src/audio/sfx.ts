@@ -27,6 +27,8 @@ const encoded = new Map<string, ArrayBuffer>();
 const buffers = new Map<string, AudioBuffer>();
 const decoding = new Set<string>();
 const played: string[] = [];
+/** Last requested names, whether or not they could play (locked audio under ?autoplay still records the request). */
+const requested: string[] = [];
 let requests = 0;
 let failed = 0;
 let listenersInstalled = false;
@@ -174,6 +176,8 @@ export function sfxLoadTask(): LoadTask {
 /** Fire-and-forget one-shot. Silently ignored while locked, suspended or for an unknown/undecoded name. */
 export function playSfx(name: string, opts?: { gain?: number; rate?: number }): void {
   requests++;
+  requested.push(String(name));
+  if (requested.length > PLAYED_KEEP) requested.splice(0, requested.length - PLAYED_KEEP);
   const c = ctx;
   if (!c || c.state !== 'running') return;
   const buf = buffers.get(name);
@@ -206,6 +210,7 @@ if (typeof window !== 'undefined') {
     state: audioState(),
     decoded: buffers.size,
     requests,
+    requested: [...requested],
     played: [...played],
     failed,
     names: sfxNames(),
