@@ -61,10 +61,6 @@ function expectClean(problems: PageProblems): void {
   expect(problems.offOrigin).toEqual([]);
 }
 
-function distXZ(a: Vec3, b: Vec3): number {
-  return Math.hypot(a[0] - b[0], a[2] - b[2]);
-}
-
 function dist3(a: Vec3, b: Vec3): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
@@ -177,8 +173,8 @@ test.describe('swing desktop', () => {
     const h = (await bt(page, 'highlight'))!;
     expect(h.id).toBe(TEST_BOX_ID);
     expect(h.screen).not.toBeNull();
+    // In range is proven by the glow itself (the pick reach is measured from the prop's edge, not its centre).
     const box0 = (await bt(page, 'box'))!.pos;
-    expect(distXZ(box0, (await bt(page, 'player'))!.pos)).toBeLessThanOrEqual(1.6);
 
     await page.mouse.click(h.screen!.x, h.screen!.y);
     await page.waitForFunction(

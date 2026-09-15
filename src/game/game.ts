@@ -11,6 +11,7 @@ import { iconFor, pickNearest, type Candidate } from '../logic/nearest';
 import { parseNpcAt } from '../logic/npcAt';
 import { TIERS } from '../logic/quality';
 import { BENCH_SEED, mulberry32 } from '../logic/rng';
+import { createSwingGate, SWING_COOLDOWN_MS } from '../logic/swing';
 import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS } from '../physics/characterController';
 import { createProps, projectToScreen, type PropRecord } from '../physics/props';
 import { ragdollStats } from '../physics/ragdoll';
@@ -85,8 +86,10 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
 /**
  * Office slice (plan 01-10): Kenney open-space office + pantry, physics props, blob shadows, follow camera.
  * Characters (plan 01-14): the player and 3 coworkers (?npcs=0..10, D-29) are Blocky characters from one shared GLB.
- * The nearest prop or coworker in front of the player glows; E, the context button or a left-click on it pushes the
- * prop (D-18, D-20) or slaps the coworker into a ragdoll (plan 01-15, D-12).
+ * The nearest prop or coworker in front of the player glows. Space / E, the context button or a left-click on the game
+ * view always swings at once (plan 01-24, D-30, behind a 350 ms cooldown); the swing pushes the glowing prop or slaps
+ * the glowing coworker into a ragdoll (plan 01-15, D-12) only when that target is in range (and, for a click, only when
+ * the click landed on it — D-18 / D-20 revised).
  */
 export async function createGame(ctx: GameCtx): Promise<Game> {
   const [assets, characterAsset] = await Promise.all([
@@ -206,8 +209,13 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   const npcScreen = new Vector3();
   const playerQuery = { x: 0, z: 0, yawRad: 0 };
   let target: Candidate | null = null;
-  let pickQueued: string | null = null;
+  /** Last game-area click since the previous fixed step: an id = it hit the glowing object, null = any other click. */
+  let pickQueued: string | null | undefined = undefined;
   let interactCount = 0;
+  // D-30 swing: one cooldown gate for every action source; slap.ts stays outside it (the 01-17 bench calls it directly).
+  const swingGate = createSwingGate();
+  let swingHits = 0;
+  let swingDropped = 0;
 
   setContextIcon(iconFor(null));
 
@@ -253,25 +261,37 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     }
   }
 
-  function interactTarget(): void {
-    if (!target) return;
-    const entry = entryOf.get(target)!;
-    if (entry.npc) {
-      performSlap(game, entry.npc, performance.now());
-      // Drop the glow right away: the hit-stop runs no fixed step for 60 ms.
-      refreshTarget();
+  /** Swing (already let through the gate) and hit `hit` when it is a target in range (D-30). */
+  function swingAt(hit: Candidate | null, nowMs: number): void {
+    const entry = hit ? entryOf.get(hit) : undefined;
+    if (hit && entry?.npc) {
+      const before = slapCount();
+      performSlap(game, entry.npc, nowMs); // swings toward the NPC through player.slapAt
+      if (slapCount() > before) {
+        swingHits++;
+        // Drop the glow right away: the hit-stop runs no fixed step for 60 ms.
+        refreshTarget();
+      } else {
+        player.swing(); // not slappable after all: still give the swing feedback
+      }
       return;
     }
-    const p = player.pos();
-    let dx = target.x - p.x;
-    let dz = target.z - p.z;
-    if (Math.hypot(dx, dz) < 1e-3) {
-      const yaw = player.yaw();
-      dx = -Math.sin(yaw);
-      dz = -Math.cos(yaw);
+    if (hit && entry?.prop) {
+      player.swing(hit.x, hit.z);
+      const p = player.pos();
+      let dx = hit.x - p.x;
+      let dz = hit.z - p.z;
+      if (Math.hypot(dx, dz) < 1e-3) {
+        const yaw = player.yaw();
+        dx = -Math.sin(yaw);
+        dz = -Math.cos(yaw);
+      }
+      props.push(hit.id, dx, dz);
+      interactCount++;
+      swingHits++;
+      return;
     }
-    props.push(target.id, dx, dz);
-    interactCount++;
+    player.swing();
   }
 
   registerDebug('box', () => {
@@ -305,6 +325,13 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     };
   });
   registerDebug('slap', () => ({ count: slapCount() }));
+  registerDebug('swing', () => ({
+    count: swingGate.count(),
+    hits: swingHits,
+    lastMs: swingGate.lastMs(),
+    cooldownMs: SWING_COOLDOWN_MS,
+    dropped: swingDropped,
+  }));
   registerDebug('hitStop', () => ({ count: hitStop.count(), active: hitStop.active(performance.now()) }));
   registerDebug('ragdolls', () => ragdollStats());
 
@@ -323,11 +350,21 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       for (const npc of npcs) npc.fixedUpdate(dt);
       refreshTarget();
 
+      // D-30: any action press or game-area click swings at once (cooldown permitting); only a target in range is hit.
       const pressed = consumeInteract(input);
       const picked = pickQueued;
-      pickQueued = null;
-      // A click only counts if it hit the object that is still the target (a stale click never acts).
-      if (pressed || (picked !== null && target !== null && picked === target.id)) interactTarget();
+      pickQueued = undefined;
+      if (pressed || picked !== undefined) {
+        const nowMs = performance.now();
+        if (!swingGate.tryStart(nowMs)) {
+          swingDropped++; // inside the cooldown: the press is dropped, not queued (T-01-24-01)
+        } else {
+          // A key / context press hits the current target; a click only hits if it landed on the object that is still
+          // the target (a stale click never acts, T-01-24-03).
+          const hit = pressed ? target : picked !== null && target !== null && picked === target.id ? target : null;
+          swingAt(hit, nowMs);
+        }
+      }
 
       props.fixedUpdate();
       shards.fixedUpdate(dt);

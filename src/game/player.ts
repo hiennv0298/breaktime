@@ -12,7 +12,12 @@ export interface Player {
   pos(): { x: number; y: number; z: number };
   /** Facing yaw in radians; facing direction in world XZ is (-sin yaw, -cos yaw). */
   yaw(): number;
-  /** Turn toward a world point and play the slap swing (plan 01-15). */
+  /**
+   * Play the arm swing now (D-30). With a finite point at least 1 mm away the player first turns toward it; without
+   * one the facing is kept. A swing during a swing restarts the clip.
+   */
+  swing(towardX?: number, towardZ?: number): void;
+  /** Turn toward a world point and play the slap swing (plan 01-15); same as swing(x, z). */
   slapAt(x: number, z: number): void;
 }
 
@@ -55,8 +60,20 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
 
   registerDebug('player', () => {
     const p = body.position();
-    return { pos: [p.x, p.y, p.z], yaw: facing };
+    return { pos: [p.x, p.y, p.z], yaw: facing, motion: character.motion() };
   });
+
+  function swing(towardX?: number, towardZ?: number): void {
+    if (towardX !== undefined && towardZ !== undefined) {
+      const p = body.position();
+      const dx = towardX - p.x;
+      const dz = towardZ - p.z;
+      if (Number.isFinite(dx) && Number.isFinite(dz) && Math.hypot(dx, dz) > 1e-3) facing = Math.atan2(-dx, -dz);
+    }
+    swingLeft = SLAP_SWING_SEC;
+    // Start the clip this frame, from time 0 even when a swing is already playing (D-30 instant feedback).
+    character.setMotion('attack-melee-right', 0.05, { restart: true });
+  }
 
   return {
     fixedUpdate(dt, input) {
@@ -91,12 +108,9 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
     yaw() {
       return facing;
     },
+    swing,
     slapAt(x, z) {
-      const p = body.position();
-      const dx = x - p.x;
-      const dz = z - p.z;
-      if (Number.isFinite(dx) && Number.isFinite(dz) && Math.hypot(dx, dz) > 1e-3) facing = Math.atan2(-dx, -dz);
-      swingLeft = SLAP_SWING_SEC;
+      swing(x, z);
     },
   };
 }

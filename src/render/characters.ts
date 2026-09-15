@@ -52,7 +52,13 @@ export interface CharacterInstance {
    * character is 1 draw call. The original part meshes stay as hidden children (ragdoll sizing, pointer pick).
    */
   skinned: SkinnedMesh;
-  setMotion(name: CharacterMotion, fadeSec?: number): void;
+  /**
+   * Crossfade to `name`. Setting the current motion again does nothing, unless `opts.restart` is true: then the clip
+   * jumps back to time 0 and plays again (plan 01-24, D-30: a new swing during a swing starts over at once).
+   */
+  setMotion(name: CharacterMotion, fadeSec?: number, opts?: { restart?: boolean }): void;
+  /** The motion last set (__bt.player.motion). */
+  motion(): CharacterMotion;
   dispose(): void;
 }
 
@@ -207,8 +213,15 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
     parts,
     material,
     skinned,
-    setMotion(name, fadeSec = DEFAULT_FADE) {
-      if (name === current) return;
+    setMotion(name, fadeSec = DEFAULT_FADE, opts) {
+      if (name === current) {
+        if (opts?.restart) {
+          // Same clip again: back to time 0 at full weight, no crossfade (D-30 swing restart).
+          // reset() also cancels a fade-in still running on this action.
+          action(name).reset().setEffectiveWeight(1).play();
+        }
+        return;
+      }
       const prev = action(current);
       const next = action(name);
       const fade = Number.isFinite(fadeSec) && fadeSec > 0 ? fadeSec : 0;
@@ -216,6 +229,9 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
       if (fade > 0) next.crossFadeFrom(prev, fade, false);
       else prev.stop();
       current = name;
+    },
+    motion() {
+      return current;
     },
     dispose() {
       mixer.stopAllAction();
