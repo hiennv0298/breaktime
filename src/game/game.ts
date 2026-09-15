@@ -1,6 +1,6 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { registerDebug } from '../debug/testHook';
-import { consumeInteract, createInputState } from '../input/inputState';
+import { consumeInteract, createInputState, type InputState } from '../input/inputState';
 import { attachKeyboard } from '../input/keyboard';
 import type { Physics } from '../physics/rapier';
 import { createCameraView } from '../render/cameraView';
@@ -14,6 +14,8 @@ export interface GameCtx extends RenderCtx {
 }
 
 export interface Game {
+  /** Shared input written by keyboard and touch controls; the loop consumes pause toggles from it. */
+  readonly input: InputState;
   fixedUpdate(dt: number): void;
   frameUpdate(dt: number, nowMs: number): void;
   timeScale(nowMs: number): number;
@@ -48,6 +50,7 @@ export function createGame(ctx: GameCtx): Game {
   registerDebug('interactCount', () => interactCount);
 
   return {
+    input,
     fixedUpdate(dt) {
       player.fixedUpdate(dt, input);
 

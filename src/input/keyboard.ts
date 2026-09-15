@@ -1,9 +1,10 @@
 import type { InputState } from './inputState';
 
 const MOVE_CODES = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD']);
+const PAUSE_CODES = new Set(['Escape', 'Space']);
 
 /**
- * Desktop keyboard (D-20, CTRL-01): KeyW/KeyA/KeyS/KeyD move, KeyE interacts.
+ * Desktop keyboard (D-20, CTRL-01, CTRL-04): KeyW/KeyA/KeyS/KeyD move, KeyE interacts, Escape/Space toggle pause.
  * Uses KeyboardEvent.code only, so the layout (AZERTY, Vietnamese IME) does not change the physical keys.
  * Camera rotation keys (Z/C, plan 01-09) are deliberately not bound here.
  * Returns a detach function.
@@ -27,10 +28,15 @@ export function attachKeyboard(s: InputState): () => void {
       recompute();
     } else if (e.code === 'KeyE' && !e.repeat) {
       s.interactQueued = true;
+    } else if (PAUSE_CODES.has(e.code)) {
+      // Space would scroll the page or click a focused button (and toggle twice): always swallow it.
+      if (e.code === 'Space') e.preventDefault();
+      if (!e.repeat) s.pauseToggleQueued = true;
     }
   }
 
   function onKeyUp(e: KeyboardEvent): void {
+    if (e.code === 'Space') e.preventDefault(); // a focused button activates on Space keyup
     if (held.delete(e.code)) recompute();
   }
 
@@ -51,5 +57,6 @@ export function attachKeyboard(s: InputState): () => void {
     document.removeEventListener('visibilitychange', onVisibility);
     clear();
     s.interactQueued = false;
+    s.pauseToggleQueued = false;
   };
 }
