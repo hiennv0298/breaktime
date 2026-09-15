@@ -16,13 +16,14 @@ test('badge shows "Break Time · <sha>" matching version.json and window.__bt', 
   expect(text).toMatch(/^Break Time · [0-9a-f]{12}$/);
   expect(text).toBe(`Break Time · ${version.sha}`);
 
-  await waitForBtState(page, 'booting');
+  // Since 01-02 boot leaves 'booting' synchronously (capability gate -> loading); wait for the first stable state.
+  await waitForBtState(page, 'ready-to-play', 60_000);
   const bt = await page.evaluate(() => {
     const b = (window as unknown as { __bt: Bt }).__bt;
     return { sha: b.sha, state: b.state };
   });
   expect(bt.sha).toBe(version.sha);
-  expect(bt.state).toBe('booting');
+  expect(bt.state).toBe('ready-to-play');
 });
 
 test('served index.html carries the CSP meta and no external reference', async ({ request }) => {
@@ -42,7 +43,7 @@ test('load produces zero console errors, page errors and off-origin requests', a
   let requests = 0;
   page.on('request', () => requests++);
   await page.goto('./', { waitUntil: 'networkidle' });
-  await waitForBtState(page, 'booting');
+  await waitForBtState(page, 'ready-to-play', 60_000); // Rapier WASM instantiated under the CSP
   await expect(page.locator('#build-badge')).toBeVisible();
   expect(requests).toBeGreaterThan(1); // the listener really saw the document + its module script
   expect(problems.errors).toEqual([]);
