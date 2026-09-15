@@ -30,7 +30,7 @@ import { getPauseState } from './loop';
 import { createNpc, type Npc } from './npc';
 import { createPlayer, PLAYER_TEXTURE, type Player } from './player';
 import { performSlap, slapCount } from './slap';
-import { NPC_ROUTES } from './waypoints';
+import { NPC_ROUTES, routeIndexForNpc, sharedIndexForNpc } from './waypoints';
 
 export interface GameCtx extends RenderCtx {
   physics: Physics;
@@ -50,8 +50,11 @@ export interface Game {
 
 /** Coworkers in normal play (D-11). */
 export const DEFAULT_NPCS = 3;
-/** Benchmark ceiling (D-11, Tier 1): ?npcs is clamped to it so a URL cannot spawn unbounded bodies (T-01-14-01). */
-export const MAX_NPCS = 8;
+/**
+ * Player-selectable and benchmark ceiling (D-29, D-11 revised): ?npcs is clamped to it so a URL cannot spawn unbounded
+ * bodies (T-01-14-01, T-01-23-01).
+ */
+export const MAX_NPCS = 10;
 /** Slap target footprint: an NPC is reachable within 1.6 m of its 0.4 m radius (plan 01-15). */
 const NPC_TARGET_RADIUS = 0.4;
 /** Spawn offset per extra NPC sharing a route, so capsules never start inside each other. */
@@ -64,13 +67,13 @@ export function scenarioFromQuery(search: string): 'smash' | null {
   return new URLSearchParams(search).get('scenario') === 'smash' ? 'smash' : null;
 }
 
-/** ?npcs=N as an integer clamped to [0, 8]; missing or unparsable gives the default 3. */
+/** ?npcs=N as an integer clamped to [0, MAX_NPCS] = [0, 10]; missing or unparsable gives the default 3. */
 export function npcCountFromQuery(search: string): number {
   const raw = new URLSearchParams(search).get('npcs');
   if (raw === null) return DEFAULT_NPCS;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n)) return DEFAULT_NPCS;
-  return Math.max(0, Math.min(8, n));
+  return Math.max(0, Math.min(MAX_NPCS, n));
 }
 
 function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
@@ -81,7 +84,7 @@ function loadedBuffer(ctx: GameCtx, id: string): ArrayBuffer {
 
 /**
  * Office slice (plan 01-10): Kenney open-space office + pantry, physics props, blob shadows, follow camera.
- * Characters (plan 01-14): the player and 3 coworkers (?npcs=0..8) are Blocky characters from one shared GLB.
+ * Characters (plan 01-14): the player and 3 coworkers (?npcs=0..10, D-29) are Blocky characters from one shared GLB.
  * The nearest prop or coworker in front of the player glows; E, the context button or a left-click on it pushes the
  * prop (D-18, D-20) or slaps the coworker into a ragdoll (plan 01-15, D-12).
  */
@@ -114,9 +117,10 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
   const npcAt = parseNpcAt(location.search, { halfX: ROOM.width / 2, halfZ: ROOM.depth / 2, margin: 0.5 });
   const firstNpcLetter = PLAYER_TEXTURE.charCodeAt(0) + 1;
   for (let i = 0; i < npcCount; i++) {
-    const route = NPC_ROUTES[i % NPC_ROUTES.length];
+    // NPCs 1-8 keep their 01-14 routes and offsets; 9 and 10 walk the hand-placed routes 3 and 4 (D-29, plan 01-23).
+    const route = NPC_ROUTES[routeIndexForNpc(i)];
     const startIndex = i % route.length;
-    const shared = Math.floor(i / NPC_ROUTES.length);
+    const shared = sharedIndexForNpc(i);
     const start = route[startIndex];
     const pinned = i === 0 && npcAt !== null;
     npcs.push(

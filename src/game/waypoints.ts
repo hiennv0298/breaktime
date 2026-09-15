@@ -1,6 +1,7 @@
 /**
- * Hand-placed NPC routes (D-11): desk <-> pantry loops built from layout.ts constants. Straight segments between
- * points; the walker pauses `dwellSec` at each one. Pure data (no three.js), so Vitest checks the geometry.
+ * Hand-placed NPC routes (D-11): desk <-> pantry loops built from layout.ts constants, plus two more for NPCs 9 and 10
+ * (D-29, plan 01-23). Straight segments between points; the walker pauses `dwellSec` at each one. Pure data (no
+ * three.js), so Vitest checks the geometry.
  *
  * Aisles: the NPCs stay out of the spawn / test-box corridor (layout CORRIDOR) and reach the pantry along a lane
  * north of the first desk row, entering and leaving the desk area around the west end of the desks.
@@ -51,10 +52,29 @@ const SOUTH_Z = desk('d3').z + BEHIND_CHAIR_Z;
 const MID_Z = desk('d1').z + BEHIND_CHAIR_Z;
 
 const d1 = desk('d1');
+const d2 = desk('d2');
 const d3 = desk('d3');
 const d4 = desk('d4');
 const printer = placement('printer');
 const bookcase = placement('bookcase');
+
+/** Where the north lane turns off toward the pantry counter's east end (route 3); x of the water cooler. */
+const PANTRY_LANE_X = 3.6;
+/** Route 4: stop by the east wall, the aisle it walks along, and the stop in front of the storage boxes. */
+const EAST_WINDOW = { x: 6.2, z: 1.0 } as const;
+const EAST_AISLE_X = 3.0;
+const STORAGE_Z = 3.9;
+const STORAGE_STOP_X = 4.85;
+
+/** Routes 0-2 serve NPCs 1-8 as in plans 01-14..01-16; the highest NPC index is 9 (D-29: up to 10 NPCs). */
+const LEGACY_ROUTES = 3;
+const LEGACY_NPCS = 8;
+const MAX_NPC_INDEX = 9;
+
+function npcIndex(i: number): number {
+  if (Number.isNaN(i)) return 0;
+  return Math.max(0, Math.min(MAX_NPC_INDEX, Math.trunc(i)));
+}
 
 const westSouth = () => pt(WEST_X, SOUTH_Z);
 const westMid = () => pt(WEST_X, MID_Z);
@@ -93,7 +113,42 @@ export const NPC_ROUTES: WaypointPoint[][] = [
     westNorth(),
     westSouth(),
   ],
+  // Route 3 (NPC 9, D-29): desk d2 <-> east end of the pantry counter, along the same west column and north lane.
+  [
+    pt(d2.x, d2.z + BEHIND_CHAIR_Z, 3),
+    westMid(),
+    westNorth(),
+    pt(PANTRY_LANE_X, NORTH_Z),
+    pt(PANTRY.counter.x + 0.6, PANTRY.counter.z + 1.1, 3),
+    pt(PANTRY_LANE_X, NORTH_Z),
+    westNorth(),
+    westMid(),
+  ],
+  // Route 4 (NPC 10, D-29): east window <-> storage boxes, east of the spawn corridor and clear of trash-2 and the boxes.
+  [
+    pt(EAST_WINDOW.x, EAST_WINDOW.z, 3),
+    pt(EAST_AISLE_X, EAST_WINDOW.z),
+    pt(EAST_AISLE_X, STORAGE_Z),
+    pt(STORAGE_STOP_X, STORAGE_Z, 3),
+    pt(EAST_AISLE_X, STORAGE_Z),
+    pt(EAST_AISLE_X, EAST_WINDOW.z),
+  ],
 ];
+
+/**
+ * NPC index -> route. NPCs 1-8 keep the routes they had in plans 01-14..01-16 (i % 3), so earlier measurements stay
+ * comparable; NPCs 9 and 10 take the hand-placed routes 3 and 4 (D-29). The index is truncated and clamped to 0..9.
+ */
+export function routeIndexForNpc(i: number): number {
+  const n = npcIndex(i);
+  return n < LEGACY_NPCS ? n % LEGACY_ROUTES : LEGACY_ROUTES + (n - LEGACY_NPCS);
+}
+
+/** How many earlier NPCs share this NPC's route (the spawn offset multiplier): 0..7 -> floor(i / 3), 8 and 9 -> 0. */
+export function sharedIndexForNpc(i: number): number {
+  const n = npcIndex(i);
+  return n < LEGACY_NPCS ? Math.floor(n / LEGACY_ROUTES) : 0;
+}
 
 /** Axis-aligned static footprints the routes must clear (used by the unit test and handy for debugging). */
 export interface Footprint {

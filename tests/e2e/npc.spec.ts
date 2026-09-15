@@ -103,24 +103,27 @@ test.describe('npc desktop', () => {
     expectClean(problems);
   });
 
-  test('npcs=8 spawns eight from the shared character', async ({ page, baseURL }) => {
-    const problems = await startPlaying(page, baseURL!, '&npcs=8');
+  // D-29 / D-11 revised (plan 01-23): the player can pick up to 10 coworkers and the benchmark measures that ceiling.
+  test('npcs=10 spawns ten from the shared character', async ({ page, baseURL }) => {
+    const problems = await startPlaying(page, baseURL!, '&npcs=10');
     const list = await npcs(page);
-    expect(list.length).toBe(8);
-    expect(new Set(list.map((n) => n.id)).size).toBe(8);
-    expect(new Set(list.map((n) => n.texture)).size).toBe(8);
+    expect(list.length).toBe(10);
+    expect(new Set(list.map((n) => n.id)).size).toBe(10);
+    expect(new Set(list.map((n) => n.texture)).size).toBe(10);
     expect(list.map((n) => n.texture)).not.toContain('a');
     await page.waitForTimeout(1000);
     expectInsideRoom(await npcs(page));
 
+    // Player + 10 NPCs on top of the dynamic props.
     const dynamicCount = (await bt(page, 'props'))!.dynamicCount;
-    expect((await bt(page, 'shadows'))!.count).toBeGreaterThanOrEqual(dynamicCount + 9);
+    expect((await bt(page, 'shadows'))!.count).toBeGreaterThanOrEqual(dynamicCount + 11);
     expectClean(problems);
   });
 
-  test('npcs clamps to 0..8', async ({ page, baseURL }) => {
+  // D-29 / D-11 revised: the ceiling moved from 8 to 10; the clamp still bounds bodies a URL can allocate (T-01-23-01).
+  test('npcs clamps to 0..10', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!, '&npcs=99');
-    expect((await npcs(page)).length).toBe(8);
+    expect((await npcs(page)).length).toBe(10);
     expectClean(problems);
 
     const problems0 = await startPlaying(page, baseURL!, '&npcs=0');

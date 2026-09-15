@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { CORRIDOR, ROOM } from '../../src/game/layout';
-import { NPC_RADIUS, NPC_ROUTES, ROUTE_CLEARANCE, ROUTE_OBSTACLES, type Footprint } from '../../src/game/waypoints';
+import { CORRIDOR, PROP_PLACEMENTS, ROOM } from '../../src/game/layout';
+import {
+  NPC_RADIUS,
+  NPC_ROUTES,
+  ROUTE_CLEARANCE,
+  ROUTE_OBSTACLES,
+  routeIndexForNpc,
+  sharedIndexForNpc,
+  type Footprint,
+} from '../../src/game/waypoints';
 
 const WALL_CLEARANCE = 0.5;
 const STEP = 0.02; // m, sampling along each segment
@@ -21,8 +29,9 @@ function segments(route: { x: number; z: number }[]): Array<[{ x: number; z: num
 }
 
 describe('NPC_ROUTES', () => {
-  it('has 3 looping routes with finite points and at least two dwell stops each', () => {
-    expect(NPC_ROUTES.length).toBe(3);
+  it('has 5 looping routes with finite points and at least two dwell stops each', () => {
+    // D-29 (plan 01-23): routes 0-2 from 01-14 plus hand-placed routes for NPCs 9 and 10 (still no navmesh).
+    expect(NPC_ROUTES.length).toBe(5);
     for (const route of NPC_ROUTES) {
       expect(route.length).toBeGreaterThanOrEqual(3);
       for (const p of route) {
@@ -90,5 +99,52 @@ describe('NPC_ROUTES', () => {
     let hit = false;
     for (const [a, b] of segments(bad)) for (const s of samples(a, b)) if (distToRect(s.x, s.z, deskRect) < NPC_RADIUS) hit = true;
     expect(hit).toBe(true);
+  });
+});
+
+/** Floor-standing dynamic props an NPC would shove if its route brushed them (plan 01-23). */
+const FLOOR_PROP_ROLES = new Set(['trashcan', 'boxClosed', 'pottedPlant', 'plantSmall']);
+const PROP_CLEARANCE = 0.6; // m, centre distance
+
+describe('routes for NPCs 9 and 10 (D-29, D-11 revised)', () => {
+  it('keeps routes 3 and 4 >= 0.6 m from every floor-standing trashcan, box and plant', () => {
+    const floorProps = PROP_PLACEMENTS.filter((p) => FLOOR_PROP_ROLES.has(p.role) && p.on === undefined);
+    expect(floorProps.length).toBeGreaterThanOrEqual(8);
+    expect(NPC_ROUTES.length).toBeGreaterThanOrEqual(5);
+    for (const ri of [3, 4]) {
+      for (const [a, b] of segments(NPC_ROUTES[ri])) {
+        for (const s of samples(a, b)) {
+          for (const p of floorProps) {
+            const d = Math.hypot(s.x - p.x, s.z - p.z);
+            if (d < PROP_CLEARANCE) {
+              throw new Error(
+                `route ${ri} segment (${a.x},${a.z})->(${b.x},${b.z}) passes ${d.toFixed(3)} m from ${p.id} at (${s.x.toFixed(2)},${s.z.toFixed(2)})`,
+              );
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('maps NPCs 1-8 to their 01-14 routes and offsets, 9 and 10 to the new routes', () => {
+    const idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    expect(idx.map((i) => routeIndexForNpc(i))).toEqual([0, 1, 2, 0, 1, 2, 0, 1, 3, 4]);
+    expect(idx.map((i) => sharedIndexForNpc(i))).toEqual([0, 0, 0, 1, 1, 1, 2, 2, 0, 0]);
+  });
+
+  it('clamps and truncates out-of-range NPC indices into 0..9', () => {
+    expect(routeIndexForNpc(-1)).toBe(0);
+    expect(routeIndexForNpc(42)).toBe(4);
+    expect(routeIndexForNpc(Number.NaN)).toBe(0);
+    expect(routeIndexForNpc(8.9)).toBe(3);
+    expect(sharedIndexForNpc(-5)).toBe(0);
+    expect(sharedIndexForNpc(100)).toBe(0);
+    expect(sharedIndexForNpc(Number.NaN)).toBe(0);
+    expect(sharedIndexForNpc(7.99)).toBe(2);
+    for (const i of [-3, 0, 5, 9, 10, 1e9, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(routeIndexForNpc(i)).toBeGreaterThanOrEqual(0);
+      expect(routeIndexForNpc(i)).toBeLessThan(NPC_ROUTES.length);
+    }
   });
 });
