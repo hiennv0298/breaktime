@@ -231,7 +231,8 @@ describe('tickAnger decay (D-05 nguội dần)', () => {
     const input: AngerState = Object.freeze({ value: 100, sinceSlapSec: 6.5, slaps: 1 });
     const out = tickAnger(input, 0.5);
     expect(out).not.toBe(input);
-    expect(out.value).toBeCloseTo(92, 9);
+    // 0.5 s past the delay at 8 per second.
+    expect(out.value).toBeCloseTo(96, 9);
     expect(input.value).toBe(100);
   });
 });
