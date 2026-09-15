@@ -71,6 +71,7 @@ Progress: [█████████░] 89%
 | Phase 01 P27 | 31min | 3 tasks | 7 files |
 | Phase 01 P17 | 22min | 2 tasks | 11 files |
 | Phase 01 P18 | 65min | 3 tasks | 18 files |
+| Phase 02 P01 | 6min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,8 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-18: ?soak=1 loops the 10-NPC bench timeline per cycle with a full reset (NPCs recover to routes, player.teleport to spawn, breakables.resetAll creates nothing); leak proxy = geometries/textures/bodies at end of cycle 1 vs last cycle; soakMin 1..30 (15), soakCycles 1..100, dur 5..60; ?soak=1 wins over ?bench=1
 - [Phase 01]: 01-18: crash beacon localStorage bt.beacon (sha + timestamps only, try/catch, heartbeat 5 s, clean on pagehide, stale after 20 s) shows #crash-banner via textContent on the next load; nothing sent off-origin
 - [Phase 01]: 01-18: measurement build 1ecc53ce473e live (DEPLOY_OK, poller 38/38 200, SITE_FILE_UNCHANGED) on the third attempt after an SSH reset at upload and a swing mashing flake (300.1 ms vs < 300); operator approved 60 -> 40 ms waits, SWING_COOLDOWN_MS and assertions unchanged
+- [Phase 02]: 02-01 (pure logic, ran before the Phase 1 device gate per D-12): anger per slap hot 100 / normal 60 / calm 42 + seeded integer jitter 0..5 (clamped; non-finite draw = 0) gives exactly 1 / 2 / 3 slaps for seeds 0..999; decay 8/s only after 6 s standing, clock paused by holdDecay (caller passes physics !== 'animated'); ?fight=always literal forces hot
+- [Phase 02]: 02-01: arbitrate ranks anger desc (any non-finite anger = 0), dist asc (non-finite last), id asc; pursue holders that still want it keep it (over-full held sets trimmed by rank); strike survives only if the holder still wants strike and holds pursue in the new set, else goes to the best-ranked new pursue holder that wants strike; first duplicate id wins
 
 ### Roadmap Evolution
 

@@ -149,7 +149,7 @@ trước khi sang Phase 2. Không đi tiếp trên một stack chưa đo.
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Logic thuần: thanh giận theo tính khí (1/2/3 cú, chỉ nguội khi NPC đứng, rng có seed) + token 3 đuổi / 1 vung (W1)
+- [x] 02-01-PLAN.md — Logic thuần: thanh giận theo tính khí (1/2/3 cú, chỉ nguội khi NPC đứng, rng có seed) + token 3 đuổi / 1 vung (W1)
 - [ ] 02-02-PLAN.md — Logic thuần: hit test tầm/nón, stun người chơi (khoá ≤ 3 s, bất tử 1,5 s), 16 bit nhóm va chạm, điểm đứng dậy (W1)
 - [ ] 02-03-PLAN.md — Công cụ entry guard D-12 (`scripts/phase-gate-guard.mjs`) + tuyến/điểm xuất phát cho NPC 11–15 (W1)
 
@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Spike kỹ thuật & đường deploy | 24/27 | In Progress|  |
-| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 0/13 | Planned | - |
+| 2. NPC đồng nghiệp — tên, số lượng, đánh trả | 1/13 | In Progress | - |
 | 3. Hệ phát hiện | 0/TBD | Not started | - |
 | 4. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 5. Stress & Rage Mode | 0/TBD | Not started | - |
