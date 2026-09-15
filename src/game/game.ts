@@ -1,7 +1,9 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { registerDebug } from '../debug/testHook';
 import { consumeInteract, createInputState, type InputState } from '../input/inputState';
+import { attachJoystick } from '../input/joystick';
 import { attachKeyboard } from '../input/keyboard';
+import { attachTouchButtons } from '../input/touchButtons';
 import type { Physics } from '../physics/rapier';
 import { createCameraView } from '../render/cameraView';
 import type { RenderCtx } from '../render/renderer';
@@ -33,6 +35,10 @@ export function createGame(ctx: GameCtx): Game {
 
   const input = createInputState();
   attachKeyboard(input);
+  // Touch controls share the same InputState (D-17, D-18); they live for the page lifetime like the keyboard.
+  const uiRoot = document.getElementById('app') ?? document.body;
+  attachJoystick(uiRoot, input);
+  attachTouchButtons(uiRoot, input);
 
   const player = createPlayer(ctx, { x: 0, z: 2 });
   const cameraView = createCameraView(ctx.camera);

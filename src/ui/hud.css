@@ -88,6 +88,85 @@ body { background: #1d1f24; color: #f2f2f2; }
   color: #f2f2f2;
 }
 
+/* Touch controls (plan 01-08, D-17/D-18), landscape positions. Portrait overrides live in layout.css (plan 01-09).
+   Stack: canvas < #touch-zone (100) < HUD buttons (200) < #pause-menu (400) < loading (500). */
+#touch-zone {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: transparent;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#joystick-base {
+  position: fixed;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: 120px; /* radius 60 CSS px */
+  height: 120px;
+  margin: -60px 0 0 -60px; /* the translate(x, y) set from JS is the centre */
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(20, 22, 28, 0.25);
+  pointer-events: none;
+}
+#joystick-base[hidden] { display: none; }
+#joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+[data-hud-button] {
+  position: fixed;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 56px; /* hit area >= 56 px */
+  min-height: 56px;
+  padding: 0;
+  border: 0;
+  color: #fff;
+  font: inherit;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+}
+[data-hud-button][hidden] { display: none; }
+[data-hud-button] svg { pointer-events: none; }
+#btn-context {
+  right: calc(env(safe-area-inset-right) + 24px);
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(255, 200, 61, 0.9);
+  color: #1d1f24;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+#btn-context svg { width: 52px; height: 52px; }
+#btn-context:active { transform: scale(0.94); }
+#btn-pause {
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: calc(env(safe-area-inset-right) + 12px);
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+}
+#btn-pause svg { width: 28px; height: 28px; }
+
 /* Pause menu (plan 01-08, D-20): above the game and every HUD button. */
 #pause-menu {
   position: fixed;

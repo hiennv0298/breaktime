@@ -44,8 +44,10 @@ export async function waitForBtState(page: Page, state: string, timeoutMs = 30_0
 /* ---------- Trusted touch input through CDP (plan 01-08) ----------
  * Input.dispatchTouchEvent goes through the browser input pipeline, so the page receives
  * trusted touch AND pointer events (pointerType 'touch'), unlike synthetic dispatchEvent.
- * CDP expects every event to list ALL touch points still on the screen, so each page keeps
- * its active points; that is what makes multi-touch (joystick + button) possible.
+ * CDP expects touchStart/touchMove to list ALL touch points still on the screen and diffs them
+ * against the previous event, so each page keeps its active points; that is what makes multi-touch
+ * (joystick + button) possible. touchEnd must carry no points and releases EVERY finger, so lifting
+ * one finger while others stay down is sent as a touchMove without that finger.
  */
 
 type TouchPoint = { x: number; y: number; id: number };
@@ -69,7 +71,8 @@ async function dispatchTouch(
   track: TouchTrack,
   type: 'touchStart' | 'touchMove' | 'touchEnd',
 ): Promise<void> {
-  const touchPoints = [...track.points.values()].map((p) => ({ x: p.x, y: p.y, id: p.id }));
+  const touchPoints =
+    type === 'touchEnd' ? [] : [...track.points.values()].map((p) => ({ x: p.x, y: p.y, id: p.id }));
   await track.session.send('Input.dispatchTouchEvent', { type, touchPoints });
 }
 
@@ -95,7 +98,7 @@ export async function touchMove(page: Page, x: number, y: number, id = 0): Promi
 export async function touchUp(page: Page, id = 0): Promise<void> {
   const track = await touchTrack(page);
   if (!track.points.delete(id)) throw new Error(`touch ${id} is not down`);
-  await dispatchTouch(track, 'touchEnd');
+  await dispatchTouch(track, track.points.size > 0 ? 'touchMove' : 'touchEnd');
 }
 
 /** Finger `id` (already down, at `from`) glides to `to` in `steps` moves spread over `durationMs`. */
