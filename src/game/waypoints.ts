@@ -5,7 +5,12 @@
  *
  * Aisles: the NPCs stay out of the spawn / test-box corridor (layout CORRIDOR) and reach the pantry along a lane
  * north of the first desk row, entering and leaving the desk area around the west end of the desks.
+ *
+ * Phase 2 (D-01 cap 15, G3r, plan 02-03): NPC slots 10-14 reuse routes 0..4 with a seeded start point instead of new
+ * routes; slots 0..9 keep the Phase 1 mapping exactly (D-11 bench comparability). A navmesh replaces all of this
+ * in Phase 3.
  */
+import { BENCH_SEED, mulberry32 } from '../logic/rng';
 import type { WaypointPoint } from '../logic/waypointWalker';
 import { DESKS, PANTRY, PROP_PLACEMENTS } from './layout';
 
@@ -66,10 +71,19 @@ const EAST_AISLE_X = 3.0;
 const STORAGE_Z = 3.9;
 const STORAGE_STOP_X = 4.85;
 
-/** Routes 0-2 serve NPCs 1-8 as in plans 01-14..01-16; the highest NPC index is 9 (D-29: up to 10 NPCs). */
+/** Routes 0-2 serve NPCs 1-8 as in plans 01-14..01-16; NPCs 9 and 10 take routes 3 and 4 (D-29, 01-23). */
 const LEGACY_ROUTES = 3;
 const LEGACY_NPCS = 8;
-const MAX_NPC_INDEX = 9;
+/** Slots 0..9 are the Phase 1 mapping; slots 10..14 (NPCs 11-15) reuse the routes (G3r). */
+const PHASE1_SLOTS = 10;
+/** Number of NPC slots (D-01: up to 15 NPCs); the highest slot index is 14. */
+export const NPC_SLOT_COUNT = 15;
+const MAX_NPC_INDEX = NPC_SLOT_COUNT - 1;
+/** Spawn offset on x per earlier NPC sharing the route (game.ts SHARED_ROUTE_OFFSET, slots 0..7). */
+export const SHARED_ROUTE_OFFSET = 0.3;
+/** Minimum centre distance between a slot 10..14 spawn point and every other slot's spawn point. */
+export const MIN_SPAWN_GAP = 0.6;
+const SPAWN_GAP_EPS = 1e-9;
 
 function npcIndex(i: number): number {
   if (Number.isNaN(i)) return 0;
@@ -137,17 +151,103 @@ export const NPC_ROUTES: WaypointPoint[][] = [
 
 /**
  * NPC index -> route. NPCs 1-8 keep the routes they had in plans 01-14..01-16 (i % 3), so earlier measurements stay
- * comparable; NPCs 9 and 10 take the hand-placed routes 3 and 4 (D-29). The index is truncated and clamped to 0..9.
+ * comparable; NPCs 9 and 10 take the hand-placed routes 3 and 4 (D-29); slots 10..14 take routes (i - 10) % 5 (G3r).
+ * The index is truncated and clamped to 0..14.
  */
 export function routeIndexForNpc(i: number): number {
   const n = npcIndex(i);
-  return n < LEGACY_NPCS ? n % LEGACY_ROUTES : LEGACY_ROUTES + (n - LEGACY_NPCS);
+  if (n < LEGACY_NPCS) return n % LEGACY_ROUTES;
+  if (n < PHASE1_SLOTS) return LEGACY_ROUTES + (n - LEGACY_NPCS);
+  return (n - PHASE1_SLOTS) % NPC_ROUTES.length;
 }
 
-/** How many earlier NPCs share this NPC's route (the spawn offset multiplier): 0..7 -> floor(i / 3), 8 and 9 -> 0. */
+/** How many earlier NPCs share this NPC's route (the spawn offset multiplier): 0..7 -> floor(i / 3), 8..14 -> 0. */
 export function sharedIndexForNpc(i: number): number {
   const n = npcIndex(i);
   return n < LEGACY_NPCS ? Math.floor(n / LEGACY_ROUTES) : 0;
+}
+
+type Point = { readonly x: number; readonly z: number };
+
+/** Lazily computed start indices of slots 10..14, filled in slot order (each depends on the earlier slots). */
+const seededStarts: number[] = [];
+
+function minDistance(p: Point, others: readonly Point[]): number {
+  let best = Number.POSITIVE_INFINITY;
+  for (const q of others) best = Math.min(best, Math.hypot(p.x - q.x, p.z - q.z));
+  return best;
+}
+
+/** Start index of seeded slot n (10..14): computes and memoises every seeded slot up to n in order. */
+function seededStartIndex(n: number): number {
+  while (seededStarts.length <= n - PHASE1_SLOTS) {
+    const slot = PHASE1_SLOTS + seededStarts.length;
+    const route = NPC_ROUTES[routeIndexForNpc(slot)];
+    const earlier: Point[] = [];
+    for (let k = 0; k < slot; k++) earlier.push(spawnPointForNpc(k));
+    // Fisher-Yates order of this route's point indices from the slot's own seed.
+    const rng = mulberry32(BENCH_SEED + slot);
+    const order = route.map((_, k) => k);
+    for (let k = order.length - 1; k > 0; k--) {
+      const j = Math.floor(rng() * (k + 1));
+      const t = order[k];
+      order[k] = order[j];
+      order[j] = t;
+    }
+    let pick = order.find((k) => minDistance(route[k], earlier) >= MIN_SPAWN_GAP - SPAWN_GAP_EPS);
+    if (pick === undefined) {
+      // No point clears every earlier spawn: take the one farthest from all of them (ties -> lower index).
+      pick = 0;
+      let bestD = -1;
+      route.forEach((p, k) => {
+        const d = minDistance(p, earlier);
+        if (d > bestD) {
+          bestD = d;
+          pick = k;
+        }
+      });
+    }
+    seededStarts.push(pick);
+  }
+  return seededStarts[n - PHASE1_SLOTS];
+}
+
+/**
+ * Route point a slot starts at (and dwells at first). Slots 0..9: i % route.length, exactly as Phase 1. Slots 10..14:
+ * the first index of a mulberry32(BENCH_SEED + i) shuffle of the route whose point is >= MIN_SPAWN_GAP from every
+ * spawn point of slots 0..i-1 (fallback: the point farthest from all of them). Pure and stable across calls.
+ */
+export function routeStartIndexForNpc(i: number): number {
+  const n = npcIndex(i);
+  if (n >= PHASE1_SLOTS) return seededStartIndex(n);
+  return n % NPC_ROUTES[routeIndexForNpc(n)].length;
+}
+
+/** Spawn position of a slot: its route start point plus sharedIndexForNpc x SHARED_ROUTE_OFFSET on x. */
+export function spawnPointForNpc(i: number): { x: number; z: number } {
+  const route = NPC_ROUTES[routeIndexForNpc(i)];
+  const start = route[routeStartIndexForNpc(i)];
+  return { x: start.x + sharedIndexForNpc(i) * SHARED_ROUTE_OFFSET, z: start.z };
+}
+
+/**
+ * Index of the route point farthest from (px, pz) (quick add away from the player, RESEARCH Pitfall 15). Ties keep
+ * the lower index; non-finite points are skipped; -1 when the route is empty or has no finite point. With a
+ * non-finite player position every distance is unknown, so the first finite point is returned.
+ */
+export function farthestRouteIndex(route: readonly { x: number; z: number }[], px: number, pz: number): number {
+  let best = -1;
+  let bestD = Number.NEGATIVE_INFINITY;
+  const playerKnown = Number.isFinite(px) && Number.isFinite(pz);
+  route.forEach((p, k) => {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
+    const d = playerKnown ? Math.hypot(p.x - px, p.z - pz) : 0;
+    if (best < 0 || d > bestD) {
+      best = k;
+      bestD = d;
+    }
+  });
+  return best;
 }
 
 /** Axis-aligned static footprints the routes must clear (used by the unit test and handy for debugging). */
