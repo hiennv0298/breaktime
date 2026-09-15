@@ -5,13 +5,17 @@ import { attachJoystick } from '../input/joystick';
 import { attachKeyboard } from '../input/keyboard';
 import { attachPointerPick } from '../input/pointerPick';
 import { attachTouchButtons, setContextIcon } from '../input/touchButtons';
+import { createDebrisBudget, DEFAULT_DEBRIS_CAPACITY } from '../logic/debrisBudget';
 import { createHitStop, type HitStop } from '../logic/hitStop';
 import { iconFor, pickNearest, type Candidate } from '../logic/nearest';
 import { parseNpcAt } from '../logic/npcAt';
+import { TIERS } from '../logic/quality';
+import { BENCH_SEED, mulberry32 } from '../logic/rng';
 import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS } from '../physics/characterController';
 import { createProps, projectToScreen, type PropRecord } from '../physics/props';
 import { ragdollStats } from '../physics/ragdoll';
 import type { Physics } from '../physics/rapier';
+import { createShards } from '../physics/shards';
 import { createBlobShadows } from '../render/blobShadows';
 import { createCameraView, getCameraYaw } from '../render/cameraView';
 import { setHighlighted } from '../render/highlight';
@@ -19,6 +23,8 @@ import { parseOfficeAssets } from '../render/officeAssets';
 import type { RenderCtx } from '../render/renderer';
 import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
+import { createShardKit } from '../render/shardKit';
+import { createBreakables } from './breakables';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, ROOM, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
 import { createNpc, type Npc } from './npc';
@@ -50,6 +56,13 @@ export const MAX_NPCS = 8;
 const NPC_TARGET_RADIUS = 0.4;
 /** Spawn offset per extra NPC sharing a route, so capsules never start inside each other. */
 const SHARED_ROUTE_OFFSET = 0.3;
+/** ?scenario=smash fires on this fixed step, once everything has settled on its surface (plan 01-16). */
+export const SMASH_STEP = 30;
+
+/** T-01-16-03: only the literal value 'smash' is recognised. */
+export function scenarioFromQuery(search: string): 'smash' | null {
+  return new URLSearchParams(search).get('scenario') === 'smash' ? 'smash' : null;
+}
 
 /** ?npcs=N as an integer clamped to [0, 8]; missing or unparsable gives the default 3. */
 export function npcCountFromQuery(search: string): number {
@@ -131,13 +144,40 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     playerFoot.z = p.z;
     return playerFoot;
   }, CAPSULE_RADIUS * 1.5);
-  for (const rec of props.list()) {
-    shadows.addCaster(() => rec.object.position, rec.radius * 1.2);
-  }
+  const shadowOf = new Map<PropRecord, number>();
+  const addPropShadow = (rec: PropRecord) => shadowOf.set(rec, shadows.addCaster(() => rec.object.position, rec.radius * 1.2));
+  for (const rec of props.list()) addPropShadow(rec);
   for (const npc of npcs) {
     // Follows the capsule while walking and the torso while the NPC is a ragdoll.
     shadows.addCaster(() => npc.foot(), CAPSULE_RADIUS * 1.5);
   }
+
+  // D-13 debris: shared shard kit (5 InstancedMesh), pooled shard bodies, cap from the quality tier (D-21).
+  const shardKit = createShardKit(ctx.scene, DEFAULT_DEBRIS_CAPACITY);
+  const debrisBudget = createDebrisBudget(TIERS.high.debrisCap, DEFAULT_DEBRIS_CAPACITY);
+  const shards = createShards(ctx, shardKit, debrisBudget, DEFAULT_DEBRIS_CAPACITY);
+  const breakables = createBreakables(ctx, props, shards, {
+    onBreak(rec) {
+      const h = shadowOf.get(rec);
+      if (h !== undefined && h >= 0) shadows.remove(h);
+      shadowOf.delete(rec);
+    },
+    onReset() {
+      for (const rec of props.list()) if (!shadowOf.has(rec)) addPropShadow(rec);
+    },
+  });
+  const scenario = scenarioFromQuery(location.search);
+  let fixedSteps = 0;
+  let contactNowMs = 0;
+  // Hoisted so draining events allocates no closure per step. Both colliders are mapped: a flying ragdoll part or a
+  // chair hitting a mug reports the event on the mug's collider (D-12 + D-13).
+  const onContactForceEvent = (e: { collider1(): number; collider2(): number; totalForceMagnitude(): number }) => {
+    const force = e.totalForceMagnitude();
+    const a = props.byColliderHandle(e.collider1());
+    const b = props.byColliderHandle(e.collider2());
+    if (a) breakables.onContactForce(a.id, force, contactNowMs);
+    if (b) breakables.onContactForce(b.id, force, contactNowMs);
+  };
 
   const testBox = props.get(TEST_BOX_ID);
   if (!testBox) throw new Error('layout has no test box ' + TEST_BOX_ID);
@@ -183,6 +223,7 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       const entry = entryOf.get(c)!;
       if (entry.prop) {
         const rec = entry.prop;
+        if (rec.broken) continue; // a shattered object cannot be targeted
         // Collider centre in world space (the object origin is the bottom of the model).
         centreWorld.copy(rec.centre).applyQuaternion(rec.object.quaternion).add(rec.object.position);
         c.x = centreWorld.x;
@@ -268,6 +309,12 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
     hitStop,
     player,
     fixedUpdate(dt) {
+      // Contact force events of the previous world step (the queue auto-clears when the next step starts).
+      contactNowMs = performance.now();
+      ctx.physics.eventQueue.drainContactForceEvents(onContactForceEvent);
+      fixedSteps++;
+      if (scenario === 'smash' && fixedSteps === SMASH_STEP) breakables.smashAll(mulberry32(BENCH_SEED));
+
       player.fixedUpdate(dt, input);
       for (const npc of npcs) npc.fixedUpdate(dt);
       refreshTarget();
@@ -279,6 +326,7 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       if (pressed || (picked !== null && target !== null && picked === target.id)) interactTarget();
 
       props.fixedUpdate();
+      shards.fixedUpdate(dt);
     },
     frameUpdate(dt, nowMs) {
       // Animations stand still while paused (the loop still renders paused frames) and during a hit-stop freeze.
@@ -287,6 +335,8 @@ export async function createGame(ctx: GameCtx): Promise<Game> {
       player.frameUpdate(animDt);
       for (const npc of npcs) npc.frameUpdate(animDt);
       props.sync();
+      shards.sync();
+      shardKit.commit();
       // The shake keeps running through the hit-stop (that is the point) but waits while paused.
       cameraView.update(dt, player.pos(), paused ? 0 : dt);
       room.update(getCameraYaw());

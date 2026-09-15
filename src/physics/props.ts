@@ -17,6 +17,14 @@ const PUSH_UP = 1.2;
 const MIN_HALF_EXTENT = 0.03;
 /** Spawn gap above the supporting surface so no body starts in contact penetration. */
 const SPAWN_GAP = 0.005;
+/**
+ * Contact force events (plan 01-16): a prop collider reports contacts whose total force exceeds this many newtons PER KG
+ * of its own mass. Every prop has density 1, so a raw newton threshold would depend on the object's size (a mug weighs
+ * 2 g, a chair 360 g). Resting on a surface is ~9.8 N/kg; a mug knocked off a desk peaks at ~255 N/kg (measured).
+ */
+export const CONTACT_FORCE_EVENT_THRESHOLD = 8;
+/** A prop counts as knocked once it is this far (m) from its home position, or broken. */
+export const MOVED_DISTANCE = 0.3;
 
 export interface PropRecord {
   id: string;
@@ -30,6 +38,10 @@ export interface PropRecord {
   home: { pos: Vector3; quat: Quaternion };
   /** Collider (bounding box) centre in the object's local frame. */
   centre: Vector3;
+  /** Collider half extents in metres (object scale applied). */
+  halfExtents: Vector3;
+  /** Set by breakables (plan 01-16): the object is hidden and its body disabled until resetAll(). */
+  broken: boolean;
 }
 
 export interface Props {
@@ -39,6 +51,12 @@ export interface Props {
   fixedUpdate(): void;
   sync(): void;
   byColliderHandle(h: number): PropRecord | undefined;
+  /** Props displaced >= MOVED_DISTANCE from home, or broken. */
+  movedCount(): number;
+  /** Currently broken props. */
+  brokenCount(): number;
+  /** Every prop back to its home transform, at rest, visible, body enabled (plan 01-18 soak). */
+  resetAll(): void;
   /** Current camera, used only by the lazy `__bt.props` screen projection. */
   setCamera(camera: Camera, viewport: () => { width: number; height: number }): void;
 }
@@ -110,6 +128,9 @@ export function createProps(
       R.ColliderDesc.cuboid(hx, hy, hz).setTranslation(centre.x, centre.y, centre.z).setDensity(1).setRestitution(0.1),
       body,
     );
+    // Contact force events for breaks and drop SFX; the threshold scales with the prop's own mass.
+    collider.setActiveEvents(R.ActiveEvents.CONTACT_FORCE_EVENTS);
+    collider.setContactForceEventThreshold(CONTACT_FORCE_EVENT_THRESHOLD * body.mass());
 
     object.position.copy(pos);
     object.quaternion.copy(quat);
@@ -126,6 +147,8 @@ export function createProps(
       mass: body.mass(),
       home: { pos: pos.clone(), quat: quat.clone() },
       centre,
+      halfExtents: new Vector3(hx, hy, hz),
+      broken: false,
     };
     if (byId.has(rec.id)) throw new Error('duplicate prop id ' + rec.id);
     records.push(rec);
@@ -136,6 +159,26 @@ export function createProps(
 
   let breakableCount = 0;
   for (const r of records) if (r.kind === 'breakable') breakableCount++;
+
+  function movedCount(): number {
+    let n = 0;
+    for (const r of records) {
+      if (r.broken) {
+        n++;
+        continue;
+      }
+      const t = r.body.translation();
+      const h = r.home.pos;
+      if (Math.hypot(t.x - h.x, t.y - h.y, t.z - h.z) >= MOVED_DISTANCE) n++;
+    }
+    return n;
+  }
+
+  function brokenCount(): number {
+    let n = 0;
+    for (const r of records) if (r.broken) n++;
+    return n;
+  }
 
   registerDebug('props', () => {
     const size = viewport();
@@ -150,10 +193,18 @@ export function createProps(
         kind: r.kind,
         pos: [t.x, t.y, t.z],
         sleeping,
+        broken: r.broken,
         screen: camera ? projectToScreen(r, camera, size.width, size.height) : { x: -1, y: -1 },
       };
     });
-    return { dynamicCount: records.length, breakableCount, sleepingCount, list };
+    return {
+      dynamicCount: records.length,
+      breakableCount,
+      sleepingCount,
+      movedCount: movedCount(),
+      brokenCount: brokenCount(),
+      list,
+    };
   });
 
   return {
@@ -165,7 +216,7 @@ export function createProps(
     },
     push(id, dirX, dirZ) {
       const rec = byId.get(id);
-      if (!rec) return;
+      if (!rec || rec.broken) return;
       const len = Math.hypot(dirX, dirZ);
       if (!Number.isFinite(len) || len < 1e-6) return;
       const m = rec.mass > 0 ? rec.mass : rec.body.mass();
@@ -178,6 +229,7 @@ export function createProps(
     },
     fixedUpdate() {
       for (const rec of records) {
+        if (rec.broken) continue;
         const body = rec.body;
         if (body.isSleeping()) {
           calmSteps.set(rec, 0);
@@ -197,6 +249,7 @@ export function createProps(
     },
     sync() {
       for (const rec of records) {
+        if (rec.broken) continue;
         const t = rec.body.translation();
         const q = rec.body.rotation();
         rec.object.position.set(t.x, t.y, t.z);
@@ -205,6 +258,26 @@ export function createProps(
     },
     byColliderHandle(h) {
       return byCollider.get(h);
+    },
+    movedCount,
+    brokenCount,
+    resetAll() {
+      const zero = { x: 0, y: 0, z: 0 };
+      for (const rec of records) {
+        const body = rec.body;
+        // Broken props only had their body disabled (never removed), so the collider handle and mass stay valid.
+        if (!body.isEnabled()) body.setEnabled(true);
+        body.setTranslation(rec.home.pos, false);
+        body.setRotation(rec.home.quat, false);
+        body.setLinvel(zero, false);
+        body.setAngvel(zero, false);
+        body.wakeUp();
+        rec.broken = false;
+        rec.object.visible = true;
+        rec.object.position.copy(rec.home.pos);
+        rec.object.quaternion.copy(rec.home.quat);
+        calmSteps.set(rec, 0);
+      }
     },
     setCamera(cam, vp) {
       camera = cam;
