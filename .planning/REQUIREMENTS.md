@@ -11,8 +11,8 @@
 - [ ] **TECH-02**: Phần tải lần đầu (tới lúc chơi được) ≤ 8 MB, trần cứng ≤ 20 MB; build in ra kích thước từng phần
 - [ ] **TECH-03**: Game giữ ≥ 30 fps trên máy Android tầm trung và 60 fps trên desktop ở màn nặng nhất
 - [ ] **TECH-04**: Chơi liên tục 15 phút trên Safari iOS không crash, không reload
-- [ ] **TECH-05**: Game không gửi request nào ra ngoài (font, asset, thư viện đóng gói hết)
-- [ ] **TECH-06**: Logic gameplay (nghi ngờ, tin đồn, quan hệ, điểm) có unit test chạy không cần trình duyệt
+- [x] **TECH-05**: Game không gửi request nào ra ngoài (font, asset, thư viện đóng gói hết)
+- [x] **TECH-06**: Logic gameplay (nghi ngờ, tin đồn, quan hệ, điểm) có unit test chạy không cần trình duyệt
 - [ ] **TECH-07**: Có HUD debug bật/tắt được, hiện fps, draw call, số physics body
 
 ### Điều khiển (CTRL)
@@ -131,8 +131,8 @@
 | TECH-02 | Phase 1 | Pending |
 | TECH-03 | Phase 1 | Pending |
 | TECH-04 | Phase 1 | Pending |
-| TECH-05 | Phase 1 | Pending |
-| TECH-06 | Phase 1 | Pending |
+| TECH-05 | Phase 1 | Complete |
+| TECH-06 | Phase 1 | Complete |
 | TECH-07 | Phase 1 | Pending |
 | CTRL-01 | Phase 1 | Pending |
 | CTRL-02 | Phase 1 | Pending |
@@ -186,6 +186,7 @@
 | PLAT-05 | Phase 8 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 57 total
 - Mapped to phases: 57
 - Unmapped: 0 ✓

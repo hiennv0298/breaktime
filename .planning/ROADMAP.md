@@ -47,7 +47,7 @@ Làm sớm hơn thì phải làm lại.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Package legitimacy gate (human-action) + exact-pin scaffold, configs, CSP, sha badge (W1)
+- [x] 01-01-PLAN.md — Package legitimacy gate (human-action) + exact-pin scaffold, configs, CSP, sha badge (W1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 0/21 | Planned | - |
+| 1. Spike kỹ thuật & đường deploy | 1/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-09-14T11:56:11.446Z"
-last_activity: 2026-09-14 — Khởi tạo dự án, ROADMAP 8 phase / 57 requirement
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-09-15T02:54:40.394Z"
+last_activity: 2026-09-15 -- Phase 1 execution started
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 21
+  completed_plans: 1
   percent: 0
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 
 ## Current Position
 
-Phase: 1 of 8 (Spike kỹ thuật & đường deploy)
-Plan: 0 of TBD in current phase
+Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
+Plan: 2 of 21
 Status: Ready to execute
-Last activity: 2026-09-14 — Khởi tạo dự án, ROADMAP 8 phase / 57 requirement
+Last activity: 2026-09-15 -- Completed 01-01 (scaffold, CSP, sha badge, test runners)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 5%
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 01 P01 | 6min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - [Init]: Three.js + Rapier, không Unity — chờ Phase 1 đo thật trên máy
 - [Init]: Solo dev + Claude, asset CC0, CrazyGames Basic Launch là đích đầu
 - [Init]: Deploy thử là static site sau Caddy của stack `doibung` trên VPS `ssh doibung`
+- [Phase 01]: 01-01: operator approved all 11 pinned packages incl. vitest@5.0.0, ffmpeg-static@5.3.0 (GPL dev-only, D-25) and @types/node@22.20.2 before install; RESEARCH audit Rejected row for ffmpeg-static superseded
+- [Phase 01]: 01-01: buildInfo reads __BUILD_SHA__ via typeof guard so testHook imports in Vitest/Node; e2e proves real sha in bundle
+- [Phase 01]: 01-01: window.__bt is a non-configurable null-prototype object with getter-only keys; testHook declines HMR
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-14T08:31:28.462Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-spike-k-thu-t-ng-deploy/01-CONTEXT.md
+Last session: 2026-09-15T02:54:32.129Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
