@@ -142,7 +142,11 @@ body { background: #1d1f24; color: #f2f2f2; }
   -webkit-user-select: none;
   user-select: none;
   cursor: pointer;
+  /* Semi-transparent so the office shows through (D-28, CTRL-06); a pressed button comes back almost solid. */
+  opacity: 0.6;
+  transition: opacity 120ms;
 }
+[data-hud-button]:active { opacity: 0.95; }
 [data-hud-button][hidden] { display: none; }
 [data-hud-button] svg { pointer-events: none; }
 #btn-context {

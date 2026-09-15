@@ -6,6 +6,7 @@ import { makeStepper } from '../logic/fixedStep';
 import { createPauseState, type PauseState } from '../logic/pauseState';
 import { TIER_LABEL_VI } from '../logic/quality';
 import { createDebugHud } from '../ui/debugHud';
+import { createKeyHints, createKeyHintsSection } from '../ui/keyHints';
 import { createPauseMenu, createQualityControls } from '../ui/pauseMenu';
 import type { Game, GameCtx } from './game';
 import { createQualityManager } from './qualityManager';
@@ -39,6 +40,9 @@ export function startLoop(ctx: GameCtx, game: Game): void {
   // Resuming only happens through the menu or the toggle keys/button, never automatically.
   const menu = createPauseMenu(() => pauseState.resume());
   menu.addSection(createQualityControls(hud));
+  // Key hint panel + touch hint (D-28, CTRL-06), toggled from the same menu.
+  const hints = createKeyHints();
+  menu.addSection(createKeyHintsSection(hints));
   let menuShown = false;
 
   registerDebug('simStep', () => simStep);
