@@ -52,7 +52,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Boot slice: capability gate, loading bar, Chơi, Rapier SIMD/compat loop, unsupported screen (W2)
-- [ ] 01-04-PLAN.md — Server wiring tooling: drift check, token-gated idempotent infra:apply/rollback, HANDOFF (W2)
+- [x] 01-04-PLAN.md — Server wiring tooling: drift check, token-gated idempotent infra:apply/rollback, HANDOFF (W2)
 - [ ] 01-05-PLAN.md — CC0 asset pipeline: Kenney packs, gltf-transform, ffmpeg-static MP3/textures, CREDITS.md (W2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 2/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 3/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |

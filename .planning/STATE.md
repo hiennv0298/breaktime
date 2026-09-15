@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-09-15T03:17:16.901Z"
-last_activity: 2026-09-15 -- Completed 01-02 (boot slice: gate, loading, Chơi, Rapier loop, unsupported screen)
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-09-15T03:58:03.643Z"
+last_activity: "2026-09-15 -- Completed 01-04 (server tooling: drift check, token-gated infra:apply/rollback, HANDOFF; live refusals exit 3, doibung untouched)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 14
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 3 of 21
+Plan: 4 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-02 (boot slice: gate, loading, Chơi, Rapier loop, unsupported screen)
+Last activity: 2026-09-15 -- Completed 01-04 (server tooling: drift check, token-gated infra:apply/rollback, HANDOFF; live refusals exit 3, doibung untouched)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Progress: [█░░░░░░░░░] 10%
 *Updated after each plan completion*
 | Phase 01 P01 | 6min | 3 tasks | 16 files |
 | Phase 01 P02 | 18min | 2 tasks | 17 files |
+| Phase 01 P04 | 35min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-02: csp.spec waits for ready-to-play instead of booting (boot leaves booting synchronously); the wait also proves Rapier WASM instantiates under the CSP
 - [Phase 01]: 01-02: three, Rapier and loading/playGate are dynamic imports after detect(); unsupported path downloads only index JS + CSS (3 requests measured)
 - [Phase 01]: 01-02: SIMD Rapier module cast to RapierApi (typeof rapier3d-compat); identical .d.ts but nominally distinct classes
+- [Phase 01]: 01-04: apply nonce is taken with atomic mv before comparison, so any attempt burns it and concurrent applies cannot share it
+- [Phase 01]: 01-04: rollback approval code binds NEED_* to ROLLBACK:<dir>, so an apply code can never approve a rollback (shared nonce file)
+- [Phase 01]: 01-04: preflight also fails when caddy image tag moved off the running image or nodb compose does not render; recreate adds --pull never
+- [Phase 01]: 01-04: auto-rollback only when doibung.com is not 200 within 60 s; other post-recreate failures exit 6 with the token-gated rollback command
 
 ### Pending Todos
 
@@ -87,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T03:17:16.890Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-09-15T03:58:03.630Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
