@@ -1,0 +1,73 @@
+/* Debug HUD (TECH-07): top-left under #build-badge, never intercepts input. */
+#debug-hud {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 30px);
+  left: calc(env(safe-area-inset-left) + 8px);
+  z-index: 1000;
+  pointer-events: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #d7ffd9;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+#debug-hud[hidden] { display: none; }
+
+/* Pause-menu quality / HUD controls (D-21). */
+#pause-menu .quality-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#pause-menu .quality-section .label { font-size: 15px; opacity: 0.85; }
+#pause-menu .tier-buttons { display: flex; gap: 8px; }
+#pause-menu .tier-buttons button,
+#hud-toggle {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 17px;
+  color: #f2f2f2;
+  background: #3b3f48;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+#pause-menu .tier-buttons button[aria-pressed='true'],
+#hud-toggle[aria-pressed='true'] {
+  border-color: #ffc83d;
+  background: #4a4f5a;
+}
+
+/* WebGL context lost (D-22, T-01-11-04): readable prompt instead of a black canvas. */
+#context-lost {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: #1d1f24;
+  color: #f2f2f2;
+  font-size: 20px;
+  text-align: center;
+  touch-action: manipulation;
+}
+#context-lost[hidden] { display: none; }
+#context-lost button {
+  min-width: 160px;
+  min-height: 56px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  color: #1d1f24;
+  background: #ffc83d;
+  cursor: pointer;
+}

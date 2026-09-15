@@ -8,6 +8,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { registerDebug } from '../debug/testHook';
+import { getPauseState } from '../game/loop';
+import { subscribeQuality } from '../game/qualityManager';
+import { TIERS, type Tier } from '../logic/quality';
+import '../ui/debugHud.css';
 
 export interface RenderCtx {
   renderer: WebGLRenderer;
@@ -44,8 +48,47 @@ export function createRenderer(container: HTMLElement): RenderCtx {
   camera.lookAt(0, 0, 0);
 
   installResizeGuard(renderer, camera);
+  installContextLossHandler(canvas);
 
   return { renderer, scene, camera };
+}
+
+let contextLostCount = 0;
+
+/**
+ * WebGL context loss (D-22, T-01-11-04, TECH-04 soak): pause the game and show a Vietnamese reload prompt instead of
+ * a black canvas. preventDefault keeps restoration possible, but reloading is the path offered to the player.
+ */
+function installContextLossHandler(canvas: HTMLCanvasElement): void {
+  let overlay: HTMLDivElement | undefined;
+
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    contextLostCount++;
+    getPauseState().pauseFor('context-lost');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'context-lost';
+      overlay.setAttribute('role', 'alertdialog');
+      overlay.setAttribute('aria-live', 'assertive');
+      const msg = document.createElement('p');
+      msg.textContent = 'Mất kết nối đồ hoạ. Chạm để tải lại.';
+      const reload = document.createElement('button');
+      reload.type = 'button';
+      reload.textContent = 'Tải lại';
+      reload.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        location.reload();
+      });
+      // "Chạm để tải lại": a tap anywhere on the prompt reloads too.
+      overlay.addEventListener('click', () => location.reload());
+      overlay.append(msg, reload);
+      document.body.appendChild(overlay);
+    }
+    overlay.hidden = false;
+  });
+
+  registerDebug('contextLostCount', () => contextLostCount);
 }
 
 const RESIZE_DEBOUNCE_MS = 100;
@@ -78,14 +121,19 @@ function installResizeGuard(renderer: WebGLRenderer, camera: PerspectiveCamera):
   let backW = -1;
   let backH = -1;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** Quality tier (D-21); null until the loop creates the quality manager, meanwhile the cap is MAX_DPR. */
+  let tier: Tier | null = null;
 
+  /** `initial` / tier changes recompute the backbuffer without counting as a viewport resize. */
   function apply(initial: boolean): void {
     const size = viewportSize();
     setPortraitClass(size.width, size.height);
-    const ratio = Math.min(Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1, MAX_DPR);
+    const deviceRatio = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
+    const cap = tier ? TIERS[tier].dprCap : MAX_DPR;
+    const ratio = Math.min(deviceRatio, cap, MAX_DPR);
     const bw = Math.floor(size.width * ratio);
     const bh = Math.floor(size.height * ratio);
-    if (bw === backW && bh === backH) return;
+    if (bw === backW && bh === backH && ratio === dpr) return;
     backW = bw;
     backH = bh;
     width = size.width;
@@ -115,11 +163,18 @@ function installResizeGuard(renderer: WebGLRenderer, camera: PerspectiveCamera):
   window.addEventListener('orientationchange', schedule);
   window.visualViewport?.addEventListener('resize', schedule);
 
+  // A tier change re-applies setPixelRatio(Math.min(devicePixelRatio, TIERS[tier].dprCap)) right away (D-21).
+  subscribeQuality((t) => {
+    tier = t;
+    apply(true);
+  });
+
   registerDebug('renderer', () => ({
     resizeCount,
     width,
     height,
     dpr,
+    tier,
     shadowMapEnabled: renderer.shadowMap.enabled,
   }));
 }

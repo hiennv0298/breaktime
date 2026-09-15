@@ -1,6 +1,8 @@
 import { Vector3, type PerspectiveCamera } from 'three';
 import { registerDebug } from '../debug/testHook';
+import { subscribeQuality } from '../game/qualityManager';
 import { createCameraRig, viewParams } from '../logic/cameraRig';
+import { TIERS } from '../logic/quality';
 
 export interface CameraView {
   update(dt: number, target: { x: number; y: number; z: number }): void;
@@ -37,6 +39,12 @@ export function createCameraView(camera: PerspectiveCamera): CameraView {
   let distance = start.distance;
   let pitchDeg = start.pitchDeg;
 
+  // Draw distance follows the quality tier (D-21): camera.far 40 / 30 / 22 m for Cao / Vừa / Thấp.
+  subscribeQuality((tier) => {
+    camera.far = TIERS[tier].far;
+    camera.updateProjectionMatrix();
+  });
+
   if (!debugRegistered) {
     debugRegistered = true;
     registerDebug('camera', () => ({
@@ -44,6 +52,7 @@ export function createCameraView(camera: PerspectiveCamera): CameraView {
       targetYawDeg: rig.targetYawDeg(),
       distance,
       pitchDeg,
+      far: camera.far,
     }));
   }
 
