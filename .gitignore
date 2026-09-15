@@ -10,3 +10,6 @@ coverage/
 Thumbs.db
 # asset gốc tải về (zip pack CC0) — chỉ commit bản đã tối ưu trong public/assets
 assets-src/downloads/
+test-results/
+playwright-report/
+assets-src/.tmp/
