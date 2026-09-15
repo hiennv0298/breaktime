@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-17-PLAN.md
-last_updated: "2026-09-15T14:26:16.047Z"
-last_activity: "2026-09-15 -- Completed 01-17 (?bench=1 seeded 60 s scenario with 10 NPCs via createGame forcedNpcCount MAX_NPCS: autopilot walk + slaps, all 10 ragdolls at once, smash; results screen with avg/1% low fps, peak draws/bodies, NPC, ragdolls, knocked/broken, tier+source, Rapier, DPR/backbuffer, throttled, sha, UA; headless dur 8: 10 NPC, 10 ragdolls, 31-33 knocked (11 broken), peak draws 91, bodies 165; stored count 2 still 10; vitest 465/465, playwright 90 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-07 left open for real devices)"
+stopped_at: Completed 01-18-PLAN.md
+last_updated: "2026-09-15T15:32:38.113Z"
+last_activity: "2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 23
-  percent: 85
+  completed_plans: 24
+  percent: 89
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 24 of 27 (01-01..01-17, 01-22..01-27 complete; next 01-18)
+Plan: 25 of 27 (01-01..01-18, 01-22..01-27 complete; next 01-19)
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-17 (?bench=1 seeded 60 s scenario with 10 NPCs via createGame forcedNpcCount MAX_NPCS: autopilot walk + slaps, all 10 ragdolls at once, smash; results screen with avg/1% low fps, peak draws/bodies, NPC, ragdolls, knocked/broken, tier+source, Rapier, DPR/backbuffer, throttled, sha, UA; headless dur 8: 10 NPC, 10 ragdolls, 31-33 knocked (11 broken), peak draws 91, bodies 165; stored count 2 still 10; vitest 465/465, playwright 90 passed 0 failed, SIZE_GATE_OK; TECH-03/TECH-07 left open for real devices)
+Last activity: 2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 85%
 | Phase 01 P26 | 15min | 2 tasks | 7 files |
 | Phase 01 P27 | 31min | 3 tasks | 7 files |
 | Phase 01 P17 | 22min | 2 tasks | 11 files |
+| Phase 01 P18 | 65min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-17: massRagdoll slaps every slappable NPC in one step outside the swing gate, then for up to 300 steps slaps NPCs that stand up from an earlier slap until all active NPCs are ragdolls at once (measured 0 late slaps at dur 8 and 60); scripted slapNearest goes through the swing gate
 - [Phase 01]: 01-17: bench mode keeps pause toggles but the player reads an autopilot-owned InputState (Game.playerInput); presses/clicks dropped, joystick and pointer pick not attached; loop.ts onStep runs before fixedUpdate, onFrame after render with workMs
 - [Phase 01]: 01-17: frames recorded after a 60-step warm-up and never while paused; results overlay #bench-results z 1100 over a pauseFor('user'); bench waypoints = spawn + NPC_ROUTES de-duplicated at 1 cm (raw corners repeat and the loop paced in place)
+- [Phase 01]: 01-18: ?soak=1 loops the 10-NPC bench timeline per cycle with a full reset (NPCs recover to routes, player.teleport to spawn, breakables.resetAll creates nothing); leak proxy = geometries/textures/bodies at end of cycle 1 vs last cycle; soakMin 1..30 (15), soakCycles 1..100, dur 5..60; ?soak=1 wins over ?bench=1
+- [Phase 01]: 01-18: crash beacon localStorage bt.beacon (sha + timestamps only, try/catch, heartbeat 5 s, clean on pagehide, stale after 20 s) shows #crash-banner via textContent on the next load; nothing sent off-origin
+- [Phase 01]: 01-18: measurement build 1ecc53ce473e live (DEPLOY_OK, poller 38/38 200, SITE_FILE_UNCHANGED) on the third attempt after an SSH reset at upload and a swing mashing flake (300.1 ms vs < 300); operator approved 60 -> 40 ms waits, SWING_COOLDOWN_MS and assertions unchanged
 
 ### Pending Todos
 
@@ -175,6 +179,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T14:26:16.032Z
-Stopped at: Completed 01-17-PLAN.md
+Last session: 2026-09-15T15:32:38.100Z
+Stopped at: Completed 01-18-PLAN.md
 Resume file: None

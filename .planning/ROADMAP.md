@@ -109,7 +109,7 @@ Plans:
 
 **Wave 14** *(blocked on Wave 13 completion)*
 
-- [ ] 01-18-PLAN.md — `?soak=1` 15-min soak, crash beacon, leak proxy, deploy measurement build (W14)
+- [x] 01-18-PLAN.md — `?soak=1` 15-min soak, crash beacon, leak proxy, deploy measurement build (W14)
 
 **Wave 15** *(blocked on Wave 14 completion)*
 
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 23/27 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 24/27 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
