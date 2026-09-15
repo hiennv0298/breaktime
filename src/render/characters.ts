@@ -8,11 +8,13 @@ import {
   RepeatWrapping,
   SRGBColorSpace,
   TextureLoader,
+  Vector3,
   type AnimationAction,
   type AnimationClip,
   type Material,
   type Mesh,
   type Object3D,
+  type SkinnedMesh,
   type Texture,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -20,6 +22,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { registerDebug } from '../debug/testHook';
 import { characterTextureUrl } from '../game/assets';
+import { buildRigidSkin } from './rigidSkin';
 
 /**
  * Kenney Blocky Characters (D-09): one shared character.glb (6 rigid parts, 27 clips) cloned per character with a
@@ -44,6 +47,11 @@ export interface CharacterInstance {
   parts: Object3D[];
   /** Shared by every character using the same texture letter. */
   material: MeshLambertMaterial;
+  /**
+   * The one rendered mesh (plan 01-23, RESEARCH A6): the 6 part meshes merged with one rigid bone per part, so a
+   * character is 1 draw call. The original part meshes stay as hidden children (ragdoll sizing, pointer pick).
+   */
+  skinned: SkinnedMesh;
   setMotion(name: CharacterMotion, fadeSec?: number): void;
   dispose(): void;
 }
@@ -57,12 +65,29 @@ const textures = new Map<string, Texture>();
 const materials = new Map<string, MeshLambertMaterial>();
 /** Model scale and foot offset per parsed asset, measured once from the bind pose. */
 const fit = new WeakMap<Object3D, { scale: number; offsetY: number }>();
+/** Live characters (spawned and not disposed), for __bt.characters. */
+const live = new Set<{ letter: string; skinned: SkinnedMesh }>();
 let debugRegistered = false;
 
 function ensureDebug(): void {
   if (debugRegistered) return;
   debugRegistered = true;
-  registerDebug('characters', () => ({ texturesLoaded: textures.size }));
+  registerDebug('characters', () => ({
+    texturesLoaded: textures.size,
+    skinnedMeshes: live.size,
+    drawsPerCharacter: 1,
+    // World bounds of each skin, computed only when the test hook is read (per-vertex bone transform).
+    get skin() {
+      const out: Array<{ letter: string; centre: [number, number, number]; height: number }> = [];
+      for (const c of live) {
+        c.skinned.computeBoundingBox();
+        const box = new Box3().copy(c.skinned.boundingBox!).applyMatrix4(c.skinned.matrixWorld);
+        const centre = box.getCenter(new Vector3());
+        out.push({ letter: c.letter, centre: [centre.x, centre.y, centre.z], height: box.max.y - box.min.y });
+      }
+      return out;
+    },
+  }));
 }
 
 export async function parseCharacterAsset(glb: ArrayBuffer): Promise<CharacterAsset> {
@@ -152,6 +177,11 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
     return node;
   });
 
+  // One draw call per character (plan 01-23). Built in the bind pose, before the mixer touches the parts.
+  const skinned = buildRigidSkin(model, CHARACTER_PARTS, material, asset.scene).mesh;
+  const liveEntry = { letter: textureLetter, skinned };
+  live.add(liveEntry);
+
   const root = new Group();
   root.name = 'character-' + textureLetter;
   root.add(model);
@@ -176,6 +206,7 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
     mixer,
     parts,
     material,
+    skinned,
     setMotion(name, fadeSec = DEFAULT_FADE) {
       if (name === current) return;
       const prev = action(current);
@@ -192,6 +223,8 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
       mixer.uncacheRoot(model);
       actions.clear();
       root.removeFromParent();
+      live.delete(liveEntry);
+      skinned.skeleton.dispose(); // this character's bone texture
       // Geometry, textures and materials are shared and cached; they stay alive for other characters.
     },
   };

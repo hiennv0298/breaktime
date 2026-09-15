@@ -142,7 +142,7 @@ test.describe('characters desktop', () => {
 
   // Operator ask for 01-23: the SUMMARY reports idle AND smash-peak numbers at both 3 and 10 NPCs; the two tests
   // above give 3 idle and 10 smash, this one adds 10 idle and 3 smash under the same budget.
-  test('budget measured idle at 10 NPCs and at the smash peak with 3 NPCs', async ({ page, baseURL }) => {
+  test('budget measured idle with ten coworkers and at the smash peak with three', async ({ page, baseURL }) => {
     const problems10 = await startPlaying(page, baseURL!, './?autoplay=1&npcs=10');
     await page.waitForTimeout(1500);
     const idle10 = (await bt(page, 'hud'))!;
