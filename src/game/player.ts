@@ -19,6 +19,8 @@ export interface Player {
   swing(towardX?: number, towardZ?: number): void;
   /** Turn toward a world point and play the slap swing (plan 01-15); same as swing(x, z). */
   slapAt(x: number, z: number): void;
+  /** Put the capsule back at a floor point, facing the default direction (plan 01-18 soak reset). */
+  teleport(x: number, z: number): void;
 }
 
 const SPEED = 3.2; // m/s
@@ -111,6 +113,18 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
     swing,
     slapAt(x, z) {
       swing(x, z);
+    },
+    teleport(x, z) {
+      if (!Number.isFinite(x) || !Number.isFinite(z)) return;
+      const y = body.position().y;
+      const at = { x, y: Math.max(y, footY), z };
+      body.body.setTranslation(at, true);
+      body.body.setNextKinematicTranslation(at);
+      lastX = x;
+      lastZ = z;
+      speed = 0;
+      facing = 0;
+      swingLeft = 0;
     },
   };
 }

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { benchFromQuery, buildTimeline, parseBenchDuration, type BenchAction } from '../../src/logic/benchTimeline';
+import {
+  benchFromQuery,
+  buildTimeline,
+  parseBenchDuration,
+  soakFromQuery,
+  soakOptionsFromQuery,
+  type BenchAction,
+} from '../../src/logic/benchTimeline';
 
 /*
  * Plan 01-17 (D-08, D-11 revised, D-29): the ?bench=1 scenario is pure data driven by the simulation-step index, so a
@@ -157,5 +164,44 @@ describe('benchFromQuery', () => {
     expect(benchFromQuery('?bench=true')).toBe(false);
     expect(benchFromQuery('?bench=0')).toBe(false);
     expect(benchFromQuery('')).toBe(false);
+  });
+});
+
+describe('soak query (plan 01-18, T-01-18-05)', () => {
+  it('only soak=1 turns the soak on', () => {
+    expect(soakFromQuery('?soak=1')).toBe(true);
+    expect(soakFromQuery('?soak=true')).toBe(false);
+    expect(soakFromQuery('?bench=1')).toBe(false);
+    expect(soakFromQuery('')).toBe(false);
+  });
+
+  it('defaults: 15 minutes, 60 s cycles, no cycle limit', () => {
+    expect(soakOptionsFromQuery('?soak=1')).toEqual({ minutes: 15, cycleSec: 60 });
+  });
+
+  it('soakMin is a plain integer clamped to 1..30', () => {
+    expect(soakOptionsFromQuery('?soak=1&soakMin=5').minutes).toBe(5);
+    expect(soakOptionsFromQuery('?soak=1&soakMin=0').minutes).toBe(1);
+    expect(soakOptionsFromQuery('?soak=1&soakMin=-3').minutes).toBe(1);
+    expect(soakOptionsFromQuery('?soak=1&soakMin=999').minutes).toBe(30);
+    // '+' in a query string decodes to a space, so a literal plus sign is %2B.
+    for (const raw of ['', 'abc', '2.5', '1e2', '%2B5']) expect(soakOptionsFromQuery('?soak=1&soakMin=' + raw).minutes).toBe(15);
+  });
+
+  it('soakCycles is optional and clamped to 1..100', () => {
+    expect(soakOptionsFromQuery('?soak=1&soakCycles=3').maxCycles).toBe(3);
+    expect(soakOptionsFromQuery('?soak=1&soakCycles=0').maxCycles).toBe(1);
+    expect(soakOptionsFromQuery('?soak=1&soakCycles=5000').maxCycles).toBe(100);
+    for (const raw of ['', 'x', '3.5', '1e1']) {
+      expect(soakOptionsFromQuery('?soak=1&soakCycles=' + raw).maxCycles).toBeUndefined();
+      expect('maxCycles' in soakOptionsFromQuery('?soak=1&soakCycles=' + raw)).toBe(false);
+    }
+  });
+
+  it('dur sets the cycle length through parseBenchDuration (5..60)', () => {
+    expect(soakOptionsFromQuery('?soak=1&dur=6').cycleSec).toBe(6);
+    expect(soakOptionsFromQuery('?soak=1&dur=2').cycleSec).toBe(5);
+    expect(soakOptionsFromQuery('?soak=1&dur=900').cycleSec).toBe(60);
+    expect(soakOptionsFromQuery('?soak=1&soakCycles=3&dur=6')).toEqual({ minutes: 15, cycleSec: 6, maxCycles: 3 });
   });
 });

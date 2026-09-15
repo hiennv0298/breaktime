@@ -1,0 +1,43 @@
+/* Soak panel (plan 01-18, TECH-04): bottom left, never takes input, readable in a phone screenshot. */
+#soak-panel {
+  position: fixed;
+  left: calc(env(safe-area-inset-left) + 8px);
+  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  z-index: 1000;
+  box-sizing: border-box;
+  max-width: min(92vw, 420px);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(13, 15, 18, 0.82);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+#soak-panel .title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffd54f;
+}
+
+#soak-panel .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#soak-panel .row span:last-child {
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+#soak-panel .status {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+#soak-panel .status.done {
+  color: #81c784;
+}

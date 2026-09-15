@@ -59,14 +59,13 @@ export const MASS_RAGDOLL_WINDOW_STEPS = 300;
 
 let started = false;
 
-export function startBench(game: Game, opts: { durationSec: number }): BenchRun {
-  if (started) throw new Error('bench already started');
-  started = true;
-
-  const durationSec = opts.durationSec;
-  // Route corners repeat across the NPC routes (west column, north lane); duplicates would make the loop pace in place.
+/**
+ * Player spawn + every NPC route point, de-duplicated at 1 cm (shared by the 01-17 bench and the 01-18 soak). Route
+ * corners repeat across the NPC routes (west column, north lane); duplicates would make the loop pace in place.
+ */
+export function benchWaypoints(): { x: number; z: number }[] {
   const seen = new Set<string>();
-  const waypoints = [{ x: PLAYER_SPAWN.x, z: PLAYER_SPAWN.z }, ...NPC_ROUTES.flat()]
+  return [{ x: PLAYER_SPAWN.x, z: PLAYER_SPAWN.z }, ...NPC_ROUTES.flat()]
     .map((p) => ({ x: p.x, z: p.z }))
     .filter((p) => {
       const key = `${p.x.toFixed(2)},${p.z.toFixed(2)}`;
@@ -74,7 +73,14 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
       seen.add(key);
       return true;
     });
-  const actions: BenchAction[] = buildTimeline({ durationSec, seed: BENCH_SEED, waypoints });
+}
+
+export function startBench(game: Game, opts: { durationSec: number }): BenchRun {
+  if (started) throw new Error('bench already started');
+  started = true;
+
+  const durationSec = opts.durationSec;
+  const actions: BenchAction[] = buildTimeline({ durationSec, seed: BENCH_SEED, waypoints: benchWaypoints() });
   const autopilot = createAutopilot();
   const quality = getQuality();
   const pause = getPauseState();

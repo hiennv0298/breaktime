@@ -1,10 +1,12 @@
 import './ui/hud.css';
 import './ui/layout.css';
-import { mountBuildBadge } from './boot/buildInfo';
+import { BUILD_SHA, mountBuildBadge } from './boot/buildInfo';
 import { detect } from './boot/capabilities';
+import { initCrashBeacon } from './boot/crashBeacon';
 import { requestFullscreenIfSupported } from './boot/fullscreen';
 import { installPageHardening } from './boot/pageHardening';
 import { registerDebug, setBootState } from './debug/testHook';
+import { mountCrashBanner } from './ui/crashBanner';
 import { showBootError, showUnsupported } from './ui/unsupported';
 import type { RenderCtx } from './render/renderer';
 import type { RapierApi } from './physics/rapier';
@@ -12,6 +14,8 @@ import type { RapierApi } from './physics/rapier';
 // No pinch / double-tap zoom, pull-to-refresh or long-press menus from the very first frame (RESEARCH Pattern 5).
 installPageHardening();
 mountBuildBadge();
+// Crash beacon (plan 01-18, TECH-04): heartbeat from boot on, banner when the previous page died mid-session.
+mountCrashBanner(initCrashBeacon(BUILD_SHA));
 setBootState('booting');
 
 async function boot(): Promise<void> {
@@ -67,7 +71,7 @@ async function boot(): Promise<void> {
     { startLoop },
     { attachCameraKeys },
     { attachCameraButtons },
-    { benchFromQuery, parseBenchDuration },
+    { benchFromQuery, parseBenchDuration, soakFromQuery, soakOptionsFromQuery },
   ] = await Promise.all([
     import('./render/renderer'),
     import('./physics/rapier'),
@@ -96,10 +100,18 @@ async function boot(): Promise<void> {
   const physics = createPhysics(rapier.R);
   const ctx = { ...renderCtx, physics, loaded };
   // ?bench=1 (plan 01-17, D-08, D-11 revised): always 10 NPCs; the saved 'bt.npcs' count is neither used nor written.
-  const benchOn = benchFromQuery(location.search);
+  // ?soak=1 (plan 01-18, TECH-04) loops the same scene for 15 minutes and takes precedence over ?bench=1.
+  const soakOn = soakFromQuery(location.search);
+  const benchOn = !soakOn && benchFromQuery(location.search);
   // Async since plan 01-10: the office GLBs fetched before Chơi are parsed here, after three.js has loaded.
-  const game = await createGame(ctx, benchOn ? { forcedNpcCount: MAX_NPCS, bench: true } : {});
-  if (benchOn) {
+  const game = await createGame(ctx, soakOn || benchOn ? { forcedNpcCount: MAX_NPCS, bench: true } : {});
+  if (soakOn) {
+    const [{ startSoak }, { suppressKeyHints }] = await Promise.all([import('./bench/soak'), import('./ui/keyHints')]);
+    // Hidden for the whole soak, before the loop mounts the hint panels (D-28).
+    suppressKeyHints(true);
+    startLoop(ctx, game);
+    startSoak(game, soakOptionsFromQuery(location.search));
+  } else if (benchOn) {
     const [{ startBench }, { suppressKeyHints }] = await Promise.all([import('./bench/benchScript'), import('./ui/keyHints')]);
     // Before the loop mounts the hint panels, so the one-time touch hint is not spent on a scripted run (D-28).
     suppressKeyHints(true);

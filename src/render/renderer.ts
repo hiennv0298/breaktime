@@ -55,6 +55,11 @@ export function createRenderer(container: HTMLElement): RenderCtx {
 
 let contextLostCount = 0;
 
+/** WebGL context losses on this page so far (plan 01-18 soak panel). */
+export function getContextLostCount(): number {
+  return contextLostCount;
+}
+
 /**
  * WebGL context loss (D-22, T-01-11-04, TECH-04 soak): pause the game and show a Vietnamese reload prompt instead of
  * a black canvas. preventDefault keeps restoration possible, but reloading is the path offered to the player.

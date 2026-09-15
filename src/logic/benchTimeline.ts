@@ -58,6 +58,46 @@ export function benchFromQuery(search: string): boolean {
   return new URLSearchParams(search).get('bench') === '1';
 }
 
+/** Only the literal value '1' turns the 15-minute soak on (plan 01-18); it takes precedence over ?bench=1. */
+export function soakFromQuery(search: string): boolean {
+  return new URLSearchParams(search).get('soak') === '1';
+}
+
+export const SOAK_DEFAULT_MIN = 15;
+export const SOAK_MIN_MIN = 1;
+export const SOAK_MAX_MIN = 30;
+export const SOAK_MAX_CYCLES = 100;
+
+export interface SoakOptions {
+  minutes: number;
+  cycleSec: number;
+  /** Stop after this many cycles even before `minutes` (headless leak proxy). */
+  maxCycles?: number;
+}
+
+/** Plain decimal integer (optional leading minus) or null. */
+function plainInt(raw: string | null): number | null {
+  if (typeof raw !== 'string' || !/^-?\d{1,6}$/.test(raw.trim())) return null;
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * ?soak=1 parameters (T-01-18-05): soakMin plain integer clamped 1..30 (default 15); soakCycles optional, clamped
+ * 1..100 (absent or malformed = no limit); dur = cycle length through parseBenchDuration (5..60, default 60).
+ */
+export function soakOptionsFromQuery(search: string): SoakOptions {
+  const q = new URLSearchParams(search);
+  const min = plainInt(q.get('soakMin'));
+  const cycles = plainInt(q.get('soakCycles'));
+  const out: SoakOptions = {
+    minutes: min === null ? SOAK_DEFAULT_MIN : Math.max(SOAK_MIN_MIN, Math.min(SOAK_MAX_MIN, min)),
+    cycleSec: parseBenchDuration(q.get('dur')),
+  };
+  if (cycles !== null) out.maxCycles = Math.max(1, Math.min(SOAK_MAX_CYCLES, cycles));
+  return out;
+}
+
 /** Fisher-Yates on a copy, driven by the seeded generator. */
 function shuffled<T>(list: readonly T[], rng: () => number): T[] {
   const out = list.slice();

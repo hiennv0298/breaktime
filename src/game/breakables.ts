@@ -234,11 +234,22 @@ export function createBreakables(ctx: GameCtx, props: Props, shards: Shards, opt
     },
     brokenCount: () => props.brokenCount(),
     movedCount: () => props.movedCount(),
+    /**
+     * Soak cycle reset (plan 01-18): live shards retired to their pool, every prop home and at rest, broken props shown
+     * again with their disabled body re-enabled. Broken and moved counts are derived from the records (rec.broken,
+     * distance from home), so both read 0 afterwards. Nothing is created: the same Object3D, geometry, material and
+     * Rapier body come back, so repeated cycles allocate no GPU resources or bodies. `breaks` / `drops` stay
+     * cumulative for the whole page (debug counters), the last-break record is cleared.
+     */
     resetAll() {
       shards.clearAll();
       props.resetAll();
       lastDropMs.clear();
       armed.clear();
+      lastBreak.id = '';
+      lastBreak.role = '';
+      lastBreak.force = 0;
+      lastBreak.armed = false;
       opts.onReset?.();
     },
   };

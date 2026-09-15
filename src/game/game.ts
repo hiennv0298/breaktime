@@ -34,7 +34,7 @@ import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
 import { createShardKit } from '../render/shardKit';
 import { createNpcLabels } from '../ui/npcLabels';
-import { createBreakables } from './breakables';
+import { createBreakables, type Breakables } from './breakables';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, ROOM, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
 import { createNpc, type Npc } from './npc';
@@ -81,8 +81,29 @@ export interface Game {
   /** Props displaced >= 0.3 m from home, broken props included (props.movedCount, plan 01-16). */
   knockedOrBroken(): number;
   brokenCount(): number;
-  /** Renderer / physics numbers of the last rendered frame for the bench recorder. */
-  stats(): { drawCalls: number; bodies: number; dpr: number; backbufferWidth: number; backbufferHeight: number; flavor: string };
+  /** Renderer / physics numbers of the last rendered frame for the bench recorder and the soak leak readout. */
+  stats(): {
+    drawCalls: number;
+    bodies: number;
+    dpr: number;
+    backbufferWidth: number;
+    backbufferHeight: number;
+    flavor: string;
+    geometries: number;
+    textures: number;
+  };
+
+  // ---------- Soak hooks (plan 01-18, TECH-04) ----------
+  /** Breakables of the office: the soak calls resetAll() between cycles. */
+  readonly breakables: Breakables;
+  /**
+   * Puts every active NPC of the 01-27 pool back on its route start in the walking state (a ragdoll or an NPC getting up
+   * is re-attached first), leaves inactive pooled NPCs despawned and returns the player to PLAYER_SPAWN. Nothing is
+   * created or removed: the same bodies, meshes, shadows and name tags are reused.
+   */
+  resetForSoak(): void;
+  /** Live debris shards (same number as __bt.debris.active). */
+  debrisActive(): number;
 }
 
 export interface CreateGameOptions {
@@ -648,7 +669,25 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         backbufferWidth: canvas.width,
         backbufferHeight: canvas.height,
         flavor: rapierFlavor,
+        geometries: ctx.renderer.info.memory.geometries,
+        textures: ctx.renderer.info.memory.textures,
       };
+    },
+    breakables,
+    resetForSoak() {
+      for (let i = 0; i < pool.length; i++) {
+        const npc = pool[i];
+        if (!npc.active()) continue;
+        // despawn re-attaches a ragdoll's parts and resets the get-up FSM; respawn puts it on its route start, walking.
+        npc.despawn();
+        npc.respawn(spawnPointFor(i));
+      }
+      player.teleport(PLAYER_SPAWN.x, PLAYER_SPAWN.z);
+      pickQueued = undefined;
+      refreshTarget();
+    },
+    debrisActive() {
+      return shards.active();
     },
   };
   return game;
