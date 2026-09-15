@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-09-15T02:54:40.394Z"
-last_activity: 2026-09-15 -- Phase 1 execution started
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-09-15T03:17:16.901Z"
+last_activity: 2026-09-15 -- Completed 01-02 (boot slice: gate, loading, Chơi, Rapier loop, unsupported screen)
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 21
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 2 of 21
+Plan: 3 of 21
 Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-01 (scaffold, CSP, sha badge, test runners)
+Last activity: 2026-09-15 -- Completed 01-02 (boot slice: gate, loading, Chơi, Rapier loop, unsupported screen)
 
-Progress: [█░░░░░░░░░] 5%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Progress: [█░░░░░░░░░] 5%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 6min | 3 tasks | 16 files |
+| Phase 01 P02 | 18min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,9 @@ Recent decisions affecting current work:
 - [Phase 01]: 01-01: operator approved all 11 pinned packages incl. vitest@5.0.0, ffmpeg-static@5.3.0 (GPL dev-only, D-25) and @types/node@22.20.2 before install; RESEARCH audit Rejected row for ffmpeg-static superseded
 - [Phase 01]: 01-01: buildInfo reads __BUILD_SHA__ via typeof guard so testHook imports in Vitest/Node; e2e proves real sha in bundle
 - [Phase 01]: 01-01: window.__bt is a non-configurable null-prototype object with getter-only keys; testHook declines HMR
+- [Phase 01]: 01-02: csp.spec waits for ready-to-play instead of booting (boot leaves booting synchronously); the wait also proves Rapier WASM instantiates under the CSP
+- [Phase 01]: 01-02: three, Rapier and loading/playGate are dynamic imports after detect(); unsupported path downloads only index JS + CSS (3 requests measured)
+- [Phase 01]: 01-02: SIMD Rapier module cast to RapierApi (typeof rapier3d-compat); identical .d.ts but nominally distinct classes
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T02:54:32.129Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-09-15T03:17:16.890Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
