@@ -75,7 +75,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 01-14-PLAN.md — Blocky player + 3 NPCs on hand-placed routes (up to 8 for bench) (W6)
+- [x] 01-14-PLAN.md — Blocky player + 3 NPCs on hand-placed routes (up to 8 for bench) (W6)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Spike kỹ thuật & đường deploy | 12/21 | In Progress|  |
+| 1. Spike kỹ thuật & đường deploy | 13/21 | In Progress|  |
 | 2. Hệ phát hiện | 0/TBD | Not started | - |
 | 3. Chọc phá & một ngày làm việc | 0/TBD | Not started | - |
 | 4. Stress & Rage Mode | 0/TBD | Not started | - |
