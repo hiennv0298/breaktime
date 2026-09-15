@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { CORRIDOR, PROP_PLACEMENTS, ROOM } from '../../src/game/layout';
+import { BENCH_SEED, mulberry32 } from '../../src/logic/rng';
 import {
   NPC_RADIUS,
   NPC_ROUTES,
+  NPC_SLOT_COUNT,
   ROUTE_CLEARANCE,
   ROUTE_OBSTACLES,
+  farthestRouteIndex,
   routeIndexForNpc,
+  routeStartIndexForNpc,
   sharedIndexForNpc,
+  spawnPointForNpc,
   type Footprint,
 } from '../../src/game/waypoints';
 
@@ -145,6 +150,141 @@ describe('routes for NPCs 9 and 10 (D-29, D-11 revised)', () => {
     for (const i of [-3, 0, 5, 9, 10, 1e9, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(routeIndexForNpc(i)).toBeGreaterThanOrEqual(0);
       expect(routeIndexForNpc(i)).toBeLessThan(NPC_ROUTES.length);
+    }
+  });
+});
+
+const SLOTS = Array.from({ length: 15 }, (_, i) => i);
+const MIN_SPAWN_GAP = 0.6; // m, two NPC capsules (radius 0.3) side by side
+const GAP_EPS = 1e-9;
+
+describe('Phase 1 slot mapping regression (slots 0..9, D-11 bench comparability)', () => {
+  // Values captured from the 01-23 code (game.ts spawnPointFor / ensureNpc) before plan 02-03 changed waypoints.ts.
+  const LEGACY_ROUTE = [0, 1, 2, 0, 1, 2, 0, 1, 3, 4];
+  const LEGACY_SHARED = [0, 0, 0, 1, 1, 1, 2, 2, 0, 0];
+  const LEGACY_START = [0, 1, 2, 3, 4, 5, 0, 0, 0, 3];
+  const LEGACY_SPAWN = [
+    [-5, -1.4],
+    [-6.235, 2],
+    [-6.235, -3.89],
+    [5.3, -3.9],
+    [-5.935, -3.89],
+    [1.1, -4.7],
+    [-4.4, -1.4],
+    [-2.2, 2],
+    [-2.8, -1.4],
+    [4.85, 3.9],
+  ];
+
+  it('keeps routes, shared offsets, start indices and spawn points of slots 0..9', () => {
+    const idx = SLOTS.slice(0, 10);
+    expect(idx.map((i) => routeIndexForNpc(i))).toEqual(LEGACY_ROUTE);
+    expect(idx.map((i) => sharedIndexForNpc(i))).toEqual(LEGACY_SHARED);
+    expect(idx.map((i) => routeStartIndexForNpc(i))).toEqual(LEGACY_START);
+    for (const i of idx) {
+      const route = NPC_ROUTES[routeIndexForNpc(i)];
+      expect(routeStartIndexForNpc(i)).toBe(i % route.length);
+      const p = spawnPointForNpc(i);
+      const start = route[i % route.length];
+      expect(p.x).toBe(start.x + sharedIndexForNpc(i) * 0.3);
+      expect(p.z).toBe(start.z);
+      expect(p.x).toBeCloseTo(LEGACY_SPAWN[i][0], 9);
+      expect(p.z).toBeCloseTo(LEGACY_SPAWN[i][1], 9);
+    }
+  });
+});
+
+describe('slots 10..14 reuse the 5 routes with seeded start points (D-01, G3r)', () => {
+  it('has 15 slots and still exactly 5 routes', () => {
+    expect(NPC_SLOT_COUNT).toBe(15);
+    expect(NPC_ROUTES.length).toBe(5);
+  });
+
+  it('maps slots 10..14 to routes 0..4 with no shared offset and clamps into 0..14', () => {
+    expect([10, 11, 12, 13, 14].map((i) => routeIndexForNpc(i))).toEqual([0, 1, 2, 3, 4]);
+    expect([10, 11, 12, 13, 14].map((i) => sharedIndexForNpc(i))).toEqual([0, 0, 0, 0, 0]);
+    expect(routeIndexForNpc(99)).toBe(4);
+    expect(routeIndexForNpc(Number.NaN)).toBe(0);
+    expect(routeIndexForNpc(Number.POSITIVE_INFINITY)).toBe(4);
+    expect(routeIndexForNpc(13.7)).toBe(3);
+    expect(sharedIndexForNpc(14)).toBe(0);
+  });
+
+  it('draws slot 10..14 start indices from mulberry32(BENCH_SEED + i), stable across calls', () => {
+    const placed: { x: number; z: number }[] = SLOTS.slice(0, 10).map((i) => spawnPointForNpc(i));
+    for (const i of [10, 11, 12, 13, 14]) {
+      const route = NPC_ROUTES[routeIndexForNpc(i)];
+      const start = routeStartIndexForNpc(i);
+      expect(Number.isInteger(start)).toBe(true);
+      expect(start).toBeGreaterThanOrEqual(0);
+      expect(start).toBeLessThan(route.length);
+      expect(routeStartIndexForNpc(i)).toBe(start);
+      // Re-derive: Fisher-Yates order of the route indices from the slot seed, first point clear of earlier slots.
+      const rng = mulberry32(BENCH_SEED + i);
+      const order = route.map((_, k) => k);
+      for (let k = order.length - 1; k > 0; k--) {
+        const j = Math.floor(rng() * (k + 1));
+        [order[k], order[j]] = [order[j], order[k]];
+      }
+      const clear = (k: number) =>
+        placed.every((q) => Math.hypot(route[k].x - q.x, route[k].z - q.z) >= MIN_SPAWN_GAP - GAP_EPS);
+      const expected = order.find(clear);
+      expect(expected).toBeDefined();
+      expect(start).toBe(expected);
+      placed.push(spawnPointForNpc(i));
+    }
+  });
+
+  it('spawns every slot 10..14 on one of its route points', () => {
+    for (const i of [10, 11, 12, 13, 14]) {
+      const route = NPC_ROUTES[routeIndexForNpc(i)];
+      const p = spawnPointForNpc(i);
+      expect(route.some((q) => q.x === p.x && q.z === p.z)).toBe(true);
+      expect(route[routeStartIndexForNpc(i)]).toMatchObject(p);
+    }
+  });
+
+  it('keeps every pair that includes a slot 10..14 at least 0.6 m apart', () => {
+    const spawns = SLOTS.map((i) => spawnPointForNpc(i));
+    let pairs = 0;
+    for (const b of [10, 11, 12, 13, 14]) {
+      for (const a of SLOTS) {
+        if (a === b) continue;
+        const d = Math.hypot(spawns[a].x - spawns[b].x, spawns[a].z - spawns[b].z);
+        if (d < MIN_SPAWN_GAP - GAP_EPS) throw new Error(`slots ${a} and ${b} spawn ${d.toFixed(3)} m apart`);
+        pairs++;
+      }
+    }
+    expect(pairs).toBe(5 * 14);
+  });
+});
+
+describe('farthestRouteIndex', () => {
+  const route = [
+    { x: 0, z: 0 },
+    { x: 3, z: 4 },
+    { x: -3, z: -4 },
+    { x: 1, z: 1 },
+  ];
+
+  it('returns the point farthest from the player, lower index on ties', () => {
+    expect(farthestRouteIndex(route, 0, 0)).toBe(1);
+    expect(farthestRouteIndex(route, 3, 4)).toBe(2);
+    expect(farthestRouteIndex([{ x: 1, z: 0 }, { x: -1, z: 0 }], 0, 0)).toBe(0);
+  });
+
+  it('returns -1 for an empty route and ignores non-finite points', () => {
+    expect(farthestRouteIndex([], 0, 0)).toBe(-1);
+    expect(farthestRouteIndex([{ x: Number.NaN, z: 0 }, { x: 1, z: 1 }, { x: Number.POSITIVE_INFINITY, z: 0 }], 0, 0)).toBe(1);
+    expect(farthestRouteIndex([{ x: Number.NaN, z: 0 }], 0, 0)).toBe(-1);
+  });
+
+  it('works on the real routes', () => {
+    for (const r of NPC_ROUTES) {
+      const k = farthestRouteIndex(r, 0, 0);
+      expect(k).toBeGreaterThanOrEqual(0);
+      const d = Math.hypot(r[k].x, r[k].z);
+      for (const p of r) expect(Math.hypot(p.x, p.z)).toBeLessThanOrEqual(d);
     }
   });
 });
