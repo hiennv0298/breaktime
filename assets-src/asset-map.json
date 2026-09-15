@@ -1,0 +1,53 @@
+{
+  "office": {
+    "desk": "Models/GLTF format/desk.glb",
+    "chairDesk": "Models/GLTF format/chairDesk.glb",
+    "computerScreen": "Models/GLTF format/computerScreen.glb",
+    "computerKeyboard": "Models/GLTF format/computerKeyboard.glb",
+    "computerMouse": "Models/GLTF format/computerMouse.glb",
+    "laptop": "Models/GLTF format/laptop.glb",
+    "coffeeMachine": "Models/GLTF format/kitchenCoffeeMachine.glb",
+    "fridge": "Models/GLTF format/kitchenFridge.glb",
+    "pantryCounter": "Models/GLTF format/kitchenCabinet.glb",
+    "pottedPlant": "Models/GLTF format/pottedPlant.glb",
+    "plantSmall": "Models/GLTF format/plantSmall1.glb",
+    "trashcan": "Models/GLTF format/trashcan.glb",
+    "bookcase": "Models/GLTF format/bookcaseClosed.glb",
+    "books": "Models/GLTF format/books.glb",
+    "boxClosed": "Models/GLTF format/cardboardBoxClosed.glb"
+  },
+  "food": {
+    "mug": "Models/GLB format/mug.glb",
+    "cupCoffee": "Models/GLB format/cup-coffee.glb"
+  },
+  "character": {
+    "base": "Models/GLB format/character-a.glb",
+    "texturesDir": "Models/GLB format/Textures"
+  },
+  "sfx": {
+    "slap-0": "Audio/impactPunch_heavy_000.ogg",
+    "slap-1": "Audio/impactPunch_heavy_001.ogg",
+    "slap-2": "Audio/impactPunch_heavy_002.ogg",
+    "break-glass-0": "Audio/impactGlass_heavy_000.ogg",
+    "break-glass-1": "Audio/impactGlass_heavy_001.ogg",
+    "break-ceramic-0": "Audio/impactPlate_heavy_000.ogg",
+    "break-ceramic-1": "Audio/impactPlate_heavy_001.ogg",
+    "drop-wood-0": "Audio/impactWood_heavy_000.ogg",
+    "drop-wood-1": "Audio/impactWood_medium_000.ogg",
+    "drop-soft-0": "Audio/impactSoft_heavy_000.ogg",
+    "drop-metal-0": "Audio/impactMetal_heavy_000.ogg"
+  },
+  "_notes": [
+    "Paths are relative to the extracted pack folder: office -> assets-src/downloads/furniture-kit, food -> assets-src/downloads/food-kit, character -> assets-src/downloads/blocky-characters, sfx -> assets-src/downloads/impact-sounds.",
+    "Furniture Kit 2.0 ships its glTF binaries in 'Models/GLTF format' (no Textures folder there; materials are plain colours). Food Kit 2.0 and Blocky Characters 2.0 use 'Models/GLB format' with a sibling Textures folder.",
+    "coffeeMachine: no 'coffeeMachine.glb'; substituted kitchenCoffeeMachine.glb.",
+    "fridge: no 'fridge.glb'; substituted kitchenFridge.glb (standard free-standing kitchen fridge; Small/Large/BuiltIn variants also exist).",
+    "pantryCounter: no counter model by that name; substituted kitchenCabinet.glb (counter-height base cabinet with worktop). kitchenBar.glb is the alternative.",
+    "plantSmall: no 'plantSmall.glb'; substituted plantSmall1.glb (plantSmall2/3 also exist).",
+    "bookcase: no 'bookcase.glb'; substituted bookcaseClosed.glb (closed-back bookcase).",
+    "boxClosed: no 'boxClosed.glb'; substituted cardboardBoxClosed.glb.",
+    "cupCoffee: Food Kit file name is cup-coffee.glb (kebab case).",
+    "drop-wood-1: impactWood has heavy/medium/light variants; drop-wood-0 uses heavy_000 and drop-wood-1 uses medium_000 for audible variety.",
+    "drop-soft-0 and drop-metal-0 use the heavy_000 variant; Impact Sounds 1.0 has no un-suffixed impactSoft/impactMetal files."
+  ]
+}
