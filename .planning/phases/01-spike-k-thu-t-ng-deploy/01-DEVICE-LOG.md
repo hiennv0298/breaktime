@@ -5,7 +5,9 @@ Template prepared 2026-09-15 by 01-19 Task 1 before the first halt. Nothing belo
 
 ## Build under test
 
-- Measurement sha: `1ecc53ce473e` (01-18, DEPLOY_OK, see 01-GO-LIVE.md "## Measurement build")
+- Measurement sha: **`04c06b21c39a`** (quickfix tuyến NPC riêng theo seed, deploy 16/09/2026, DEPLOY_OK poller 5/5 200)
+- ~~`1ecc53ce473e`~~ (01-18) bị thay: tuyến NPC đổi nên số đo cũ không so trực tiếp được
+- Bench: https://game.doibung.com/?bench=1 · Soak: https://game.doibung.com/?soak=1 · Play: https://game.doibung.com/
 - Bench: https://game.doibung.com/b/1ecc53ce473e/?bench=1
 - Soak: https://game.doibung.com/b/1ecc53ce473e/?soak=1
 - Play: https://game.doibung.com/b/1ecc53ce473e/
@@ -32,20 +34,21 @@ Declared the reference devices for every later phase (D-06). Record model, OS an
 
 Baseline (Vite 8 build target): iOS must be ≥ 16.4 and Chrome ≥ 111. If either phone is lower, write `BELOW_BASELINE` here, add a STATE.md blocker and stop the plan instead of measuring.
 
-Baseline result: (not checked yet)
+Baseline result: (chưa kiểm — chưa có model/OS của 2 điện thoại). Desktop không thuộc baseline này.
 
 ## Measurement sessions
 
-Rules for Task 3: the sha on screen must be `1ecc53ce473e` (else `INVALID_SHA`); throttled "Có" or Low Power / Battery Saver on → `INVALID_THROTTLED`; NPC not 10 on a bench row → `INVALID_SCENARIO`.
+Rules for Task 3: the sha on screen must be `04c06b21c39a` (cập nhật 16/09) (else `INVALID_SHA`); throttled "Có" or Low Power / Battery Saver on → `INVALID_THROTTLED`; NPC not 10 on a bench row → `INVALID_SCENARIO`.
 
 | Date | Sha | Device | URL | Tier (source) | Low Power | Throttled flag | NPC | Avg fps | 1% low | Peak draws | Peak bodies | Knocked/broken | Ragdolls at once | Flavor | Screenshot |
 |------|-----|--------|-----|---------------|-----------|----------------|-----|---------|--------|------------|-------------|----------------|------------------|--------|------------|
+| 2026-09-16 | 04c06b21c39a | Desktop (Windows 10/11, Chrome 153, 1920x911, DPR 1) | ?bench=1 | Cao (auto) | n/a | Không | 10 | 59.9 | 53.6 | 91 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi trong hội thoại 16/09 — **chưa lưu file vào evidence/** |
 
 ## Browser checklist
 
 | Browser | Loads | Playable | Notes |
 |---------|-------|----------|-------|
-| Chrome desktop |  |  |  |
+| Chrome desktop | ok | ok | Bench 60 s hoàn tất, 59.9 fps TB / 53.6 (1% thấp), 3560 khung; Chrome 153 trên Windows |
 | Edge desktop |  |  |  |
 | Firefox desktop |  |  |  |
 | Chrome Android |  |  |  |
