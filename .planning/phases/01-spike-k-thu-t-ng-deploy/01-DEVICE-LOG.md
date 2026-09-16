@@ -29,8 +29,8 @@ Declared the reference devices for every later phase (D-06). Record model, OS an
 
 | Role | Model | OS version | Browser + version | Low Power Mode / Battery Saver default | Display refresh rate | RAM if known | Recorded at |
 |------|-------|------------|-------------------|----------------------------------------|----------------------|--------------|-------------|
-| Android |  |  |  |  |  |  |  |
-| iPhone |  |  |  |  |  |  |  |
+| Android | **KHÔNG CÓ MÁY** (operator 16/09) | — | — | — | — | — | — |
+| iPhone | (chờ operator ghi model) | iOS 26.6.2 | Chrome iOS (CriOS) 153 — bench 16/09; Safari sẽ đo bổ sung | tắt khi đo | (không rõ) | (không rõ) | 2026-09-16 |
 
 Baseline (Vite 8 build target): iOS must be ≥ 16.4 and Chrome ≥ 111. If either phone is lower, write `BELOW_BASELINE` here, add a STATE.md blocker and stop the plan instead of measuring.
 
@@ -42,6 +42,9 @@ Rules for Task 3: the sha on screen must be `04c06b21c39a` (cập nhật 16/09) 
 
 | Date | Sha | Device | URL | Tier (source) | Low Power | Throttled flag | NPC | Avg fps | 1% low | Peak draws | Peak bodies | Knocked/broken | Ragdolls at once | Flavor | Screenshot |
 |------|-----|--------|-----|---------------|-----------|----------------|-----|---------|--------|------------|-------------|----------------|------------------|--------|------------|
+| 2026-09-16 | 04c06b21c39a | iPhone (iOS 26.6.2, **Chrome iOS / CriOS 153**, DPR 2, 804x1368) | ?bench=1 | Cao (manual) | tắt | Không | 10 | 60.0 | 46.2 | 78 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi 16/09 — chưa lưu file evidence/ |
+| 2026-09-16 | 04c06b21c39a | iPhone — SOAK 15 phút (Chrome iOS) | ?soak=1 | Cao | tắt | — | 10 | fps thấp nhất/phút: 59·60·59·60·54·60×11 | — | — | 165 (gốc 165) | — | — | simd | 14 chu kỳ, mất ngữ cảnh 0, geometries 44/44, textures 25/25 → không rò rỉ; "Xong 15 phút — không crash" |
+| — | — | **Android: CHƯA ĐO** | — | — | — | — | — | — | — | — | — | — | — | — | Operator không có máy Android (16/09). Giả định tạm: Android giữ 60 fps ở cảnh chơi thường 3 NPC (ảnh HUD 15/09). **Không suy ra được hệ số** vì cả hai máy đều chạm trần 60 fps và hai ảnh khác cảnh (body 116 vs 56). Nợ: phải đo bench Android thật trước Phase 9 |
 | 2026-09-16 | 04c06b21c39a | Desktop (Windows 10/11, Chrome 153, 1920x911, DPR 1) | ?bench=1 | Cao (auto) | n/a | Không | 10 | 59.9 | 53.6 | 91 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi trong hội thoại 16/09 — **chưa lưu file vào evidence/** |
 
 ## Browser checklist
@@ -52,7 +55,7 @@ Rules for Task 3: the sha on screen must be `04c06b21c39a` (cập nhật 16/09) 
 | Edge desktop |  |  |  |
 | Firefox desktop |  |  |  |
 | Chrome Android |  |  |  |
-| Safari iOS |  |  |  |
+| Safari iOS | (chờ đo) | (chờ đo) | Bench 16/09 chạy trên **Chrome iOS (CriOS 153)**, không phải Safari — operator sẽ chạy lại bench 60 s trên Safari |
 
 ## Controls & settings checklist
 
@@ -76,10 +79,10 @@ Answer "ok" or "not ok" (+ note). "n/a" cells are not applicable on that device 
 
 ## Soak and crash notes (iPhone, TECH-04)
 
-- Soak panel after 15 min: (not measured yet)
+- Soak panel after 15 min: **ĐẠT** — 15:00/15:00, 14 chu kỳ, mất ngữ cảnh 0, geometries 44 (gốc 44), textures 25 (gốc 25), bodies 165 (gốc 165), "Xong 15 phút — không crash" (Chrome iOS, 16/09)
 - 15 min normal play: (not measured yet)
 - Crash banner "Lần chơi trước bị dừng đột ngột" on reload: (not measured yet)
-- Safari reloaded the tab by itself: (not measured yet)
+- Safari reloaded the tab by itself: chưa ghi nhận (bản đo chạy Chrome iOS; operator chưa báo tab bị tải lại)
 
 ## Feel notes (CTRL-02)
 
