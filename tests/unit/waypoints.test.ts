@@ -1,17 +1,36 @@
-import { describe, expect, it } from 'vitest';
+/**
+ * 16/09/2026 operator (quick fix, no plan): NPC đi tuyến riêng theo seed thay vì dùng chung 5 tuyến.
+ *
+ * Until today every NPC took one of the 5 hand-placed `NPC_ROUTES` (slots 0..9 by the Phase 1 mapping, slots 10..14
+ * by a seeded start point on the same 5 loops), so a newly added coworker visibly walked the path of an older one.
+ * Two describes that pinned that behaviour were removed here and replaced by the per-NPC route suite below:
+ *
+ *   - "Phase 1 slot mapping regression (slots 0..9, D-11 bench comparability)" — it asserted routeIndexForNpc /
+ *     sharedIndexForNpc / routeStartIndexForNpc / spawnPointForNpc literals for the shared routes. Those functions no
+ *     longer exist; slot -> route is now `routeForNpc(i)`, one generated loop per slot.
+ *   - "slots 10..14 reuse the 5 routes with seeded start points (D-01, G3r)" — same reason: no slot reuses a route.
+ *
+ * `NPC_ROUTES` itself is kept byte-identical because `src/bench/benchScript.ts` builds the ?bench=1 player waypoints
+ * from it (01-17); the bench timeline must not change. Its geometry tests below therefore stay as they were.
+ * Bench fps numbers measured before today (10 NPCs on the shared routes) are not comparable to new runs.
+ */
+import { describe, expect, it, vi } from 'vitest';
 import { CORRIDOR, PROP_PLACEMENTS, ROOM } from '../../src/game/layout';
-import { BENCH_SEED, mulberry32 } from '../../src/logic/rng';
+import { spotBlocked } from '../../src/logic/routeGen';
 import {
+  MIN_SPAWN_GAP,
   NPC_RADIUS,
   NPC_ROUTES,
+  NPC_ROUTE_AREA,
+  NPC_ROUTE_CONFIG,
   NPC_SLOT_COUNT,
+  PROP_CLEARANCE,
   ROUTE_CLEARANCE,
   ROUTE_OBSTACLES,
   farthestRouteIndex,
-  routeIndexForNpc,
-  routeStartIndexForNpc,
-  sharedIndexForNpc,
+  routeForNpc,
   spawnPointForNpc,
+  walkSpeedForNpc,
   type Footprint,
 } from '../../src/game/waypoints';
 
@@ -33,7 +52,7 @@ function segments(route: { x: number; z: number }[]): Array<[{ x: number; z: num
   return route.map((p, i) => [p, route[(i + 1) % route.length]]);
 }
 
-describe('NPC_ROUTES', () => {
+describe('NPC_ROUTES (hand-placed reference loops, now only the ?bench=1 waypoint source)', () => {
   it('has 5 looping routes with finite points and at least two dwell stops each', () => {
     // D-29 (plan 01-23): routes 0-2 from 01-14 plus hand-placed routes for NPCs 9 and 10 (still no navmesh).
     expect(NPC_ROUTES.length).toBe(5);
@@ -109,9 +128,8 @@ describe('NPC_ROUTES', () => {
 
 /** Floor-standing dynamic props an NPC would shove if its route brushed them (plan 01-23). */
 const FLOOR_PROP_ROLES = new Set(['trashcan', 'boxClosed', 'pottedPlant', 'plantSmall']);
-const PROP_CLEARANCE = 0.6; // m, centre distance
 
-describe('routes for NPCs 9 and 10 (D-29, D-11 revised)', () => {
+describe('hand-placed routes 3 and 4 keep clear of the floor props (D-29)', () => {
   it('keeps routes 3 and 4 >= 0.6 m from every floor-standing trashcan, box and plant', () => {
     const floorProps = PROP_PLACEMENTS.filter((p) => FLOOR_PROP_ROLES.has(p.role) && p.on === undefined);
     expect(floorProps.length).toBeGreaterThanOrEqual(8);
@@ -131,131 +149,138 @@ describe('routes for NPCs 9 and 10 (D-29, D-11 revised)', () => {
       }
     }
   });
-
-  it('maps NPCs 1-8 to their 01-14 routes and offsets, 9 and 10 to the new routes', () => {
-    const idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    expect(idx.map((i) => routeIndexForNpc(i))).toEqual([0, 1, 2, 0, 1, 2, 0, 1, 3, 4]);
-    expect(idx.map((i) => sharedIndexForNpc(i))).toEqual([0, 0, 0, 1, 1, 1, 2, 2, 0, 0]);
-  });
-
-  it('clamps and truncates out-of-range NPC indices into 0..9', () => {
-    expect(routeIndexForNpc(-1)).toBe(0);
-    expect(routeIndexForNpc(42)).toBe(4);
-    expect(routeIndexForNpc(Number.NaN)).toBe(0);
-    expect(routeIndexForNpc(8.9)).toBe(3);
-    expect(sharedIndexForNpc(-5)).toBe(0);
-    expect(sharedIndexForNpc(100)).toBe(0);
-    expect(sharedIndexForNpc(Number.NaN)).toBe(0);
-    expect(sharedIndexForNpc(7.99)).toBe(2);
-    for (const i of [-3, 0, 5, 9, 10, 1e9, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(routeIndexForNpc(i)).toBeGreaterThanOrEqual(0);
-      expect(routeIndexForNpc(i)).toBeLessThan(NPC_ROUTES.length);
-    }
-  });
 });
 
 const SLOTS = Array.from({ length: 15 }, (_, i) => i);
-const MIN_SPAWN_GAP = 0.6; // m, two NPC capsules (radius 0.3) side by side
 const GAP_EPS = 1e-9;
+/** Two stops closer than this count as "the same place" when comparing two NPCs' stop sets. */
+const SAME_STOP = 0.5;
 
-describe('Phase 1 slot mapping regression (slots 0..9, D-11 bench comparability)', () => {
-  // Values captured from the 01-23 code (game.ts spawnPointFor / ensureNpc) before plan 02-03 changed waypoints.ts.
-  const LEGACY_ROUTE = [0, 1, 2, 0, 1, 2, 0, 1, 3, 4];
-  const LEGACY_SHARED = [0, 0, 0, 1, 1, 1, 2, 2, 0, 0];
-  const LEGACY_START = [0, 1, 2, 3, 4, 5, 0, 0, 0, 3];
-  const LEGACY_SPAWN = [
-    [-5, -1.4],
-    [-6.235, 2],
-    [-6.235, -3.89],
-    [5.3, -3.9],
-    [-5.935, -3.89],
-    [1.1, -4.7],
-    [-4.4, -1.4],
-    [-2.2, 2],
-    [-2.8, -1.4],
-    [4.85, 3.9],
-  ];
+function pairsOf<T>(list: readonly T[]): Array<[T, T]> {
+  const out: Array<[T, T]> = [];
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) out.push([list[i], list[j]]);
+  return out;
+}
 
-  it('keeps routes, shared offsets, start indices and spawn points of slots 0..9', () => {
-    const idx = SLOTS.slice(0, 10);
-    expect(idx.map((i) => routeIndexForNpc(i))).toEqual(LEGACY_ROUTE);
-    expect(idx.map((i) => sharedIndexForNpc(i))).toEqual(LEGACY_SHARED);
-    expect(idx.map((i) => routeStartIndexForNpc(i))).toEqual(LEGACY_START);
-    for (const i of idx) {
-      const route = NPC_ROUTES[routeIndexForNpc(i)];
-      expect(routeStartIndexForNpc(i)).toBe(i % route.length);
-      const p = spawnPointForNpc(i);
-      const start = route[i % route.length];
-      expect(p.x).toBe(start.x + sharedIndexForNpc(i) * 0.3);
-      expect(p.z).toBe(start.z);
-      expect(p.x).toBeCloseTo(LEGACY_SPAWN[i][0], 9);
-      expect(p.z).toBeCloseTo(LEGACY_SPAWN[i][1], 9);
-    }
-  });
-});
+describe('per-NPC seeded routes (16/09/2026 quick fix: tuyến riêng theo seed)', () => {
+  const routes = SLOTS.map((i) => routeForNpc(i));
 
-describe('slots 10..14 reuse the 5 routes with seeded start points (D-01, G3r)', () => {
-  it('has 15 slots and still exactly 5 routes', () => {
+  it('gives all 15 slots their own loop of 3..5 dwelling stops', () => {
     expect(NPC_SLOT_COUNT).toBe(15);
-    expect(NPC_ROUTES.length).toBe(5);
-  });
-
-  it('maps slots 10..14 to routes 0..4 with no shared offset and clamps into 0..14', () => {
-    expect([10, 11, 12, 13, 14].map((i) => routeIndexForNpc(i))).toEqual([0, 1, 2, 3, 4]);
-    expect([10, 11, 12, 13, 14].map((i) => sharedIndexForNpc(i))).toEqual([0, 0, 0, 0, 0]);
-    expect(routeIndexForNpc(99)).toBe(4);
-    expect(routeIndexForNpc(Number.NaN)).toBe(0);
-    expect(routeIndexForNpc(Number.POSITIVE_INFINITY)).toBe(4);
-    expect(routeIndexForNpc(13.7)).toBe(3);
-    expect(sharedIndexForNpc(14)).toBe(0);
-  });
-
-  it('draws slot 10..14 start indices from mulberry32(BENCH_SEED + i), stable across calls', () => {
-    const placed: { x: number; z: number }[] = SLOTS.slice(0, 10).map((i) => spawnPointForNpc(i));
-    for (const i of [10, 11, 12, 13, 14]) {
-      const route = NPC_ROUTES[routeIndexForNpc(i)];
-      const start = routeStartIndexForNpc(i);
-      expect(Number.isInteger(start)).toBe(true);
-      expect(start).toBeGreaterThanOrEqual(0);
-      expect(start).toBeLessThan(route.length);
-      expect(routeStartIndexForNpc(i)).toBe(start);
-      // Re-derive: Fisher-Yates order of the route indices from the slot seed, first point clear of earlier slots.
-      const rng = mulberry32(BENCH_SEED + i);
-      const order = route.map((_, k) => k);
-      for (let k = order.length - 1; k > 0; k--) {
-        const j = Math.floor(rng() * (k + 1));
-        [order[k], order[j]] = [order[j], order[k]];
+    for (const [i, route] of routes.entries()) {
+      expect(route.length, `slot ${i}`).toBeGreaterThanOrEqual(NPC_ROUTE_CONFIG.minStops);
+      expect(route.length, `slot ${i}`).toBeLessThanOrEqual(NPC_ROUTE_CONFIG.maxStops);
+      for (const p of route) {
+        expect(Number.isFinite(p.x) && Number.isFinite(p.z)).toBe(true);
+        expect(p.dwellSec).toBeGreaterThanOrEqual(NPC_ROUTE_CONFIG.dwellMin);
+        expect(p.dwellSec).toBeLessThanOrEqual(NPC_ROUTE_CONFIG.dwellMax);
       }
-      const clear = (k: number) =>
-        placed.every((q) => Math.hypot(route[k].x - q.x, route[k].z - q.z) >= MIN_SPAWN_GAP - GAP_EPS);
-      const expected = order.find(clear);
-      expect(expected).toBeDefined();
-      expect(start).toBe(expected);
-      placed.push(spawnPointForNpc(i));
+      // Its own stops are far enough apart to read as separate destinations, and the loop crosses the room.
+      for (const [a, b] of pairsOf(route)) {
+        expect(Math.hypot(a.x - b.x, a.z - b.z), `slot ${i}`).toBeGreaterThanOrEqual(NPC_ROUTE_CONFIG.minStopGap - GAP_EPS);
+      }
+      const spread = Math.max(...pairsOf(route).map(([a, b]) => Math.hypot(a.x - b.x, a.z - b.z)));
+      expect(spread, `slot ${i} spread`).toBeGreaterThanOrEqual(NPC_ROUTE_CONFIG.minSpread - GAP_EPS);
     }
   });
 
-  it('spawns every slot 10..14 on one of its route points', () => {
-    for (const i of [10, 11, 12, 13, 14]) {
-      const route = NPC_ROUTES[routeIndexForNpc(i)];
-      const p = spawnPointForNpc(i);
-      expect(route.some((q) => q.x === p.x && q.z === p.z)).toBe(true);
-      expect(route[routeStartIndexForNpc(i)]).toMatchObject(p);
+  it('is deterministic: same seed and slot give byte-identical routes, whatever order they are asked for', async () => {
+    for (const i of SLOTS) expect(routeForNpc(i)).toEqual(routes[i]);
+    // A fresh module instance asked in reverse order must produce exactly the same loops (?bench=1 / ?soak=1 replay).
+    vi.resetModules();
+    const fresh = await import('../../src/game/waypoints');
+    const reverse = new Map<number, unknown>();
+    for (let i = NPC_SLOT_COUNT - 1; i >= 0; i--) reverse.set(i, fresh.routeForNpc(i));
+    for (const i of SLOTS) {
+      expect(JSON.stringify(reverse.get(i)), `slot ${i}`).toBe(JSON.stringify(routes[i]));
+      expect(fresh.walkSpeedForNpc(i)).toBe(walkSpeedForNpc(i));
     }
   });
 
-  it('keeps every pair that includes a slot 10..14 at least 0.6 m apart', () => {
+  it('gives every slot a different set of stops (the bug: newcomers followed the older NPCs)', () => {
+    for (const [i, j] of pairsOf(SLOTS)) {
+      expect(JSON.stringify(routes[i]), `slots ${i} and ${j}`).not.toBe(JSON.stringify(routes[j]));
+      const shared = routes[i].filter((a) => routes[j].some((b) => Math.hypot(a.x - b.x, a.z - b.z) < SAME_STOP));
+      expect(shared.length, `slots ${i} and ${j} share ${shared.length} stops`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('spawns every slot on its first stop, at least 0.6 m from every other spawn', () => {
     const spawns = SLOTS.map((i) => spawnPointForNpc(i));
-    let pairs = 0;
-    for (const b of [10, 11, 12, 13, 14]) {
-      for (const a of SLOTS) {
-        if (a === b) continue;
-        const d = Math.hypot(spawns[a].x - spawns[b].x, spawns[a].z - spawns[b].z);
-        if (d < MIN_SPAWN_GAP - GAP_EPS) throw new Error(`slots ${a} and ${b} spawn ${d.toFixed(3)} m apart`);
-        pairs++;
-      }
+    spawns.forEach((p, i) => {
+      expect(p.x).toBe(routes[i][0].x);
+      expect(p.z).toBe(routes[i][0].z);
+    });
+    for (const [i, j] of pairsOf(SLOTS)) {
+      const d = Math.hypot(spawns[i].x - spawns[j].x, spawns[i].z - spawns[j].z);
+      if (d < MIN_SPAWN_GAP - GAP_EPS) throw new Error(`slots ${i} and ${j} spawn ${d.toFixed(3)} m apart`);
     }
-    expect(pairs).toBe(5 * 14);
+  });
+
+  it('varies the walk speed per NPC inside the documented band', () => {
+    const speeds = SLOTS.map((i) => walkSpeedForNpc(i));
+    for (const v of speeds) {
+      expect(v).toBeGreaterThanOrEqual(NPC_ROUTE_CONFIG.speedMin);
+      expect(v).toBeLessThanOrEqual(NPC_ROUTE_CONFIG.speedMax);
+    }
+    expect(new Set(speeds).size).toBeGreaterThanOrEqual(10);
+    // Dwell times differ too, not just the speeds.
+    expect(new Set(routes.flat().map((p) => p.dwellSec)).size).toBeGreaterThanOrEqual(10);
+  });
+
+  it('clamps and truncates slot indices into 0..14', () => {
+    expect(routeForNpc(-1)).toEqual(routes[0]);
+    expect(routeForNpc(Number.NaN)).toEqual(routes[0]);
+    expect(routeForNpc(99)).toEqual(routes[14]);
+    expect(routeForNpc(Number.POSITIVE_INFINITY)).toEqual(routes[14]);
+    expect(routeForNpc(3.9)).toEqual(routes[3]);
+    expect(walkSpeedForNpc(-4)).toBe(walkSpeedForNpc(0));
+    expect(walkSpeedForNpc(Number.NaN)).toBe(walkSpeedForNpc(0));
+  });
+
+  it('describes the office with the furniture and props the routes must clear', () => {
+    const ids = NPC_ROUTE_AREA.rects.map((r) => r.id);
+    for (const id of ['d1-desk', 'd4-desk', 'd1-chair', 'd4-chair', 'pantry-counter', 'pantry-fridge', 'pantry-cooler', 'bookcase', 'printer', 'corridor']) {
+      expect(ids, `NPC_ROUTE_AREA is missing ${id}`).toContain(id);
+    }
+    const circles = NPC_ROUTE_AREA.circles.map((c) => c.id);
+    for (const id of ['trash-1', 'trash-2', 'box-1', 'box-2', 'box-test', 'plant-big', 'plant-small-1', 'plant-small-2']) {
+      expect(circles, `NPC_ROUTE_AREA is missing ${id}`).toContain(id);
+    }
+    expect(NPC_ROUTE_AREA.circles.every((c) => c.radius >= PROP_CLEARANCE)).toBe(true);
+  });
+
+  it('never puts a stop or a walked segment inside furniture, a prop or the corridor', () => {
+    const rects: Footprint[] = NPC_ROUTE_AREA.rects.map((r) => ({ id: r.id, minX: r.minX, maxX: r.maxX, minZ: r.minZ, maxZ: r.maxZ }));
+    const margin = new Map(NPC_ROUTE_AREA.rects.map((r) => [r.id, r.margin]));
+    routes.forEach((route, i) => {
+      for (const p of route) {
+        expect(Math.abs(p.x), `slot ${i} stop x`).toBeLessThanOrEqual(ROOM.width / 2 - WALL_CLEARANCE);
+        expect(Math.abs(p.z), `slot ${i} stop z`).toBeLessThanOrEqual(ROOM.depth / 2 - WALL_CLEARANCE);
+        expect(spotBlocked(NPC_ROUTE_AREA, p.x, p.z), `slot ${i} stop (${p.x},${p.z})`).toBe(false);
+      }
+      for (const [a, b] of segments(route)) {
+        expect(Math.hypot(b.x - a.x, b.z - a.z), `slot ${i} zero-length segment`).toBeGreaterThan(0.05);
+        for (const s of samples(a, b)) {
+          for (const r of rects) {
+            const d = distToRect(s.x, s.z, r);
+            if (d < margin.get(r.id)! - GAP_EPS) {
+              throw new Error(
+                `slot ${i} segment (${a.x},${a.z})->(${b.x},${b.z}) passes ${d.toFixed(3)} m from ${r.id} at (${s.x.toFixed(2)},${s.z.toFixed(2)})`,
+              );
+            }
+          }
+          for (const c of NPC_ROUTE_AREA.circles) {
+            const d = Math.hypot(s.x - c.x, s.z - c.z);
+            if (d < c.radius - GAP_EPS) {
+              throw new Error(
+                `slot ${i} segment (${a.x},${a.z})->(${b.x},${b.z}) passes ${d.toFixed(3)} m from ${c.id} at (${s.x.toFixed(2)},${s.z.toFixed(2)})`,
+              );
+            }
+          }
+        }
+      }
+    });
   });
 });
 
@@ -279,8 +304,8 @@ describe('farthestRouteIndex', () => {
     expect(farthestRouteIndex([{ x: Number.NaN, z: 0 }], 0, 0)).toBe(-1);
   });
 
-  it('works on the real routes', () => {
-    for (const r of NPC_ROUTES) {
+  it('works on the generated routes', () => {
+    for (const r of SLOTS.map((i) => routeForNpc(i))) {
       const k = farthestRouteIndex(r, 0, 0);
       expect(k).toBeGreaterThanOrEqual(0);
       const d = Math.hypot(r[k].x, r[k].z);
