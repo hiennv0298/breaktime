@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-18-PLAN.md
-last_updated: "2026-09-15T15:32:38.113Z"
+stopped_at: Completed 01-19-PLAN.md
+last_updated: "2026-09-16T00:00:00.000Z"
 last_activity: "2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 24
-  percent: 89
+  completed_plans: 25
+  percent: 93
 ---
 
 # Project State
@@ -26,9 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 25 of 27 (01-01..01-18, 01-22..01-27 complete; next 01-19)
-Status: Ready to execute
-Last activity: 2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)
+Plan: 26 of 27 (01-01..01-19, 01-22..01-27 complete; 01-20/01-21 KHÔNG cần chạy vì cổng PASS)
+Status: Cổng máy thật PASS — dừng theo yêu cầu operator, chưa execute Phase 2
+Last activity: 2026-09-16 -- Completed 01-19 (cổng máy thật): 01-GATE.md VERDICT=PASS trên sha 04c06b21c39a — Android Chrome 152 60.6 fps TB / 53.6 (1% thấp) / 33 đồ văng-vỡ, Safari iOS 26.6.1 60.0 / 49.2, Chrome iOS 60.0 / 46.2, desktop Chrome 153 59.9 / 53.6, soak iPhone 15 phút không crash không rò rỉ (geometries 44/44, textures 25/25, bodies 165/165), first load 3.364.381 byte. D-07 không kích hoạt; guard 02-06 chuyển sang GUARD_CONTINUE. Còn nợ (không chặn cổng): checklist D-19/D-27..D-30 chưa kiểm tay (CTRL_UI_CHECK 0/0), Edge+Firefox desktop chưa thử (TECH01_BROWSERS 3/5), cảm nhận joystick chưa ghi, 4 ảnh bằng chứng chưa lưu vào evidence/, model 2 máy chưa rõ
+
+Previous activity: 2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)
 
 Progress: [█████████░] 89%
 
@@ -178,6 +180,8 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-04: Equal/NumpadAdd -> 'npc-add', Minus/NumpadSubtract -> 'npc-remove' (null with Ctrl/Meta/Alt, so Ctrl± zoom stays); keyboard.ts and KEY_HINTS untouched until 02-08; `bt.npcLabels` on unless exactly '0'; 32 frozen NFC preset nicknames, randomPresetName compares taken names after sanitizeNpcName
 - [Phase 02]: 02-05 (pure logic, before the Phase 1 device gate per D-12): combat FSM routine/down/fume/pursue/windup/cooldown/return; ragdoll/recover -> down (windup -> 'interrupted'); fume waits a seeded 0.2-0.5 s then pursues only with a token; windup 0.6 s (36 steps) -> strike -> cooldown 1.5 s -> return if landed or calm, pursue with token, else fume; give-up (anger cleared) on 8 s total pursuit, > 9 m held 1.0 s, stuck x2 (< 0.3 m per 1.0 s window, 0.5 s sidestep), calm; return -> routine within 0.5 m
 - [Phase 02]: 02-05: createCombatDirector({ seed, fight }) step order = forget/rebind -> tickAnger holdDecay physics !== 'animated' -> arbitrate on the previous step's wants (sorted ids) -> FSM in id order -> landed = targetable && strikeHits, satisfyAnger on landed/give-up -> drop unwanted tokens same step -> commands (pursue 2.2 m/s stopping at edge 0.95 m, sidestep left-hand (uz, -ux) 1.6 m/s, return 1.4 m/s not past the route point, marker only in windup); per-member rng mulberry32(seedFor(seed, memberId)) with seedFor = FNV-1a xor base; reset() re-seeds streams; 600-step same-seed trace deep-equal, seed + 1 differs
+- [Phase 01]: 01-19: cổng máy thật PASS trên sha `04c06b21c39a` — 4 tiêu chí chặn cổng đều đạt (Android 60.6 fps TB ≥ 30 với 33 đồ văng/vỡ ≥ 20 trong cùng lần bench; soak iOS 15 phút không crash/không rò rỉ; first load 3.364.381 ≤ 8 MB). Cả 3 máy chạm trần 60 fps ở tier tự chọn (Vừa trên 2 điện thoại), nên chỉ số phân biệt là 1% thấp: desktop 53.6 / Android 53.6 / Safari 49.2 / Chrome iOS ở tier Cao + DPR 2 là 46.2 — máy yếu nhất vẫn cách ngưỡng 30 rất xa. Không chạy 01-20/01-21 (đòn bẩy D-07)
+- [Phase 01]: 01-19: phần chưa kiểm được ghi vào "## Gaps for verify-work" của 01-GATE.md chứ không đổi VERDICT (đúng D-07: chỉ 4 tiêu chí chặn cổng mới kích hoạt): 13 dòng checklist điều khiển/cài đặt chưa kiểm tay, Edge/Firefox desktop chưa mở, cảm nhận joystick chưa ghi, soak chạy trên Chrome iOS (cùng WebKit) chứ chưa trên Safari và chưa kiểm banner sau reload, ảnh bằng chứng còn ở hội thoại chưa lưu vào `evidence/`
 - [Quick fix 16/09/2026, ngoài plan, operator]: mỗi NPC đi tuyến riêng sinh từ seed thay vì dùng chung 5 tuyến — `src/logic/routeGen.ts` thuần (3–5 điểm dừng trên lưới 0,5 m nền trống, đoạn thẳng bị loại nếu chạm bàn/ghế/quầy/thùng/chậu/hành lang), tốc độ 1,1–1,6 m/s và dwell 1,5–5 s theo từng NPC, seed = seedFor(BENCH_SEED, 'npc-route-N'); NPC_ROUTES giữ nguyên vì benchScript dựng waypoint người chơi từ nó; số bench cũ (10 NPC dùng chung tuyến) không còn so trực tiếp được. Xem `.planning/phases/02-npc-dong-nghiep/02-QUICKFIX-routes.md`.
 
 ### Roadmap Evolution
@@ -192,8 +196,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 2] Tích hợp chờ cổng máy thật Phase 1 (01-GATE.md: gate-missing) — các plan tích hợp 02-06..02-13 dừng ở entry guard, chưa sửa code (D-12)
-- [Phase 1] **Model máy đo chưa ghi**: operator có Android tầm trung + iPhone (01-CONTEXT D-06) — phải ghi model/OS/trình duyệt trước lần đo đầu
+- [Phase 1] **Model 2 máy tham chiếu vẫn chưa rõ (D-06)**: OS + trình duyệt đã ghi (iOS 26.6.1 / Safari 604.1 + Chrome iOS 153; Chrome Android 152) và baseline đạt, nhưng Chrome Android gửi UA rút gọn `Android 10; K` nên không lộ model/bản Android thật, model iPhone chờ operator. Nợ tài liệu, không chặn cổng
+- [Phase 1] **4 ảnh bench/soak chưa lưu vào `evidence/`**: số đã chép vào 01-DEVICE-LOG.md và 01-GATE.md, nhưng file ảnh còn ở hội thoại — operator chép vào thư mục theo `evidence/README.md`
+- [Phase 1] **Checklist điều khiển/cài đặt (D-19, D-27..D-30) chưa kiểm tay**: CTRL_UI_CHECK=0/0, Edge/Firefox desktop chưa mở (TECH01_BROWSERS=3/5), cảm nhận joystick chưa ghi — việc của verify-work, không đổi phán quyết cổng
 - [Phase 1] Deploy whattoeat kế tiếp (`rsync --delete`) sẽ ghi đè dòng `import` trong Caddyfile trên server → `npm run deploy` của break-time phải tự phát hiện và báo
 - VPS chỉ **1 vCPU / 3,6 GB RAM** (đo 14/09/2026) và đang chạy cả Postgres của doibung. Static site thì không sao, nhưng **không build game trên VPS**: build ở máy local rồi đẩy `dist/` lên
 
@@ -205,6 +210,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T15:32:38.100Z
-Stopped at: Completed 01-18-PLAN.md
+Last session: 2026-09-16
+Stopped at: Completed 01-19-PLAN.md (cổng PASS). Operator yêu cầu DỪNG sau khi xong plan — chưa execute Phase 2.
 Resume file: None
+Next step khi quay lại: `/gsd-execute-phase 2` để chạy 02-06…02-13 (guard đã GUARD_CONTINUE).

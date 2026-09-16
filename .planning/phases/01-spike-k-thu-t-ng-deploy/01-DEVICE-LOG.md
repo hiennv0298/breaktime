@@ -29,12 +29,13 @@ Declared the reference devices for every later phase (D-06). Record model, OS an
 
 | Role | Model | OS version | Browser + version | Low Power Mode / Battery Saver default | Display refresh rate | RAM if known | Recorded at |
 |------|-------|------------|-------------------|----------------------------------------|----------------------|--------------|-------------|
-| Android | **KHÔNG CÓ MÁY** (operator 16/09) | — | — | — | — | — | — |
-| iPhone | (chờ operator ghi model) | iOS 26.6.2 | Chrome iOS (CriOS) 153 — bench 16/09; Safari sẽ đo bổ sung | tắt khi đo | (không rõ) | (không rõ) | 2026-09-16 |
+| Android | chưa rõ — Chrome gửi UA rút gọn (`Linux; Android 10; K`), không lộ model | Android (UA rút gọn ghi "10"; bản thật chưa rõ) | Chrome 152.0.0.0 Mobile | tắt khi đo ("Bị giới hạn 30 fps? Không") | (không rõ) | (không rõ) | 2026-09-16 |
+| iPhone | (chờ operator ghi model) | iOS 26.6.1 (UA Safari `Version/26.6.1`; Chrome iOS báo 26.6.2) | Safari 604.1 — bench chính 16/09; Chrome iOS (CriOS) 153 — bench + soak 16/09 | tắt khi đo | (không rõ) | (không rõ) | 2026-09-16 |
 
 Baseline (Vite 8 build target): iOS must be ≥ 16.4 and Chrome ≥ 111. If either phone is lower, write `BELOW_BASELINE` here, add a STATE.md blocker and stop the plan instead of measuring.
 
-Baseline result: (chưa kiểm — chưa có model/OS của 2 điện thoại). Desktop không thuộc baseline này.
+Baseline result: **ĐẠT** — iPhone iOS 26.6.1 ≥ 16.4; Android Chrome 152 ≥ 111. Desktop không thuộc baseline này.
+(Model của cả hai máy vẫn thiếu: Android bị Chrome che bằng UA rút gọn, iPhone chờ operator ghi. Đây là nợ tài liệu của D-06, không phải BELOW_BASELINE.)
 
 ## Measurement sessions
 
@@ -44,7 +45,8 @@ Rules for Task 3: the sha on screen must be `04c06b21c39a` (cập nhật 16/09) 
 |------|-----|--------|-----|---------------|-----------|----------------|-----|---------|--------|------------|-------------|----------------|------------------|--------|------------|
 | 2026-09-16 | 04c06b21c39a | iPhone (iOS 26.6.2, **Chrome iOS / CriOS 153**, DPR 2, 804x1368) | ?bench=1 | Cao (manual) | tắt | Không | 10 | 60.0 | 46.2 | 78 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi 16/09 — chưa lưu file evidence/ |
 | 2026-09-16 | 04c06b21c39a | iPhone — SOAK 15 phút (Chrome iOS) | ?soak=1 | Cao | tắt | — | 10 | fps thấp nhất/phút: 59·60·59·60·54·60×11 | — | — | 165 (gốc 165) | — | — | simd | 14 chu kỳ, mất ngữ cảnh 0, geometries 44/44, textures 25/25 → không rò rỉ; "Xong 15 phút — không crash" |
-| — | — | **Android: CHƯA ĐO** | — | — | — | — | — | — | — | — | — | — | — | — | Operator không có máy Android (16/09). Giả định tạm: Android giữ 60 fps ở cảnh chơi thường 3 NPC (ảnh HUD 15/09). **Không suy ra được hệ số** vì cả hai máy đều chạm trần 60 fps và hai ảnh khác cảnh (body 116 vs 56). Nợ: phải đo bench Android thật trước Phase 9 |
+| 2026-09-16 | 04c06b21c39a | iPhone (iOS 26.6.1, **Safari 604.1**, DPR 1.5, 603x1071) | ?bench=1 | Vừa (auto) | tắt | Không | 10 | 60.0 | 49.2 | 78 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi 16/09 — chưa lưu file evidence/. 60 s · 3568 khung |
+| 2026-09-16 | 04c06b21c39a | **Android** (Chrome 152, DPR 1.5, 562x1251, UA rút gọn `Android 10; K`) | ?bench=1 | Vừa (auto) | tắt | Không | 10 | 60.6 | 53.6 | 74 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi 16/09 — chưa lưu file evidence/. 60 s · 3599 khung |
 | 2026-09-16 | 04c06b21c39a | Desktop (Windows 10/11, Chrome 153, 1920x911, DPR 1) | ?bench=1 | Cao (auto) | n/a | Không | 10 | 59.9 | 53.6 | 91 | 165 | 33 (vỡ 11) | 10 | simd | ảnh operator gửi trong hội thoại 16/09 — **chưa lưu file vào evidence/** |
 
 ## Browser checklist
@@ -54,8 +56,8 @@ Rules for Task 3: the sha on screen must be `04c06b21c39a` (cập nhật 16/09) 
 | Chrome desktop | ok | ok | Bench 60 s hoàn tất, 59.9 fps TB / 53.6 (1% thấp), 3560 khung; Chrome 153 trên Windows |
 | Edge desktop |  |  |  |
 | Firefox desktop |  |  |  |
-| Chrome Android |  |  |  |
-| Safari iOS | (chờ đo) | (chờ đo) | Bench 16/09 chạy trên **Chrome iOS (CriOS 153)**, không phải Safari — operator sẽ chạy lại bench 60 s trên Safari |
+| Chrome Android | ok | ok | Bench 60 s hoàn tất: 60.6 fps TB / 53.6 (1% thấp), 3599 khung, Chrome 152, tier Vừa tự chọn |
+| Safari iOS | ok | ok | Bench 60 s hoàn tất: 60.0 fps TB / 49.2 (1% thấp), 3568 khung, Safari 604.1 / iOS 26.6.1, tier Vừa tự chọn. Soak 15 phút chạy trên Chrome iOS (cùng WebKit), chưa chạy lại trên Safari |
 
 ## Controls & settings checklist
 

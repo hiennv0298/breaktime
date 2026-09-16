@@ -476,6 +476,8 @@ Lines 1–36 (steps 1–7) are the same shape as the first deploy: STEP 3 had LI
 
 ## Measurement build
 
+> **Cập nhật 2026-09-16 — sha đo thật sự là `04c06b21c39a`.** Quickfix "tuyến NPC riêng theo seed" đã đổi hành vi di chuyển của NPC nên số đo trên `1ecc53ce473e` không còn so trực tiếp được. Toàn bộ bench/soak trong `01-DEVICE-LOG.md` và `01-GATE.md` chạy trên `04c06b21c39a` tại `https://game.doibung.com/?bench=1` và `?soak=1` (DEPLOY_OK, poller 5/5 200). Phần bên dưới giữ nguyên làm hồ sơ lần deploy 01-18. First load không đổi: `FIRST_LOAD_TOTAL_RAW=3364381`.
+
 Plan 01-18 Task 3: the build with `?bench=1` (01-17), `?soak=1`, the crash beacon and the banner (01-18). It is deployed for the real-device gate in 01-19. Only `npm run deploy` was run. No infra:apply, rollback, docker or caddy command was run by hand.
 
 **Result: `DEPLOY_OK 1ecc53ce473e https://game.doibung.com/ https://game.doibung.com/b/1ecc53ce473e/`, exit 0 (DEPLOY_RC=0), 15:22:04Z – 15:28:11Z. This was the third deploy attempt for this plan (see "Earlier attempts" below).**
