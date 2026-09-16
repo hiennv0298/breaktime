@@ -61,6 +61,11 @@ export interface NpcOptions {
   route: WaypointPoint[];
   /** Route point the NPC starts at (and dwells at first). */
   startIndex: number;
+  /**
+   * Walk speed in m/s (per-NPC since the 16/09/2026 route quick fix). Absent or not a positive finite number falls
+   * back to the walker's WALK_SPEED, so a bad value never freezes a coworker in place.
+   */
+  speed?: number;
   /** Spawn position; defaults to the route point at startIndex. */
   spawn?: { x: number; z: number };
   /** Start with the walker frozen (?npcAt test/bench pin); the first slap releases it. */
@@ -85,7 +90,8 @@ function smoothstep(t: number): number {
 }
 
 /**
- * Coworker NPC (D-11, D-12): a kinematic capsule driven along a hand-placed route by the pure waypoint walker, with an
+ * Coworker NPC (D-11, D-12): a kinematic capsule driven along its own route (seeded per slot since 16/09/2026,
+ * `waypoints.routeForNpc`) by the pure waypoint walker, at its own walk speed, with an
  * animated Blocky character on top. A slap turns it into a pooled 6-part ragdoll; when the torso settles it blends
  * upright toward the idle pose (procedural get-up, RESEARCH Pattern 14) and walks on from the nearest route point.
  */
@@ -95,6 +101,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
   if (n === 0) throw new Error(`npc ${opts.id} has an empty route`);
   const startIndex = ((Math.trunc(opts.startIndex) % n) + n) % n;
   const spawn = opts.spawn ?? opts.route[startIndex];
+  const speed = Number.isFinite(opts.speed) && (opts.speed as number) > 0 ? opts.speed : undefined;
 
   const body = world.createRigidBody(
     R.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, CENTRE_Y, spawn.z),
@@ -225,7 +232,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
         if (r.event === 'resumed') resume();
         return;
       }
-      const r = stepWalker(walker, opts.route, dt);
+      const r = stepWalker(walker, opts.route, dt, speed);
       walker = r.state;
       if (r.vx !== 0 || r.vz !== 0) targetYaw = r.facingYaw;
       next.x = walker.x;

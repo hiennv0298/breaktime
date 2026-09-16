@@ -27,6 +27,7 @@ import {
   PROP_CLEARANCE,
   ROUTE_CLEARANCE,
   ROUTE_OBSTACLES,
+  ROUTE_START_INDEX,
   farthestRouteIndex,
   routeForNpc,
   spawnPointForNpc,
@@ -206,6 +207,9 @@ describe('per-NPC seeded routes (16/09/2026 quick fix: tuyến riêng theo seed)
   });
 
   it('spawns every slot on its first stop, at least 0.6 m from every other spawn', () => {
+    // The NPC stands on stop 0 and walks off toward ROUTE_START_INDEX straight away (no dwell-shaped statue on load).
+    expect(ROUTE_START_INDEX).toBe(1);
+    for (const route of routes) expect(route.length).toBeGreaterThan(ROUTE_START_INDEX);
     const spawns = SLOTS.map((i) => spawnPointForNpc(i));
     spawns.forEach((p, i) => {
       expect(p.x).toBe(routes[i][0].x);

@@ -1,18 +1,31 @@
 /**
- * Hand-placed NPC routes (D-11): desk <-> pantry loops built from layout.ts constants, plus two more for NPCs 9 and 10
- * (D-29, plan 01-23). Straight segments between points; the walker pauses `dwellSec` at each one. Pure data (no
- * three.js), so Vitest checks the geometry.
+ * NPC routes and the office geometry they have to respect.
  *
- * Aisles: the NPCs stay out of the spawn / test-box corridor (layout CORRIDOR) and reach the pantry along a lane
- * north of the first desk row, entering and leaving the desk area around the west end of the desks.
+ * 16/09/2026 (operator quick fix, no plan): **each NPC walks its own seeded loop**. Until today slots 0..9 were mapped
+ * onto the 5 hand-placed `NPC_ROUTES` and slots 10..14 reused the same 5 loops from a seeded start point (plan 02-03,
+ * G3r), so every coworker added after the first few visibly retraced an older one. `routeForNpc(i)` now builds one
+ * loop per slot with `logic/routeGen.ts`: 3-5 stops on free floor, its own walk speed and its own dwell times, all
+ * from `seedFor(BENCH_SEED, 'npc-route-' + i)`. Same seed + same slot -> same loop, so ?bench=1 / ?soak=1 replay.
  *
- * Phase 2 (D-01 cap 15, G3r, plan 02-03): NPC slots 10-14 reuse routes 0..4 with a seeded start point instead of new
- * routes; slots 0..9 keep the Phase 1 mapping exactly (D-11 bench comparability). A navmesh replaces all of this
- * in Phase 3.
+ * `NPC_ROUTES` (hand-placed, D-11 / D-29, plans 01-14 and 01-23) is kept exactly as it was: `bench/benchScript.ts`
+ * builds the ?bench=1 player waypoints from it (01-17) and the bench timeline must not change. No NPC walks it any
+ * more; it stays the reference for where the interesting corners of the office are.
+ *
+ * Still no navmesh (Phase 3 scope): stops sit on a 0.5 m lattice of free floor and legs are straight lines rejected
+ * unless they clear every keep-out.
  */
-import { BENCH_SEED, mulberry32 } from '../logic/rng';
+import {
+  DEFAULT_ROUTE_CONFIG,
+  generateRoute,
+  type BlockCircle,
+  type BlockRect,
+  type NpcRoute,
+  type RouteArea,
+  type RouteGenConfig,
+} from '../logic/routeGen';
+import { BENCH_SEED, seedFor } from '../logic/rng';
 import type { WaypointPoint } from '../logic/waypointWalker';
-import { DESKS, PANTRY, PROP_PLACEMENTS } from './layout';
+import { CORRIDOR, DESKS, PANTRY, PROP_PLACEMENTS, ROOM } from './layout';
 
 /** NPC capsule radius (npc.ts collider). */
 export const NPC_RADIUS = 0.3;
@@ -71,19 +84,11 @@ const EAST_AISLE_X = 3.0;
 const STORAGE_Z = 3.9;
 const STORAGE_STOP_X = 4.85;
 
-/** Routes 0-2 serve NPCs 1-8 as in plans 01-14..01-16; NPCs 9 and 10 take routes 3 and 4 (D-29, 01-23). */
-const LEGACY_ROUTES = 3;
-const LEGACY_NPCS = 8;
-/** Slots 0..9 are the Phase 1 mapping; slots 10..14 (NPCs 11-15) reuse the routes (G3r). */
-const PHASE1_SLOTS = 10;
 /** Number of NPC slots (D-01: up to 15 NPCs); the highest slot index is 14. */
 export const NPC_SLOT_COUNT = 15;
 const MAX_NPC_INDEX = NPC_SLOT_COUNT - 1;
-/** Spawn offset on x per earlier NPC sharing the route (game.ts SHARED_ROUTE_OFFSET, slots 0..7). */
-export const SHARED_ROUTE_OFFSET = 0.3;
-/** Minimum centre distance between a slot 10..14 spawn point and every other slot's spawn point. */
+/** Minimum centre distance between two NPC spawn points (two 0.3 m capsules side by side). */
 export const MIN_SPAWN_GAP = 0.6;
-const SPAWN_GAP_EPS = 1e-9;
 
 function npcIndex(i: number): number {
   if (Number.isNaN(i)) return 0;
@@ -150,87 +155,6 @@ export const NPC_ROUTES: WaypointPoint[][] = [
 ];
 
 /**
- * NPC index -> route. NPCs 1-8 keep the routes they had in plans 01-14..01-16 (i % 3), so earlier measurements stay
- * comparable; NPCs 9 and 10 take the hand-placed routes 3 and 4 (D-29); slots 10..14 take routes (i - 10) % 5 (G3r).
- * The index is truncated and clamped to 0..14.
- */
-export function routeIndexForNpc(i: number): number {
-  const n = npcIndex(i);
-  if (n < LEGACY_NPCS) return n % LEGACY_ROUTES;
-  if (n < PHASE1_SLOTS) return LEGACY_ROUTES + (n - LEGACY_NPCS);
-  return (n - PHASE1_SLOTS) % NPC_ROUTES.length;
-}
-
-/** How many earlier NPCs share this NPC's route (the spawn offset multiplier): 0..7 -> floor(i / 3), 8..14 -> 0. */
-export function sharedIndexForNpc(i: number): number {
-  const n = npcIndex(i);
-  return n < LEGACY_NPCS ? Math.floor(n / LEGACY_ROUTES) : 0;
-}
-
-type Point = { readonly x: number; readonly z: number };
-
-/** Lazily computed start indices of slots 10..14, filled in slot order (each depends on the earlier slots). */
-const seededStarts: number[] = [];
-
-function minDistance(p: Point, others: readonly Point[]): number {
-  let best = Number.POSITIVE_INFINITY;
-  for (const q of others) best = Math.min(best, Math.hypot(p.x - q.x, p.z - q.z));
-  return best;
-}
-
-/** Start index of seeded slot n (10..14): computes and memoises every seeded slot up to n in order. */
-function seededStartIndex(n: number): number {
-  while (seededStarts.length <= n - PHASE1_SLOTS) {
-    const slot = PHASE1_SLOTS + seededStarts.length;
-    const route = NPC_ROUTES[routeIndexForNpc(slot)];
-    const earlier: Point[] = [];
-    for (let k = 0; k < slot; k++) earlier.push(spawnPointForNpc(k));
-    // Fisher-Yates order of this route's point indices from the slot's own seed.
-    const rng = mulberry32(BENCH_SEED + slot);
-    const order = route.map((_, k) => k);
-    for (let k = order.length - 1; k > 0; k--) {
-      const j = Math.floor(rng() * (k + 1));
-      const t = order[k];
-      order[k] = order[j];
-      order[j] = t;
-    }
-    let pick = order.find((k) => minDistance(route[k], earlier) >= MIN_SPAWN_GAP - SPAWN_GAP_EPS);
-    if (pick === undefined) {
-      // No point clears every earlier spawn: take the one farthest from all of them (ties -> lower index).
-      pick = 0;
-      let bestD = -1;
-      route.forEach((p, k) => {
-        const d = minDistance(p, earlier);
-        if (d > bestD) {
-          bestD = d;
-          pick = k;
-        }
-      });
-    }
-    seededStarts.push(pick);
-  }
-  return seededStarts[n - PHASE1_SLOTS];
-}
-
-/**
- * Route point a slot starts at (and dwells at first). Slots 0..9: i % route.length, exactly as Phase 1. Slots 10..14:
- * the first index of a mulberry32(BENCH_SEED + i) shuffle of the route whose point is >= MIN_SPAWN_GAP from every
- * spawn point of slots 0..i-1 (fallback: the point farthest from all of them). Pure and stable across calls.
- */
-export function routeStartIndexForNpc(i: number): number {
-  const n = npcIndex(i);
-  if (n >= PHASE1_SLOTS) return seededStartIndex(n);
-  return n % NPC_ROUTES[routeIndexForNpc(n)].length;
-}
-
-/** Spawn position of a slot: its route start point plus sharedIndexForNpc x SHARED_ROUTE_OFFSET on x. */
-export function spawnPointForNpc(i: number): { x: number; z: number } {
-  const route = NPC_ROUTES[routeIndexForNpc(i)];
-  const start = route[routeStartIndexForNpc(i)];
-  return { x: start.x + sharedIndexForNpc(i) * SHARED_ROUTE_OFFSET, z: start.z };
-}
-
-/**
  * Index of the route point farthest from (px, pz) (quick add away from the player, RESEARCH Pitfall 15). Ties keep
  * the lower index; non-finite points are skipped; -1 when the route is empty or has no finite point. With a
  * non-finite player position every distance is unknown, so the first finite point is returned.
@@ -275,3 +199,88 @@ export const ROUTE_OBSTACLES: Footprint[] = [
 
 /** z range of the desk block, exposed for tests. */
 export const DESK_BLOCK = { minX: deskMinX, minZ: deskMinZ, maxZ: deskMaxZ } as const;
+
+// ---------------------------------------------------------------------------------------------------------------
+// Per-NPC seeded routes (16/09/2026 quick fix)
+// ---------------------------------------------------------------------------------------------------------------
+
+/** Free space kept from the walls, matching the >= 0.5 m the route unit test asks for. */
+const WALL_MARGIN = 0.5;
+/** Free space kept from desks, chairs and pantry furniture: the capsule plus ROUTE_CLEARANCE. */
+const FURNITURE_MARGIN = NPC_RADIUS + ROUTE_CLEARANCE;
+/** Centre distance kept from floor-standing props, so an NPC never shoves a trashcan, box or plant (plan 01-23). */
+export const PROP_CLEARANCE = 0.6;
+/** Kenney chairDesk at ROLE_SCALE 2 is about 0.63 m square; its back sits at desk z + 1.215 (see BEHIND_CHAIR_Z). */
+const CHAIR_HALF = 0.315;
+const CHAIR_Z_OFFSET = 0.9;
+/** Floor-standing prop roles: they stand on the floor and get shoved, so routes keep PROP_CLEARANCE from them. */
+const FLOOR_PROP_ROLES: ReadonlySet<string> = new Set(['trashcan', 'boxClosed', 'pottedPlant', 'plantSmall']);
+
+function block(f: Footprint, margin: number): BlockRect {
+  return { ...f, margin };
+}
+
+/** Floor props (`on` undefined: not standing on a desk) an NPC route must keep away from. */
+const floorProps: BlockCircle[] = PROP_PLACEMENTS.filter((p) => FLOOR_PROP_ROLES.has(p.role) && p.on === undefined).map(
+  (p) => ({ id: p.id, x: p.x, z: p.z, radius: PROP_CLEARANCE }),
+);
+
+/**
+ * The office as the route generator sees it: the room inset by WALL_MARGIN, minus desks, chairs, pantry furniture,
+ * the spawn / test-box corridor and every floor-standing prop. Chairs are in here but deliberately NOT in
+ * ROUTE_OBSTACLES: the hand-placed routes stand right behind them on purpose (BEHIND_CHAIR_Z), generated stops do not.
+ */
+export const NPC_ROUTE_AREA: RouteArea = {
+  minX: -ROOM.width / 2 + WALL_MARGIN,
+  maxX: ROOM.width / 2 - WALL_MARGIN,
+  minZ: -ROOM.depth / 2 + WALL_MARGIN,
+  maxZ: ROOM.depth / 2 - WALL_MARGIN,
+  gridStep: 0.5,
+  rects: [
+    ...ROUTE_OBSTACLES.map((f) => block(f, FURNITURE_MARGIN)),
+    ...DESKS.map((d) => block(rect(`${d.id}-chair`, d.x, d.z + CHAIR_Z_OFFSET, CHAIR_HALF, CHAIR_HALF), FURNITURE_MARGIN)),
+    block({ id: 'corridor', ...CORRIDOR }, NPC_RADIUS),
+  ],
+  circles: floorProps,
+};
+
+/** Bands for this office; only minSpawnGap is pinned to a game constant (two capsules side by side). */
+export const NPC_ROUTE_CONFIG: RouteGenConfig = { ...DEFAULT_ROUTE_CONFIG, minSpawnGap: MIN_SPAWN_GAP };
+
+/** One generated loop per slot, filled in slot order: slot n avoids the spawn points of slots 0..n-1 and nothing else. */
+const routeCache: NpcRoute[] = [];
+
+function npcRoute(n: number): NpcRoute {
+  while (routeCache.length <= n) {
+    const slot = routeCache.length;
+    const taken = routeCache.map((r) => r.stops[0]);
+    routeCache.push(generateRoute(NPC_ROUTE_AREA, NPC_ROUTE_CONFIG, seedFor(BENCH_SEED, `npc-route-${slot}`), taken));
+  }
+  return routeCache[n];
+}
+
+/**
+ * This NPC's own patrol loop (3-5 stops, each with its own dwell). The index is truncated and clamped to 0..14.
+ * A fresh copy every call, so a caller that edits its route cannot corrupt the slot for the next respawn.
+ */
+export function routeForNpc(i: number): WaypointPoint[] {
+  return npcRoute(npcIndex(i)).stops.map((p) => ({ ...p }));
+}
+
+/** This NPC's walk speed in m/s (NPC_ROUTE_CONFIG speed band around WALK_SPEED 1.4). */
+export function walkSpeedForNpc(i: number): number {
+  return npcRoute(npcIndex(i)).speed;
+}
+
+/** Spawn position of a slot: the first stop of its own route. */
+export function spawnPointForNpc(i: number): { x: number; z: number } {
+  const start = npcRoute(npcIndex(i)).stops[0];
+  return { x: start.x, z: start.z };
+}
+
+/**
+ * Waypoint index a spawned NPC heads for. It stands on stop 0, so aiming at stop 1 makes it set off at once instead of
+ * standing still for its first dwell (up to 5 s of statues right after the office loads, and an NPC that a 4 s e2e
+ * window never sees move). It still dwells at stop 0 when the loop comes back round.
+ */
+export const ROUTE_START_INDEX = 1;

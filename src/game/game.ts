@@ -41,7 +41,7 @@ import { createNpc, type Npc } from './npc';
 import { createPlayer, PLAYER_TEXTURE, type Player } from './player';
 import { readNpcSettingsRaw } from './npcSettingsStore';
 import { performSlap, slapCount } from './slap';
-import { NPC_ROUTES, routeIndexForNpc, sharedIndexForNpc } from './waypoints';
+import { ROUTE_START_INDEX, routeForNpc, spawnPointForNpc, walkSpeedForNpc } from './waypoints';
 
 export interface GameCtx extends RenderCtx {
   physics: Physics;
@@ -129,8 +129,6 @@ const LABEL_RAGDOLL_Y = 0.9;
 const LABEL_NDC_LIMIT = 1.1;
 /** Slap target footprint: an NPC is reachable within 1.6 m of its 0.4 m radius (plan 01-15). */
 const NPC_TARGET_RADIUS = 0.4;
-/** Spawn offset per extra NPC sharing a route, so capsules never start inside each other. */
-const SHARED_ROUTE_OFFSET = 0.3;
 /** ?scenario=smash fires on this fixed step, once everything has settled on its surface (plan 01-16). */
 export const SMASH_STEP = 30;
 
@@ -181,7 +179,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
   const cameraView = createCameraView(ctx.camera);
 
-  // Coworkers on hand-placed routes (D-11). Texture letters follow the player's: b, c, d, …
+  // Coworkers, each on its own seeded route (D-11, quick fix 16/09/2026). Texture letters follow the player's: b, c, d, …
   // Grow-only pool (plan 01-27, D-29, T-01-27-02): slot i is created the first time the count reaches it; afterwards it
   // is only despawned / respawned, so Apply never creates or removes Rapier bodies beyond MAX_NPCS NPCs.
   const pool: Npc[] = [];
@@ -203,18 +201,17 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   /** Set once shadows and targeting exist: NPCs created later by Apply register their blob and candidate through it. */
   let wireNpc: ((i: number) => void) | null = null;
 
-  /** Route start of slot i plus its shared-route offset; NPCs 1-8 keep their 01-14 routes, 9-10 use routes 3-4 (01-23). */
+  /** First stop of slot i's own seeded route (16/09/2026 quick fix); every slot spawns >= 0.6 m from the others. */
   function spawnPointFor(i: number): { x: number; z: number } {
-    const route = NPC_ROUTES[routeIndexForNpc(i)];
-    const start = route[i % route.length];
-    return { x: start.x + sharedIndexForNpc(i) * SHARED_ROUTE_OFFSET, z: start.z };
+    return spawnPointForNpc(i);
   }
 
   /** Creates pool slots up to and including i (capped at MAX_NPCS); a created NPC starts active. */
   function ensureNpc(i: number): void {
     while (pool.length <= i && pool.length < MAX_NPCS) {
       const k = pool.length;
-      const route = NPC_ROUTES[routeIndexForNpc(k)];
+      // Own loop, own walk speed, own dwell times: a newly added coworker no longer retraces an older one.
+      const route = routeForNpc(k);
       const pinned = pinAllowed && k === 0 && npcAt !== null;
       const texture = String.fromCharCode(firstNpcLetter + k);
       const npc = createNpc(ctx, {
@@ -222,7 +219,8 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         asset: characterAsset,
         texture,
         route,
-        startIndex: k % route.length,
+        startIndex: ROUTE_START_INDEX,
+        speed: walkSpeedForNpc(k),
         spawn: pinned && npcAt ? npcAt : spawnPointFor(k),
         frozen: pinned,
         groupIndex: k,
