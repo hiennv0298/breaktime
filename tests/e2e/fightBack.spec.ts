@@ -355,23 +355,17 @@ test.describe('fightBack desktop', () => {
     // Record time of first slap
     const firstSlapTime = Date.now();
 
-    // Try to land second slap, maintaining at least 3.5s gap from the first
+    // Try to land second slap with at least 3.5s gap
     let secondSlapTime = 0;
-    const pollStart = Date.now();
 
-    // Repeatedly try to acquire target and slap until successful or timeout
-    while (Date.now() - pollStart < 8000 && secondSlapTime === 0) {
-      // Ensure minimum 3.5s gap from first slap before landing second
-      const elapsed = Date.now() - firstSlapTime;
-      if (elapsed < 3500) {
-        // Wait a bit and retry
-        await page.waitForTimeout(500);
-        continue;
-      }
+    // Wait ~3.5s+ for the gap requirement
+    await page.waitForTimeout(3500);
 
-      // Now actively try to acquire and slap
-      // Turn to re-acquire (same logic as faceAndSlap)
-      for (let turnCount = 0; turnCount < 40; turnCount++) {
+    // Now try to acquire and slap
+    const slapStart = Date.now();
+    while (Date.now() - slapStart < 5000 && secondSlapTime === 0) {
+      // Turn right to try to acquire the NPC (matching faceAndSlap logic exactly)
+      for (let i = 0; i < 40; i++) {
         const highlight = (await bt(page, 'highlight'))?.kind;
         if (highlight === 'npc') break;
         await page.keyboard.down('KeyD');
@@ -380,7 +374,7 @@ test.describe('fightBack desktop', () => {
         await page.waitForTimeout(60);
       }
 
-      // If we have target, try to slap
+      // If acquired, slap
       const highlight = (await bt(page, 'highlight'))?.kind;
       if (highlight === 'npc') {
         const countBefore = (await bt(page, 'slap'))?.count || 0;
@@ -394,7 +388,7 @@ test.describe('fightBack desktop', () => {
         }
       }
 
-      // Retry
+      // Retry turn-and-slap
       await page.waitForTimeout(100);
     }
 
