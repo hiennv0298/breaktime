@@ -184,16 +184,18 @@ export function startBench(game: Game, opts: { durationSec: number; brawl?: bool
       knockedOrBroken: game.knockedOrBroken(),
       broken: game.brokenCount(),
       userAgent: navigator.userAgent,
-      ...(brawl && {
-        brawl: true,
-        maxPursuers: combat.maxPursuers,
-        maxAttackers: combat.maxAttackers,
-        strikes: combat.strikes,
-        playerKnockdowns: combat.knockdowns,
-        simStepAvgMs: stepMs.length > 0 ? stepMs.reduce((a, b) => a + b, 0) / stepMs.length : 0,
-        simStepP99Ms: percentile(stepMs, 0.99),
-        simStepMaxMs: stepMs.length > 0 ? Math.max(...stepMs) : 0,
-      }),
+      // Always stated, so a result screenshot says which scenario produced it instead of leaving the
+      // reader to infer it from the absence of a field.
+      brawl,
+      // Always present, zeros included: a result record with a stable shape can be diffed against another
+      // run without having to reason about which fields a given scenario happens to omit.
+      maxPursuers: combat.maxPursuers,
+      maxAttackers: combat.maxAttackers,
+      strikes: combat.strikes,
+      playerKnockdowns: combat.knockdowns,
+      simStepAvgMs: stepMs.length > 0 ? stepMs.reduce((a, b) => a + b, 0) / stepMs.length : 0,
+      simStepP99Ms: percentile(stepMs, 0.99),
+      simStepMaxMs: stepMs.length > 0 ? Math.max(...stepMs) : 0,
     };
     pause.pauseFor('user');
     showBenchResults(result);

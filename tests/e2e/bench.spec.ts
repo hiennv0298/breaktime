@@ -168,6 +168,10 @@ test.describe('bench desktop', () => {
 
   test('brawl: ?bench=1&brawl=1 runs 15 fighting NPCs inside the budget', async ({ page, baseURL }) => {
     test.setTimeout(180000); // 3 minutes
+    // Capture console BEFORE navigating: the MEASURE line is a console.log. The old code read
+    // window.__bt_logs, which nothing ever populates, so measureLine was always undefined.
+    const consoleLines: string[] = [];
+    page.on('console', (m) => consoleLines.push(m.text()));
     const { result: r, problems } = await runBench(page, baseURL!, './?bench=1&brawl=1&dur=40&autoplay=1');
 
     // Brawl-specific fields
@@ -178,7 +182,12 @@ test.describe('bench desktop', () => {
     expect(r.maxPursuers).toBeLessThanOrEqual(3);
     expect(r.maxAttackers).toBeLessThanOrEqual(1);
     expect(r.strikes).toBeGreaterThanOrEqual(1);
-    expect(r.playerKnockdowns).toBeGreaterThanOrEqual(20);
+    // A knockdown cycle cannot be shorter than about 5 s — wind-up 0.6 + ragdoll ~2.5 + stand-up 0.45
+    // + invulnerable 1.5 — and only one coworker may strike at a time, so 40 s allows at most a handful.
+    // The original >= 20 could never pass. The pair of bounds below is the useful statement: the brawl
+    // really does floor the player, and invulnerability still prevents chain-knockdowns.
+    expect(r.playerKnockdowns).toBeGreaterThanOrEqual(1);
+    expect(r.playerKnockdowns).toBeLessThanOrEqual(12);
     expect(r.simStepAvgMs).toBeGreaterThan(0);
     expect(Number.isFinite(r.simStepP99Ms)).toBe(true);
     expect(r.simStepP99Ms).toBeGreaterThan(0);
@@ -196,10 +205,10 @@ test.describe('bench desktop', () => {
     const fits = await results.evaluate((el) => el.scrollHeight <= el.clientHeight + 1);
     expect(fits).toBe(true);
 
-    // Check console for the MEASURE line
-    const logs = await page.evaluate(() => (window as unknown as { __bt_logs?: string[] }).__bt_logs || []);
-    const measureLine = logs.find((l) => l.includes('MEASURE brawl'));
+    // The MEASURE line is what the operator copies into 02-DEVICE-CHECK.md, so prove it is emitted.
+    const measureLine = consoleLines.find((l) => l.includes('MEASURE brawl'));
     expect(measureLine).toBeDefined();
+    expect(measureLine).toContain('peakBodies=');
 
     expectClean(problems);
   });
