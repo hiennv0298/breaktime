@@ -10,8 +10,8 @@ progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 26
-  percent: 96
+  completed_plans: 27
+  percent: 100
 ---
 
 # Project State
@@ -26,13 +26,13 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 2 (NPC đồng nghiệp) — EXECUTING
-Plan: 7 of 13 (02-01..02-07 complete; 02-08..02-13 awaiting)
-Status: Entry guard 02-07 GUARD_CONTINUE; roster-driven office + storage + look swap integrated
-Last activity: 2026-09-18 -- Completed 02-07 (roster-driven office): Guard GUARD_CONTINUE (D-12 cleared); rosterStore.ts (read/write/debounce/pagehide); characters.ts setLook/look/preloadCharacterLook (no rebuild); game.ts applyRoster + roster binding + look swap + next-candidate preload; loop.ts adapter (withSlotEdits); rosterStart e2e 6/7 GREEN (1 storage minor issue); unit tests 825/825 GREEN; storage writes only bt.roster (NPC-02 satisfied)
+Plan: 8 of 13 (02-01..02-08 complete; 02-09..02-13 awaiting)
+Status: Entry guard 02-08 GUARD_CONTINUE; quick add/remove in-play + pill + guards + save/reload integrated
+Last activity: 2026-09-18 -- Completed 02-08 (quick add/remove in-play): Guard GUARD_CONTINUE (D-12 passed Phase 1 VERDICT); Task 2 RED tests + input plumbing (5/11 initially fail); Task 3 GREEN pill (src/ui/quickNpcPill.ts/.css) + game.ts integration (spawn away, save, pause guards); 11/11 e2e pass (10 desktop, 1 mobile); NPC-01 satisfied (keys +/−, pill clicks/taps, bounds 0–15, spawn ≥1m from player, save/reload, guards on repeat/typing/paused/Ctrl)
 
 Previous activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
 
-Progress: [██████████] 96%
+Progress: [████████████] 100%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [██████████] 96%
 | Phase 02 P03 | 8min | 2 tasks | 5 files |
 | Phase 02 P04 | 10min | 3 tasks | 10 files |
 | Phase 02 P05 | 11min | 2 tasks | 7 files |
+| Phase 02 P08 | 60min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
