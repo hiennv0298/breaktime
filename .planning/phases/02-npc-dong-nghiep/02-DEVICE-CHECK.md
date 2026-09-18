@@ -29,19 +29,23 @@ Mở những URL dưới đây trên 2 điện thoại chuẩn (1 Android, 1 iPh
 
 ## Bảng kết quả trên máy chuẩn
 
-### Máy chuẩn (Android)
+### Máy chuẩn (Android — Chrome 153, Android 10, DPR 1.5, 576×1159/1279, tier Vừa/auto)
 
 | Kịch bản | Avg fps | 1% low | Đỉnh draw | Đỉnh body | NPC | Đuổi tối đa | Người chơi bị hạ | Sim ms TB | Sim p99 | Ghi chú |
 |---|---|---|---|---|---|---|---|---|---|---|
-| ?bench=1 (10 NPC) | — | — | — | — | 10 | — | — | — | — | Chương trình chụp ảnh để so với 01-19 |
-| ?bench=1&brawl=1 (15 NPC) | — | — | — | — | 15 | — | — | — | — | Đánh trả 60 giây, ghi fps |
+| ?bench=1 (10 NPC) | 59.3 | 27.0 | 72 | 171 | 10 | — | — | — | — | commit f8f4a44d3dde, 60s/3529 khung |
+| ?bench=1&brawl=1 (15 NPC) | 58.9 | 24.3 | 82 | 206 | 15 | 3/3 | 5 | 3.6 | 10.1 | commit f8f4a44d3dde, 60s/3527 khung |
 
-### Máy chuẩn (iPhone)
+### Máy chuẩn (iPhone — Safari 604.1 / CriOS 153, iOS 26.6.2, DPR 2, 804×1368, tier Cao/manual)
 
 | Kịch bản | Avg fps | 1% low | Đỉnh draw | Đỉnh body | NPC | Đuổi tối đa | Người chơi bị hạ | Sim ms TB | Sim p99 | Ghi chú |
 |---|---|---|---|---|---|---|---|---|---|---|
-| ?bench=1 (10 NPC) | — | — | — | — | 10 | — | — | — | — | Chương trình chụp ảnh để so với 01-19 |
-| ?bench=1&brawl=1 (15 NPC) | — | — | — | — | 15 | — | — | — | — | Đánh trả 60 giây, ghi fps |
+| ?bench=1 (10 NPC) | 60.0 | 57.1 | 78 | 171 | 10 | — | — | — | — | commit f8f4a44d3dde, 60s/3563 khung |
+| ?bench=1&brawl=1 (15 NPC) | 59.8 | 35.3 | 83 | 206 | 15 | 3/3 | 6 | 1.0 | 4.0 | commit f8f4a44d3dde, 60s/3576 khung |
+
+**Kết luận số đo:** cả 2 máy chuẩn đều giữ avg fps ~59-60 kể cả ở kịch bản nặng nhất (brawl 15 NPC, 206/206 physics body — chạm trần). 1% low thấp nhất là Android brawl (24.3 fps) — dưới 30 nhưng chỉ là các khung đáy hiếm, không phải trung bình; avg vẫn 58.9. Không có dấu hiệu giới hạn 30fps, không nghẽn draw call.
+
+**Lỗi phát hiện khi chơi thật (không phải lỗi hiệu năng):** sau khi bị đánh ngã và tự đứng dậy, chân/tay/đầu bị "co về giữa thân" trong lúc chuyển tiếp thay vì gắn khớp — do `blend()` trong `knockdown.ts` dùng sai điểm xuất phát khi lerp. Đã sửa ở commit `fa0a163` (sau bench này), cần operator xác nhận lại trên máy sau khi deploy bản mới.
 
 ---
 
