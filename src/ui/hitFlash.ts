@@ -3,6 +3,8 @@
  * Flash lasts 250 ms (HIT_FLASH_MS), fades out via CSS transition.
  */
 
+import './hitFlash.css';
+
 export const HIT_FLASH_MS = 250;
 
 export interface HitFlash {

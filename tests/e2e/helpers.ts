@@ -125,3 +125,65 @@ export async function touchTap(page: Page, x: number, y: number, id = 1): Promis
   await touchDown(page, x, y, id);
   await touchUp(page, id);
 }
+
+/**
+ * Walks the player to coworker `npcIndex` and slaps it. Returns the slap timestamp, or 0 if no slap
+ * landed within `budgetMs`.
+ *
+ * Shared by fightBack.spec and playerKnockdown.spec so the two cannot drift apart. Three things here
+ * are deliberate, each one having cost a round of false failures:
+ *  - It WALKS to the coworker. Standing still and waiting for one to wander past is a coin flip since
+ *    every coworker follows its own seeded route.
+ *  - WASD is world movement, not turning, and which key maps to which world axis depends on the
+ *    camera yaw — so the mapping is measured here, never assumed.
+ *  - It confirms `__bt.slap.count` went up, not `__bt.swing.count`. A swing into thin air increments
+ *    swing.count, so checking that proves nothing about the coworker having been hit.
+ */
+export async function approachAndSlap(page: Page, npcIndex: number, budgetMs: number): Promise<number> {
+  type Vec = { x: number; z: number };
+  const read = <T>(fn: (i: number) => T): Promise<T> => page.evaluate(fn, npcIndex);
+  const posOf = (): Promise<{ player: Vec; npc: Vec }> =>
+    read((i) => {
+      const b = (window as unknown as { __bt: { player?: { pos: number[] }; npcs?: Array<{ pos: number[] }> } }).__bt;
+      const p = b.player!.pos;
+      const n = b.npcs![i]!.pos;
+      return { player: { x: p[0]!, z: p[2]! }, npc: { x: n[0]!, z: n[2]! } };
+    });
+  const highlightKind = (): Promise<string | null | undefined> =>
+    page.evaluate(() => (window as unknown as { __bt: { highlight?: { kind?: string | null } } }).__bt.highlight?.kind);
+  const slapCount = (): Promise<number> =>
+    page.evaluate(() => (window as unknown as { __bt: { slap?: { count: number } } }).__bt.slap?.count ?? 0);
+
+  const probe = async (key: string): Promise<Vec> => {
+    const a = (await posOf()).player;
+    await page.keyboard.down(key);
+    await page.waitForTimeout(120);
+    await page.keyboard.up(key);
+    await page.waitForTimeout(60);
+    const b = (await posOf()).player;
+    return { x: b.x - a.x, z: b.z - a.z };
+  };
+  const dVec = await probe('KeyD');
+  const wVec = await probe('KeyW');
+  const dot = (a: Vec, b: Vec): number => a.x * b.x + a.z * b.z;
+
+  const start = Date.now();
+  while (Date.now() - start < budgetMs) {
+    if ((await highlightKind()) === 'npc') break;
+    const { player, npc } = await posOf();
+    const want: Vec = { x: npc.x - player.x, z: npc.z - player.z };
+    if (Math.hypot(want.x, want.z) < 0.2) break;
+    const alongD = dot(want, dVec);
+    const alongW = dot(want, wVec);
+    const key = Math.abs(alongD) >= Math.abs(alongW) ? (alongD >= 0 ? 'KeyD' : 'KeyA') : alongW >= 0 ? 'KeyW' : 'KeyS';
+    await page.keyboard.down(key);
+    await page.waitForTimeout(90);
+    await page.keyboard.up(key);
+  }
+
+  if ((await highlightKind()) !== 'npc') return 0;
+  const before = await slapCount();
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(300);
+  return (await slapCount()) > before ? Date.now() : 0;
+}

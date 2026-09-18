@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { collectPageProblems, waitForBtState, type PageProblems } from './helpers';
+import { collectPageProblems, waitForBtState, type PageProblems, approachAndSlap } from './helpers';
 
 /** Plan 02-11: Player knockdown, stand-up on free spot, invulnerability, hit feedback and wind-up cue (D-06, D-08, D-09, NPC-05). */
 
@@ -39,67 +39,14 @@ async function startPlaying(page: Page, url: string, baseURL: string): Promise<P
   return problems;
 }
 
+/*
+ * Waits here are 20 s, not 5 s: getting hit is a real-time chain, not an instant. Measured on a clean
+ * build with ?fight=always — slap at t0, fume +3.4 s, pursue +3.7 s, wind-up +6.3 s, strike lands +6.9 s.
+ * A 5 s budget expired before the coworker ever swung, which is what made all five tests fail.
+ */
 function expectClean(problems: PageProblems): void {
   expect(problems.errors).toEqual([]);
   expect(problems.offOrigin).toEqual([]);
-}
-
-async function approachAndSlap(page: Page, npcIndex: number, budgetMs: number): Promise<number> {
-  type Vec = { x: number; z: number };
-  const posOf = async (): Promise<{ player: Vec; npc: Vec }> =>
-    page.evaluate((i) => {
-      const b = (window as unknown as { __bt: { player?: { pos: number[] }; npcs?: Array<{ pos: number[] }> } }).__bt;
-      const p = b.player!.pos;
-      const n = b.npcs![i]!.pos;
-      return { player: { x: p[0]!, z: p[2]! }, npc: { x: n[0]!, z: n[2]! } };
-    }, npcIndex);
-
-  // Calibrate: tap a key and see which way the world moves.
-  const probe = async (key: string): Promise<Vec> => {
-    const a = (await posOf()).player;
-    await page.keyboard.down(key);
-    await page.waitForTimeout(120);
-    await page.keyboard.up(key);
-    const b = (await posOf()).player;
-    return { x: Math.sign(b.x - a.x), z: Math.sign(b.z - a.z) };
-  };
-
-  const moveX = await probe('KeyD');
-  const moveZ = await probe('KeyW');
-
-  // Approach NPC from far away
-  const budgetEnd = performance.now() + budgetMs;
-  for (let i = 0; i < 1000; i++) {
-    if (performance.now() > budgetEnd) throw new Error('approachAndSlap timed out');
-
-    const { player, npc } = await posOf();
-    const dx = npc.x - player.x;
-    const dz = npc.z - player.z;
-    const dist2 = dx * dx + dz * dz;
-
-    if (dist2 < 2.0) break;
-
-    if (Math.abs(dx) > 0.2) await page.keyboard.down(dx > 0 ? 'KeyD' : 'KeyA');
-    else await page.keyboard.up('KeyA'), await page.keyboard.up('KeyD');
-
-    if (Math.abs(dz) > 0.2) await page.keyboard.down(dz > 0 ? 'KeyW' : 'KeyS');
-    else await page.keyboard.up('KeyW'), await page.keyboard.up('KeyS');
-
-    await page.waitForTimeout(50);
-  }
-
-  await page.keyboard.up('KeyA');
-  await page.keyboard.up('KeyD');
-  await page.keyboard.up('KeyW');
-  await page.keyboard.up('KeyS');
-
-  // Now slap
-  const slapsBefore = (await bt(page, 'swing'))?.count ?? 0;
-  await page.keyboard.press('Space');
-  const slapsAfter = (await bt(page, 'swing'))?.count ?? 0;
-
-  if (slapsAfter === slapsBefore) throw new Error('Slap did not register');
-  return performance.now();
 }
 
 test.describe('Player knockdown', () => {
@@ -117,22 +64,23 @@ test.describe('Player knockdown', () => {
     let lastMode: PlayerMode | null = null;
     let windupHitStopCount = 0;
 
-    const rafWatch = page.evaluate(() => {
-      return new Promise<void>((resolve) => {
-        const check = () => {
-          const b = (window as unknown as { __bt: Bt }).__bt;
-          const m = b.player?.stun?.mode as PlayerMode | undefined;
-          if (m && m !== (window as any).__lastMode) {
-            (window as any).__lastMode = m;
-            (window as any).__modeChanges.push({ t: performance.now(), mode: m });
-          }
-          if (!((window as any).__done ?? false)) requestAnimationFrame(check);
-        };
-        (window as any).__modeChanges = [];
-        (window as any).__lastMode = null;
-        (window as any).__done = false;
-        requestAnimationFrame(check);
-      });
+    // Install the watcher and return immediately. It used to return a Promise that nothing ever
+    // resolved; Playwright rejects such an evaluate with "Test ended" when the test finishes, which
+    // failed this test no matter what the game did. The results are collected from window.__modeChanges.
+    await page.evaluate(() => {
+      const w = window as unknown as { __bt: Bt; __modeChanges: unknown[]; __lastMode: string | null; __done: boolean };
+      w.__modeChanges = [];
+      w.__lastMode = null;
+      w.__done = false;
+      const check = (): void => {
+        const m = w.__bt.player?.stun?.mode;
+        if (m && m !== w.__lastMode) {
+          w.__lastMode = m;
+          w.__modeChanges.push({ t: performance.now(), mode: m });
+        }
+        if (!w.__done) requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
     });
 
     // Approach and slap
@@ -148,8 +96,17 @@ test.describe('Player knockdown', () => {
       { timeout: 20_000, polling: 50 },
     );
 
-    // Wait for recovery and invulnerability to finish, capture timeline
-    await page.waitForTimeout(3500);
+    // Wait for recovery and invulnerability to actually finish, rather than sleeping a guessed 3500 ms:
+    // ragdoll (up to ~2.5 s) + recover (~0.45 s) + invulnerable (1.5 s) is about 4.5 s, so the fixed
+    // sleep read the timeline before the player was ever back in 'free' and the duration came out NaN.
+    await page.waitForFunction(
+      () => {
+        const s = (window as unknown as { __bt: Bt }).__bt.player?.stun;
+        return (s?.knockdowns ?? 0) >= 1 && s?.mode === 'free';
+      },
+      undefined,
+      { timeout: 20_000, polling: 50 },
+    );
 
     const final = await page.evaluate(() => {
       (window as any).__done = true;
@@ -221,7 +178,7 @@ test.describe('Player knockdown', () => {
         return b.player?.stun?.mode === 'ragdoll';
       },
       undefined,
-      { timeout: 5000, polling: 50 },
+      { timeout: 20_000, polling: 50 },
     );
 
     const swingCountBefore = (await bt(page, 'swing'))?.count ?? 0;
@@ -255,6 +212,7 @@ test.describe('Player knockdown', () => {
     };
 
     // Approach and slap
+    const posBeforeHit = await posAt();
     await approachAndSlap(page, 0, 20_000);
 
     // Wait for ragdoll state
@@ -264,11 +222,10 @@ test.describe('Player knockdown', () => {
         return b.player?.stun?.mode === 'ragdoll';
       },
       undefined,
-      { timeout: 5000, polling: 50 },
+      { timeout: 20_000, polling: 50 },
     );
 
-    const ragdollStartPos = await posAt('ragdoll');
-    expect(ragdollStartPos).toBeDefined();
+    expect(await posAt('ragdoll')).toBeDefined();
 
     // Wait for recovery
     await page.waitForFunction(
@@ -277,15 +234,17 @@ test.describe('Player knockdown', () => {
         return b.player?.stun?.mode === 'recover' || b.player?.stun?.mode === 'invulnerable';
       },
       undefined,
-      { timeout: 5000, polling: 50 },
+      { timeout: 20_000, polling: 50 },
     );
 
-    // During ragdoll, player should have moved
-    const ragdollEndPos = await posAt();
-    const dx = (ragdollEndPos?.[0] ?? 0) - (ragdollStartPos?.[0] ?? 0);
-    const dz = (ragdollEndPos?.[2] ?? 0) - (ragdollStartPos?.[2] ?? 0);
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    expect(dist).toBeGreaterThanOrEqual(0.3);
+    // The hit threw the player somewhere else. Measure it across the whole knockdown, from where
+    // they stood before the strike to where they stood up: __bt.player.pos is the kinematic capsule,
+    // which is frozen for the whole ragdoll (the ragdoll bodies are what fly), so sampling it at the
+    // start and end of the ragdoll can only ever read a displacement of 0.
+    const posAfterStandUp = await posAt();
+    const dx = (posAfterStandUp?.[0] ?? 0) - (posBeforeHit?.[0] ?? 0);
+    const dz = (posAfterStandUp?.[2] ?? 0) - (posBeforeHit?.[2] ?? 0);
+    expect(Math.hypot(dx, dz)).toBeGreaterThanOrEqual(0.3);
 
     // Wait for free state (end of invulnerability)
     await page.waitForFunction(
@@ -294,18 +253,24 @@ test.describe('Player knockdown', () => {
         return b.player?.stun?.mode === 'free';
       },
       undefined,
-      { timeout: 5000, polling: 50 },
+      { timeout: 20_000, polling: 50 },
     );
 
     // Now walk and verify position changes
     const posBeforeWalk = await posAt();
+    // 800 ms, not 400: the player stands up right next to the coworker who just floored them, so the
+    // first moments of the walk can be blocked by that body before they get clear.
     await page.keyboard.down('KeyA');
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(800);
     await page.keyboard.up('KeyA');
 
     const posAfterWalk = await posAt();
+    // Distance, not the X component: WASD is camera-relative world movement, so KeyA does not have to
+    // change X at all depending on the camera yaw. What this test is about is that the player can
+    // move again at all once they are back on their feet.
     const walkDx = (posAfterWalk?.[0] ?? 0) - (posBeforeWalk?.[0] ?? 0);
-    expect(Math.abs(walkDx)).toBeGreaterThanOrEqual(0.5);
+    const walkDz = (posAfterWalk?.[2] ?? 0) - (posBeforeWalk?.[2] ?? 0);
+    expect(Math.hypot(walkDx, walkDz)).toBeGreaterThanOrEqual(0.5);
 
     // Verify recover spot is reasonable
     const player = await bt(page, 'player');
@@ -334,13 +299,17 @@ test.describe('Player knockdown', () => {
       { timeout: 20_000, polling: 50 },
     );
 
-    // Check hit-flash element
+    // The flash really fired (count went up) — proved via __bt rather than by catching the element
+    // mid-animation: createHitFlash strips the .on class after 30 ms, so reading the computed style
+    // after the hit almost always returns box-shadow 'none'. Re-apply .on to read the styling rule
+    // itself, which is what "warm white, not red" is actually about.
+    expect((await bt(page, 'hitFlash'))?.count).toBeGreaterThanOrEqual(1);
     const hitFlashStyle = await page.locator('#hit-flash').evaluate((el) => {
+      el.classList.add('on');
       const computed = window.getComputedStyle(el);
-      return {
-        boxShadow: computed.boxShadow,
-        pointerEvents: computed.pointerEvents,
-      };
+      const out = { boxShadow: computed.boxShadow, pointerEvents: computed.pointerEvents };
+      el.classList.remove('on');
+      return out;
     });
 
     expect(hitFlashStyle.boxShadow).toContain('rgba(255, 236, 179');
@@ -363,7 +332,7 @@ test.describe('Player knockdown', () => {
         return b.player?.stun?.mode === 'ragdoll';
       },
       undefined,
-      { timeout: 5000, polling: 50 },
+      { timeout: 20_000, polling: 50 },
     );
 
     // Check body count

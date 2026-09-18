@@ -668,6 +668,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     dropped: swingDropped,
   }));
   registerDebug('hitStop', () => ({ count: hitStop.count(), active: hitStop.active(performance.now()) }));
+  // Plan 02-11 wrote playerKnockdown.spec against __bt.hitFlash but never registered it, so all five
+  // of its tests hung at startup waiting for a key that did not exist. HitFlash already exposes
+  // exactly this shape.
+  registerDebug('hitFlash', () => ({ count: hitFlash.count(), active: hitFlash.active(performance.now()) }));
   registerDebug('ragdolls', () => ragdollStats());
 
   const game: Game = {

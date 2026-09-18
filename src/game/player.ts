@@ -118,6 +118,19 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
     character.setMotion('attack-melee-right', 0.05, { restart: true });
   }
 
+  /** Put the player back on their feet at a free spot and hand control back to the capsule. */
+  function standUp(): void {
+    const spot = findFreeSpot(ctx, rig.torsoPos().x, rig.torsoPos().z, body.body);
+    body.body.setTranslation({ x: spot.x, y: body.position().y, z: spot.z }, true);
+    body.body.setNextKinematicTranslation({ x: spot.x, y: body.position().y, z: spot.z });
+    rig.finish();
+    body.body.setEnabled(true);
+    facing = recoverFacing;
+    recoverSpot = spot.kind;
+    lastX = spot.x;
+    lastZ = spot.z;
+  }
+
   return {
     fixedUpdate(dt, input) {
       // Handle knockdown state machine
@@ -132,18 +145,11 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
           recoverFacing = recover.yaw;
           lockStartMs = performance.now();
         } else if (r.event === 'stood-up') {
-          const spot = findFreeSpot(ctx, rig.torsoPos().x, rig.torsoPos().z, body.body);
-          body.body.setTranslation({ x: spot.x, y: body.position().y, z: spot.z }, true);
-          body.body.setNextKinematicTranslation({ x: spot.x, y: body.position().y, z: spot.z });
-          rig.finish();
-          body.body.setEnabled(true);
-          facing = recoverFacing;
-          recoverSpot = spot.kind;
-          lastX = spot.x;
-          lastZ = spot.z;
+          standUp();
         }
 
-        // Drop all input while ragdolled
+        // Drop all input while ragdolled.
+        if (Math.hypot(input.moveX, input.moveY) > 1e-3) moveIgnored++;
         return;
       }
 
@@ -151,14 +157,23 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
         rig.sync();
         const r = stepPlayerStun(stun, { torsoSpeed: 0, torsoAngSpeed: 0, dt });
         stun = r.state;
+        rig.blend(r.recoverT);
+        // 'stood-up' is emitted from the FSM's RECOVER branch (playerStun.ts), never from the ragdoll
+        // branch. Handling it only above meant the capsule was never re-enabled or repositioned, so
+        // one knockdown left the player frozen for the rest of the session: back in 'free' with every
+        // key dead and recoverSpot still 'none'.
+        if (r.event === 'stood-up') standUp();
+        if (Math.hypot(input.moveX, input.moveY) > 1e-3) moveIgnored++;
         return;
       }
 
       if (stun.mode === 'invulnerable') {
         const r = stepPlayerStun(stun, { torsoSpeed: 0, torsoAngSpeed: 0, dt });
         stun = r.state;
-        // Can't move or act, but can be forced into recovery cap
-        return;
+        // Invulnerability is 1.5 s of PROTECTION, not more input lock: the D-06 contract caps the
+        // lock at ~3 s across ragdoll + recover. Returning early here kept the player frozen for
+        // another 1.5 s (about 4.5 s total) with no way to run from the coworker still standing over
+        // them. Fall through to normal movement.
       }
 
       // Free mode: normal movement
