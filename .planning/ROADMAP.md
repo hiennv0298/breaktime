@@ -188,7 +188,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-13-PLAN.md — Guard + full suite + `npm run deploy` + `02-DEVICE-CHECK.md` cho 2 máy chuẩn (đề xuất hạ trần về 10 nếu brawl < 30 fps là của planner, chờ operator quyết) (W10)
+- [x] 02-13-PLAN.md — Guard + full suite + `npm run deploy` + `02-DEVICE-CHECK.md` cho 2 máy chuẩn (đề xuất hạ trần về 10 nếu brawl < 30 fps là của planner, chờ operator quyết) (W10)
 
 **UI hint**: yes
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-12-PLAN.md
-last_updated: "2026-09-18T17:51:00.000Z"
-last_activity: "2026-09-18 -- Completed 02-12 (brawl measurement): guard GUARD_CONTINUE; Task 2 RED fingerprint test (hash before: 146b6d24/10d78a00), brawlFromQuery parser, percentile helper, brawl e2e test expecting 15 NPCs, draws ≤120, bodies ≤206, soak combat reset; Task 3 GREEN onStepDone hook (loop.ts), Combat.snapshot() method, Game.combatStats(), main.ts brawl wiring (brawlOn = benchOn && brawlFromQuery), benchScript.ts step-timing collection (simStepAvgMs/P99Ms/MaxMs), resultsView.ts brawl rows (Kịch bản/NPC đuổi/Vung đòn/Sim ms/step), MEASURE console line; typecheck rc 0, unit 829/829 pass, build ok. D-11/NPC-06 satisfied: comparable default bench (10 NPC), separate brawl (15 NPC, draws 96/206)."
+status: complete
+stopped_at: Completed 02-13-PLAN.md
+last_updated: "2026-09-18T22:00:00.000Z"
+last_activity: "2026-09-18 -- Completed 02-13 (deploy + device checklist): guard GUARD_CONTINUE; Task 1 full local suite (typecheck rc 0, vitest 829/829, build rc 0, size ok, playwright 140 ok); Task 2 npm run deploy (DEPLOY_OK 82448797205b, poller count=8 non200=0, all 5 independent live checks ok); created 02-DEVICE-CHECK.md with bench/brawl test URLs, result tables, planner cap-proposal (NPC_DEVICE_VERDICT/CAP_DECISION pending operator); STATE.md pending-todos added."
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 40
-  completed_plans: 39
-  percent: 98
+  completed_plans: 40
+  percent: 100
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 
 ## Current Position
 
-Phase: 2 (NPC đồng nghiệp) — EXECUTING
-Plan: 12 of 13 (02-01..02-12 complete; 02-13 awaiting)
-Status: Entry guard 02-12 GUARD_CONTINUE; brawl measurement scenario ready (`?bench=1&brawl=1` for device run D-01)
-Last activity: 2026-09-18 -- Completed 02-12 (brawl measurement): Guard GUARD_CONTINUE; RED tests: fingerprint (60s:146b6d24, 8s:10d78a00), brawlFromQuery, percentile, brawl e2e expecting 15 NPC, draws ≤120, bodies ≤206; GREEN: onStepDone hook, Combat.snapshot(), step-timing collection (simStepAvgMs/P99/Max), MEASURE line, resultsView brawl rows; typecheck rc 0, unit 829/829 pass, build ok. D-11 satisfied.
+Phase: 2 (NPC đồng nghiệp) — COMPLETE
+Plan: 13 of 13 (02-01..02-13 complete; Phase 2 awaiting operator device run)
+Status: Live at https://game.doibung.com/b/82448797205b/ with device confirmation checklist awaiting operator measurements
+Last activity: 2026-09-18 -- Completed 02-13 (deploy + device checklist): Guard GUARD_CONTINUE (Phase 1 gate PASS); Task 1 full suite green (typecheck 776 files, vitest 829 tests, playwright 140 e2e, build ok); Task 2 deploy DEPLOY_OK 82448797205b, poller 8/8 200 (non200=0); 5 independent live checks ok; 02-DEVICE-CHECK.md created (bench/brawl URLs, result tables, planner cap proposal, manual checklist); STATE.md pending-todos added.
 
 Previous activity: 2026-09-18 -- Completed 02-11 (player knockdown): Guard GUARD_CONTINUE (Phase 1 gate PASS); Task 2 RED playerKnockdown.spec 5 e2e tests + 4 SFX assets (CC0 Kenney); Task 3 GREEN knockdown.ts + hitFlash.ts + player.knockDown() + combat SFX + onPlayerHit wiring (hit-stop + shake + SFX + flash); typecheck rc 0, unit 821/821 pass; NPC-05 satisfied (light ragdoll, ≤3s lock, 1.5s invulnerable, no HP/blood)
 
