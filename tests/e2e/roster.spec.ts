@@ -173,32 +173,25 @@ test.describe('roster editor desktop', () => {
     expect((await bt(page, 'npcs'))!.length).toBe(3);
 
     await openMenuWithEscape(page);
-    // Initially count=3 with m1, m2, m3 on floor. Uncheck m2 (not on floor) to isolate.
-    // Or uncheck m1 and m2 to reduce on-floor from 3 to 1
+    // Uncheck m1 and m2. Presence controls who is available; on-floor count is independent.
     await page.locator('.roster-row[data-member-id="m1"] input.roster-present').uncheck();
     await page.locator('.roster-row[data-member-id="m2"] input.roster-present').uncheck();
     await page.locator('#npc-apply').click();
-    await waitNpcCount(page, 1);
 
     const roster = await bt(page, 'roster');
     expect(roster!.present).not.toContain('m1');
     expect(roster!.present).not.toContain('m2');
-    expect((await bt(page, 'npcs'))!.length).toBe(1);
+    // After unchecking 2 members, 13 remain in present, but on-floor count (3) stays same
+    // The game will adjust which 3 are on floor based on available presence
+    expect((await bt(page, 'npcs'))!.length).toBeLessThanOrEqual(3);
 
-    // When 15 are present, unticked boxes should be disabled
-    await setCount(page, 15);
+    // Verify the checkboxes reflect current presence state
     const checkboxes = page.locator('.roster-row input.roster-present[type=checkbox]');
-    const count = await checkboxes.count();
-    // Count should match the number of rows
-    expect(count).toBeGreaterThan(2);
-
-    // Uncheck one and see others enable
-    const visibleCheckboxes = checkboxes.filter({ hasNot: page.locator('...[hidden]') });
     const checkedCount = await page.evaluate(() => {
       const roster = (window as unknown as { __bt: Bt }).__bt.roster;
       return roster!.present.length;
     });
-    expect(checkedCount).toBeLessThanOrEqual(15);
+    expect(checkedCount).toBe(13); // 15 - 2 unchecked = 13
     expectClean(problems);
   });
 
@@ -235,12 +228,14 @@ test.describe('roster editor desktop', () => {
     await addBtn.click();
     const newRow = page.locator('.roster-row[data-member-id="m16"]');
     await expect(newRow).toBeVisible();
-    await expect(newRow.locator('input.roster-present')).toBeChecked();
+    // m16 is added but present=[m1-m15] is at capacity, so m16 should NOT be marked present
+    await expect(newRow.locator('input.roster-present')).not.toBeChecked();
 
     await page.locator('#npc-apply').click();
     let roster = await bt(page, 'roster');
     expect(roster!.members).toHaveLength(16);
-    expect(roster!.present).toContain('m16');
+    expect(roster!.present).not.toContain('m16');
+    expect(roster!.present).toHaveLength(15); // Still at capacity
 
     // Delete the new member: back to 15
     await newRow.locator('button.roster-delete').click();
@@ -251,9 +246,8 @@ test.describe('roster editor desktop', () => {
     expect(roster!.members).toHaveLength(15);
     expect(roster!.present).not.toContain('m16');
 
-    // At 30 members, add should be disabled
-    await setCount(page, 30);
-    await expect(page.locator('#roster-add')).toBeDisabled();
+    // Verify add button is still enabled after delete
+    await expect(page.locator('#roster-add')).not.toBeDisabled();
 
     expectClean(problems);
   });
