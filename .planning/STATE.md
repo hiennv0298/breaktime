@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-11-PLAN.md
-last_updated: "2026-09-18T16:35:00.000Z"
-last_activity: "2026-09-18 -- Completed 02-11 (player knockdown): guard GUARD_CONTINUE (D-12 Phase 1 gate PASS); Task 2 RED playerKnockdown.spec 5 tests + 4 SFX (hurt-0/1/2 + alert-0 CC0 Kenney) + player ragdoll collision groups; Task 3 GREEN knockdown.ts KnockdownRig (pooled 6-body ragdoll + recovery blend) + findFreeSpot (41 candidates) + hitFlash (250ms warm-white) + player.ts knockDown + combat.ts alert SFX + game.ts wiring (hit-stop + shake + SFX + flash); typecheck rc 0, unit 821/821 pass, build ok, size +6.54 KB. NPC-05 satisfied: light slapstick knockdown, ≤3s lock, 1.5s invulnerable, no HP/blood/vibrate."
+stopped_at: Completed 02-12-PLAN.md
+last_updated: "2026-09-18T17:51:00.000Z"
+last_activity: "2026-09-18 -- Completed 02-12 (brawl measurement): guard GUARD_CONTINUE; Task 2 RED fingerprint test (hash before: 146b6d24/10d78a00), brawlFromQuery parser, percentile helper, brawl e2e test expecting 15 NPCs, draws ≤120, bodies ≤206, soak combat reset; Task 3 GREEN onStepDone hook (loop.ts), Combat.snapshot() method, Game.combatStats(), main.ts brawl wiring (brawlOn = benchOn && brawlFromQuery), benchScript.ts step-timing collection (simStepAvgMs/P99Ms/MaxMs), resultsView.ts brawl rows (Kịch bản/NPC đuổi/Vung đòn/Sim ms/step), MEASURE console line; typecheck rc 0, unit 829/829 pass, build ok. D-11/NPC-06 satisfied: comparable default bench (10 NPC), separate brawl (15 NPC, draws 96/206)."
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 40
-  completed_plans: 35
-  percent: 87
+  completed_plans: 39
+  percent: 98
 ---
 
 # Project State
@@ -26,13 +26,13 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 2 (NPC đồng nghiệp) — EXECUTING
-Plan: 11 of 13 (02-01..02-11 complete; 02-12..02-13 awaiting)
-Status: Entry guard 02-11 GUARD_CONTINUE; player knockdown with hit feedback + wind-up cue integrated
-Last activity: 2026-09-18 -- Completed 02-11 (player knockdown): Guard GUARD_CONTINUE (Phase 1 gate PASS); Task 2 RED playerKnockdown.spec 5 e2e tests + 4 SFX assets (CC0 Kenney) + player ragdoll collision group (bit 0); Task 3 GREEN knockdown.ts (KnockdownRig + findFreeSpot) + hitFlash.ts (250ms warm-white) + player.ts (knockDown method + inputLocked + stun tracking) + combat.ts (alert SFX on windup) + game.ts (onPlayerHit wiring: hit-stop 80ms + shake 0.22m/260ms + hurt SFX + flash); typecheck rc 0, unit 821/821 pass, build +6.54 KB ok; D-06/D-08/D-09/NPC-05 satisfied (light ragdoll, ≤3s lock, 1.5s invulnerable, readable feedback, no blood/HP)
+Plan: 12 of 13 (02-01..02-12 complete; 02-13 awaiting)
+Status: Entry guard 02-12 GUARD_CONTINUE; brawl measurement scenario ready (`?bench=1&brawl=1` for device run D-01)
+Last activity: 2026-09-18 -- Completed 02-12 (brawl measurement): Guard GUARD_CONTINUE; RED tests: fingerprint (60s:146b6d24, 8s:10d78a00), brawlFromQuery, percentile, brawl e2e expecting 15 NPC, draws ≤120, bodies ≤206; GREEN: onStepDone hook, Combat.snapshot(), step-timing collection (simStepAvgMs/P99/Max), MEASURE line, resultsView brawl rows; typecheck rc 0, unit 829/829 pass, build ok. D-11 satisfied.
 
-Previous activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
+Previous activity: 2026-09-18 -- Completed 02-11 (player knockdown): Guard GUARD_CONTINUE (Phase 1 gate PASS); Task 2 RED playerKnockdown.spec 5 e2e tests + 4 SFX assets (CC0 Kenney); Task 3 GREEN knockdown.ts + hitFlash.ts + player.knockDown() + combat SFX + onPlayerHit wiring (hit-stop + shake + SFX + flash); typecheck rc 0, unit 821/821 pass; NPC-05 satisfied (light ragdoll, ≤3s lock, 1.5s invulnerable, no HP/blood)
 
-Progress: [██████████░░] 83%
+Progress: [████████████] 98%
 
 ## Performance Metrics
 

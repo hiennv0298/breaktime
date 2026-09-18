@@ -184,7 +184,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-12-PLAN.md — Guard + `?bench=1&brawl=1` (15 NPC đánh trả, p99 ms/step), `?bench=1` và soak giữ nguyên (W9)
+- [x] 02-12-PLAN.md — Guard + `?bench=1&brawl=1` (15 NPC đánh trả, p99 ms/step), `?bench=1` và soak giữ nguyên (W9)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
