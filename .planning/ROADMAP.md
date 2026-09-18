@@ -180,7 +180,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-11-PLAN.md — Guard + người chơi bị hạ: ragdoll nhẹ, khoá ≤ ~3 s, đứng dậy chỗ trống, bất tử 1,5 s, hit-stop/rung/SFX/viền loé (W8)
+- [x] 02-11-PLAN.md — Guard + người chơi bị hạ: ragdoll nhẹ, khoá ≤ ~3 s, đứng dậy chỗ trống, bất tử 1,5 s, hit-stop/rung/SFX/viền loé (W8) ✓
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
