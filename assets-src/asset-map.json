@@ -35,7 +35,11 @@
     "drop-wood-0": "Audio/impactWood_heavy_000.ogg",
     "drop-wood-1": "Audio/impactWood_medium_000.ogg",
     "drop-soft-0": "Audio/impactSoft_heavy_000.ogg",
-    "drop-metal-0": "Audio/impactMetal_heavy_000.ogg"
+    "drop-metal-0": "Audio/impactMetal_heavy_000.ogg",
+    "hurt-0": "Audio/impactPunch_medium_000.ogg",
+    "hurt-1": "Audio/impactPunch_medium_001.ogg",
+    "hurt-2": "Audio/impactPunch_medium_002.ogg",
+    "alert-0": "Audio/impactGeneric_light_000.ogg"
   },
   "_notes": [
     "Paths are relative to the extracted pack folder: office -> assets-src/downloads/furniture-kit, food -> assets-src/downloads/food-kit, character -> assets-src/downloads/blocky-characters, sfx -> assets-src/downloads/impact-sounds.",

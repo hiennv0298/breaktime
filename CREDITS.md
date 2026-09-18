@@ -51,6 +51,8 @@ The build stops unless each pack's `License.txt` contains `CC0`.
   - `impactWood_heavy_000.ogg`, `impactWood_medium_000.ogg` → `drop-wood-0.mp3`, `drop-wood-1.mp3`
   - `impactSoft_heavy_000.ogg` → `drop-soft-0.mp3`
   - `impactMetal_heavy_000.ogg` → `drop-metal-0.mp3`
+  - `impactPunch_medium_000.ogg`, `impactPunch_medium_001.ogg`, `impactPunch_medium_002.ogg` → `hurt-0.mp3`, `hurt-1.mp3`, `hurt-2.mp3`
+  - `impactGeneric_light_000.ogg` → `alert-0.mp3`
 
 ## Made in this repository (CC0)
 

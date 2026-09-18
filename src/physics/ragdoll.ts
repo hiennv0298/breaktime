@@ -1,5 +1,6 @@
 import type { ImpulseJoint, RigidBody } from '@dimforge/rapier3d-compat';
 import { Box3, Group, Matrix4, Quaternion, Vector3, type Mesh, type Object3D, type Scene } from 'three';
+import { npcRagdollGroups, PLAYER_RAGDOLL_GROUPS } from '../logic/collisionGroups';
 import type { GameCtx } from '../game/game';
 import { CHARACTER_PARTS } from '../render/characters';
 
@@ -40,17 +41,31 @@ const MAX_GROUP_INDEX = 14;
 
 const PART_NAMES = new Set<string>(CHARACTER_PARTS);
 const all = new Set<Ragdoll>();
+const playerRagdolls = new Set<Ragdoll>();
 const roots = new WeakMap<Scene, Group>();
 
-/** Every ragdoll ever created on this page (for __bt.ragdolls). */
-export function ragdollStats(): { active: number; bodies: number; enabledBodies: number } {
+/** Every ragdoll ever created on this page (for __bt.ragdolls). Returns NPC numbers only; player tracked separately. */
+export function ragdollStats(): {
+  active: number;
+  bodies: number;
+  enabledBodies: number;
+  player: { active: boolean; bodies: number };
+} {
   let active = 0;
   let bodies = 0;
+  let playerActive = false;
+  let playerBodies = 0;
   for (const r of all) {
-    bodies += r.bodyCount();
-    if (r.active()) active++;
+    const count = r.bodyCount();
+    if (playerRagdolls.has(r)) {
+      if (r.active()) playerActive = true;
+      playerBodies = count;
+    } else {
+      bodies += count;
+      if (r.active()) active++;
+    }
   }
-  return { active, bodies, enabledBodies: active * CHARACTER_PARTS.length };
+  return { active, bodies, enabledBodies: active * CHARACTER_PARTS.length, player: { active: playerActive, bodies: playerBodies } };
 }
 
 /** One flat, identity-transform group per scene holds every detached ragdoll part. */
@@ -65,12 +80,8 @@ function ragdollRoot(scene: Scene): Group {
   return g;
 }
 
-/** Rapier interaction groups: membership bit (1 + groupIndex), filter = every bit except that one. */
-export function ragdollGroups(groupIndex: number): number {
-  const g = Math.max(0, Math.min(MAX_GROUP_INDEX, Math.trunc(Number.isFinite(groupIndex) ? groupIndex : 0)));
-  const member = 1 << (1 + g);
-  return ((member << 16) | (0xffff & ~member)) >>> 0;
-}
+/** Rapier interaction groups for NPC ragdoll: membership bit (1 + groupIndex), filter = every bit except that one. */
+export const ragdollGroups = npcRagdollGroups;
 
 const tmpM = new Matrix4();
 const tmpInv = new Matrix4();
@@ -109,12 +120,13 @@ function ownBounds(part: Object3D, out: Box3): Box3 {
 /**
  * `parts` must be CHARACTER_PARTS in order and in the rest pose (collider sizes are measured from it, never hardcoded).
  * `groupIndex` gives this ragdoll its own collision bit so its parts ignore each other but hit the world, props and
- * other ragdolls.
+ * other ragdolls. When `opts.player` is true, uses bit 0 (PLAYER_RAGDOLL_GROUPS) instead.
  */
-export function createRagdoll(ctx: GameCtx, parts: Object3D[], groupIndex: number): Ragdoll {
+export function createRagdoll(ctx: GameCtx, parts: Object3D[], groupIndex: number, opts?: { player?: boolean }): Ragdoll {
   if (parts.length !== CHARACTER_PARTS.length) throw new Error('ragdoll needs ' + CHARACTER_PARTS.length + ' parts');
   const { R, world } = ctx.physics;
-  const groups = ragdollGroups(groupIndex);
+  const isPlayer = opts?.player ?? false;
+  const groups = isPlayer ? PLAYER_RAGDOLL_GROUPS : npcRagdollGroups(groupIndex);
   const root = ragdollRoot(ctx.scene);
 
   const top = parts[TORSO].parent ? topOf(parts[TORSO]) : parts[TORSO];
@@ -236,6 +248,7 @@ export function createRagdoll(ctx: GameCtx, parts: Object3D[], groupIndex: numbe
     },
   };
   all.add(ragdoll);
+  if (isPlayer) playerRagdolls.add(ragdoll);
   return ragdoll;
 }
 
