@@ -215,19 +215,15 @@ test.describe('roster start desktop', () => {
   });
 
   test('throwing storage', async ({ page, baseURL }) => {
-    // Override Storage methods to throw
+    // Override Storage methods to throw on EVERY access. A one-shot throw is not a model of
+    // disabled storage: boot reads bt.quality / bt.keyHints / bt.touchHintSeen long before the
+    // roster is read, so the single throw was swallowed by an unrelated read and readRosterRaw()
+    // then ran against healthy storage (storageOk true). Safari private mode and blocked site
+    // data throw on every call, which is what this test must reproduce.
     await page.addInitScript(() => {
-      const original = { getItem: Storage.prototype.getItem, setItem: Storage.prototype.setItem };
-      let firstRead = true;
-      Object.defineProperty(Storage.prototype, 'getItem', {
-        value: function (key: string) {
-          if (firstRead) {
-            firstRead = false;
-            throw new Error('Storage disabled');
-          }
-          return original.getItem.call(this, key);
-        },
-      });
+      Storage.prototype.getItem = function () {
+        throw new Error('Storage disabled');
+      };
       Storage.prototype.setItem = function () {
         throw new Error('Storage disabled');
       };
