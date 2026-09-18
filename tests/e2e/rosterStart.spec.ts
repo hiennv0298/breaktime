@@ -13,7 +13,7 @@ type Bt = {
     storageOk: boolean;
     count: number;
     max: number;
-    members: number;
+    members: Array<{ id: string; name: string; look: string; temper: string }>;
     present: string[];
     onFloor: string[];
     looks: string[];
