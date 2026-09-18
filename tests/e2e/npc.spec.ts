@@ -120,14 +120,34 @@ test.describe('npc desktop', () => {
     expectClean(problems);
   });
 
-  // D-29 / D-11 revised: the ceiling moved from 8 to 10; the clamp still bounds bodies a URL can allocate (T-01-23-01).
-  test('npcs clamps to 0..10', async ({ page, baseURL }) => {
+  // D-01 (plan 02-06): the ceiling moved from 10 to 15; the clamp still bounds bodies.
+  test('npcs clamps to 0..15', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!, '&npcs=99');
-    expect((await npcs(page)).length).toBe(10);
+    expect((await npcs(page)).length).toBe(15);
     expectClean(problems);
 
     const problems0 = await startPlaying(page, baseURL!, '&npcs=0');
     expect((await npcs(page)).length).toBe(0);
     expectClean(problems0);
+  });
+
+  // D-01, G3r, D-11: up to 15 NPCs spawn at least 0.5 m apart; bench and soak still use 10.
+  test('npcs=15 spawns fifteen apart', async ({ page, baseURL }) => {
+    const problems = await startPlaying(page, baseURL!, '&autoplay=1&npcs=15');
+    const list = await npcs(page);
+    expect(list.length).toBe(15);
+    expect(new Set(list.map((n) => n.id)).size).toBe(15);
+    expect(list.map((n) => n.texture)).toEqual(['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p']);
+    expectInsideRoom(list);
+
+    // Every pair that includes an index >= 10 must be >= 0.5 m apart (G3r, waypoints.test.ts validates 0.6 m).
+    for (let i = 10; i < 15; i++) {
+      for (let j = 0; j < i; j++) {
+        const dist = Math.hypot(list[i].pos[0] - list[j].pos[0], list[i].pos[2] - list[j].pos[2]);
+        expect(dist, `NPC ${i} to ${j}: ${dist.toFixed(3)} m`).toBeGreaterThanOrEqual(0.5);
+      }
+    }
+
+    expectClean(problems);
   });
 });

@@ -14,12 +14,12 @@ import {
   type NpcSettings,
 } from '../../src/logic/npcSettings';
 
-/* Plan 01-26: NPC count + names settings model (D-29, CTRL-07, T-01-26-02..04). */
+/* Plan 01-26: NPC count + names settings model (D-29, CTRL-07, T-01-26-02..04); D-01 plan 02-06 extended to 15. */
 
-const EMPTY10 = Array.from({ length: 10 }, () => '');
+const EMPTY15 = Array.from({ length: 15 }, () => '');
 
 function names(...first: string[]): string[] {
-  return [...first, ...EMPTY10].slice(0, 10);
+  return [...first, ...EMPTY15].slice(0, 15);
 }
 
 function stored(count: unknown, list: unknown[] = []): string {
@@ -28,7 +28,7 @@ function stored(count: unknown, list: unknown[] = []): string {
 
 describe('limits', () => {
   it('pins the settings constants', () => {
-    expect(MAX_NPCS).toBe(10);
+    expect(MAX_NPCS).toBe(15);
     expect(DEFAULT_NPCS).toBe(3);
     expect(NPC_NAME_MAX).toBe(16);
     expect(NPC_SETTINGS_KEY).toBe('bt.npcs');
@@ -86,7 +86,7 @@ describe('sanitizeNpcName (T-01-26-03)', () => {
 
 describe('normalizeNpcSettings (T-01-26-02)', () => {
   it('clamps and truncates the count', () => {
-    expect(normalizeNpcSettings({ count: 42, names: [] }).count).toBe(10);
+    expect(normalizeNpcSettings({ count: 42, names: [] }).count).toBe(15);
     expect(normalizeNpcSettings({ count: -3, names: [] }).count).toBe(0);
     expect(normalizeNpcSettings({ count: 2.7, names: [] }).count).toBe(2);
     expect(normalizeNpcSettings({ count: 0, names: [] }).count).toBe(0);
@@ -97,21 +97,29 @@ describe('normalizeNpcSettings (T-01-26-02)', () => {
       expect(normalizeNpcSettings({ count, names: [] }).count, String(count)).toBe(3);
     }
     expect(normalizeNpcSettings({ names: [] }).count).toBe(3);
-    expect(normalizeNpcSettings(null)).toEqual({ count: 3, names: EMPTY10 });
-    expect(normalizeNpcSettings('x')).toEqual({ count: 3, names: EMPTY10 });
+    expect(normalizeNpcSettings(null)).toEqual({ count: 3, names: EMPTY15 });
+    expect(normalizeNpcSettings('x')).toEqual({ count: 3, names: EMPTY15 });
   });
 
-  it('always yields ten sanitised names', () => {
-    expect(normalizeNpcSettings({ count: 3, names: 'abc' }).names).toEqual(EMPTY10);
-    const many = Array.from({ length: 14 }, (_, i) => 'N' + i);
-    expect(normalizeNpcSettings({ count: 3, names: many }).names).toEqual(many.slice(0, 10));
+  it('always yields MAX_NPCS sanitised names', () => {
+    expect(normalizeNpcSettings({ count: 3, names: 'abc' }).names).toEqual(EMPTY15);
+    const many = Array.from({ length: 20 }, (_, i) => 'N' + i);
+    expect(normalizeNpcSettings({ count: 3, names: many }).names).toEqual(many.slice(0, 15));
     expect(normalizeNpcSettings({ count: 3, names: ['A', 5, null, ' B '] }).names).toEqual(names('A', '', '', 'B'));
-    expect(normalizeNpcSettings({ count: 3 }).names).toHaveLength(10);
+    expect(normalizeNpcSettings({ count: 3 }).names).toHaveLength(15);
+  });
+
+  it('MAX_NPCS equals NPC_CAP and BENCH_NPCS equals 10', async () => {
+    // Dynamic import to avoid circular dependency issues in the test setup.
+    const { BENCH_NPCS, MAX_NPCS } = await import('../../src/logic/npcSettings');
+    const { NPC_CAP } = await import('../../src/logic/roster');
+    expect(BENCH_NPCS).toBe(10);
+    expect(MAX_NPCS).toBe(NPC_CAP);
   });
 });
 
 describe('parseNpcSettings', () => {
-  const def: NpcSettings = { count: 3, names: EMPTY10 };
+  const def: NpcSettings = { count: 3, names: EMPTY15 };
 
   it('rejects missing, malformed and wrong-shape data', () => {
     for (const raw of [null, '', '{not json', 'null', '[]', '5', '"x"', JSON.stringify({ v: 2, count: 5, names: ['A'] })]) {
@@ -133,7 +141,7 @@ describe('parseNpcSettings', () => {
   it('normalises a tampered version 1 record', () => {
     const r = parseNpcSettings(stored(42, ['\u202E<b>x</b>', 7]));
     expect(r.valid).toBe(true);
-    expect(r.settings).toEqual({ count: 10, names: names('<b>x</b>') });
+    expect(r.settings).toEqual({ count: 15, names: names('<b>x</b>') });
   });
 });
 
@@ -147,11 +155,11 @@ describe('serializeNpcSettings', () => {
 
   it('normalises before writing', () => {
     const raw = serializeNpcSettings({ count: 99, names: ['  a  '] });
-    expect(JSON.parse(raw)).toEqual({ v: 1, count: 10, names: names('a') });
+    expect(JSON.parse(raw)).toEqual({ v: 1, count: 15, names: names('a') });
   });
 
   it('the largest record fits the raw cap', () => {
-    const s: NpcSettings = { count: 10, names: Array.from({ length: 10 }, () => '😀'.repeat(16)) };
+    const s: NpcSettings = { count: 15, names: Array.from({ length: 15 }, () => '😀'.repeat(16)) };
     expect(serializeNpcSettings(s).length).toBeLessThanOrEqual(NPC_SETTINGS_MAX_RAW);
     expect(parseNpcSettings(serializeNpcSettings(s))).toEqual({ settings: s, valid: true });
   });
@@ -164,7 +172,7 @@ describe('npcCountFromQuery', () => {
     expect(npcCountFromQuery('?npcs=abc')).toBeNull();
     expect(npcCountFromQuery('?npcs=')).toBeNull();
     expect(npcCountFromQuery('?npcs=7')).toBe(7);
-    expect(npcCountFromQuery('?npcs=99')).toBe(10);
+    expect(npcCountFromQuery('?npcs=99')).toBe(15);
     expect(npcCountFromQuery('?npcs=-1')).toBe(0);
     expect(npcCountFromQuery('?npcs=2.9')).toBe(2);
     expect(npcCountFromQuery('?npcs=0')).toBe(0);
@@ -173,7 +181,7 @@ describe('npcCountFromQuery', () => {
 
 describe('resolveStartNpcSettings (precedence)', () => {
   it('defaults with nothing stored', () => {
-    expect(resolveStartNpcSettings('', null)).toEqual({ settings: { count: 3, names: EMPTY10 }, source: 'default' });
+    expect(resolveStartNpcSettings('', null)).toEqual({ settings: { count: 3, names: EMPTY15 }, source: 'default' });
   });
 
   it('uses the stored record', () => {
@@ -191,7 +199,7 @@ describe('resolveStartNpcSettings (precedence)', () => {
       source: 'query',
     });
     expect(resolveStartNpcSettings('?npcs=99', '{bad')).toEqual({
-      settings: { count: 10, names: EMPTY10 },
+      settings: { count: 15, names: EMPTY15 },
       source: 'query',
     });
   });
@@ -201,7 +209,7 @@ describe('resolveStartNpcSettings (precedence)', () => {
       settings: { count: 10, names: names('A', 'B') },
       source: 'query',
     });
-    expect(resolveStartNpcSettings('', stored(2), 99).settings.count).toBe(10);
+    expect(resolveStartNpcSettings('', stored(2), 99).settings.count).toBe(15);
     expect(resolveStartNpcSettings('', stored(2), -4).settings.count).toBe(0);
     expect(resolveStartNpcSettings('', stored(2), 4.8).settings.count).toBe(4);
   });
@@ -210,7 +218,7 @@ describe('resolveStartNpcSettings (precedence)', () => {
     expect(resolveStartNpcSettings('?npcs=7', null, Number.NaN).settings.count).toBe(7);
     expect(resolveStartNpcSettings('?npcs=7', null, Number.NaN).source).toBe('query');
     expect(resolveStartNpcSettings('', stored(2), Infinity)).toEqual({
-      settings: { count: 2, names: EMPTY10 },
+      settings: { count: 2, names: EMPTY15 },
       source: 'stored',
     });
     expect(resolveStartNpcSettings('', null, undefined).source).toBe('default');

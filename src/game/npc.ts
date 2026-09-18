@@ -50,8 +50,8 @@ export interface Npc {
    * ragdoll is synced, disabled and its parts re-attached first; the capsule is disabled and the character hidden.
    */
   despawn(): void;
-  /** Brings an inactive NPC back, standing idle at `spawn` and walking its route again from its start point. */
-  respawn(spawn: { x: number; z: number }): void;
+  /** Brings an inactive NPC back, standing idle at `spawn` and walking its route again from `startIndex` (or its original start point). */
+  respawn(spawn: { x: number; z: number }, startIndex?: number): void;
 }
 
 export interface NpcOptions {
@@ -311,11 +311,14 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       character.root.visible = false;
       isActive = false;
     },
-    respawn(p) {
+    respawn(p, newStartIndex?: number) {
       if (isActive) return;
       const x = Number.isFinite(p.x) ? p.x : spawn.x;
       const z = Number.isFinite(p.z) ? p.z : spawn.z;
-      walker = createWalker(opts.route, { x, z }, startIndex);
+      const idx = typeof newStartIndex === 'number' ? newStartIndex : startIndex;
+      const n = opts.route.length;
+      const wrappedIndex = ((Math.trunc(idx) % n) + n) % n;
+      walker = createWalker(opts.route, { x, z }, wrappedIndex);
       yaw = 0;
       targetYaw = 0;
       next.x = x;

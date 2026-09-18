@@ -67,11 +67,12 @@ async function boot(): Promise<void> {
   const [
     { createRenderer },
     { createPhysics },
-    { createGame, MAX_NPCS },
+    { createGame },
     { startLoop },
     { attachCameraKeys },
     { attachCameraButtons },
     { benchFromQuery, parseBenchDuration, soakFromQuery, soakOptionsFromQuery },
+    { BENCH_NPCS },
   ] = await Promise.all([
     import('./render/renderer'),
     import('./physics/rapier'),
@@ -81,6 +82,7 @@ async function boot(): Promise<void> {
     import('./input/cameraButtons'),
     // Loaded with the game (after Chơi), so the index chunk and the unsupported path stay as they were.
     import('./logic/benchTimeline'),
+    import('./logic/npcSettings'),
   ]);
 
   let renderCtx: RenderCtx;
@@ -101,10 +103,11 @@ async function boot(): Promise<void> {
   const ctx = { ...renderCtx, physics, loaded };
   // ?bench=1 (plan 01-17, D-08, D-11 revised): always 10 NPCs; the saved 'bt.npcs' count is neither used nor written.
   // ?soak=1 (plan 01-18, TECH-04) loops the same scene for 15 minutes and takes precedence over ?bench=1.
+  // D-11, plan 02-06: benchmark and soak stay at BENCH_NPCS (10) for device parity, while normal play can reach MAX_NPCS (15).
   const soakOn = soakFromQuery(location.search);
   const benchOn = !soakOn && benchFromQuery(location.search);
   // Async since plan 01-10: the office GLBs fetched before Chơi are parsed here, after three.js has loaded.
-  const game = await createGame(ctx, soakOn || benchOn ? { forcedNpcCount: MAX_NPCS, bench: true } : {});
+  const game = await createGame(ctx, soakOn || benchOn ? { forcedNpcCount: BENCH_NPCS, bench: true } : {});
   if (soakOn) {
     const [{ startSoak }, { suppressKeyHints }] = await Promise.all([import('./bench/soak'), import('./ui/keyHints')]);
     // Hidden for the whole soak, before the loop mounts the hint panels (D-28).

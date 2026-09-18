@@ -1,5 +1,5 @@
 /**
- * NPC settings model (plan 01-26, D-29, CTRL-07): how many coworkers start in the office (0–10, default 3) and the name
+ * NPC settings model (plan 01-26, D-29, CTRL-07, D-01): how many coworkers start in the office (0–15, default 3) and the name
  * shown above each of them. Pure: no three.js, no DOM, no storage — src/game/npcSettingsStore.ts reads and writes the
  * serialized form, src/game/game.ts applies it at start, plan 01-27 builds the settings screen that edits it.
  *
@@ -9,11 +9,13 @@
  * with a preset name list or a filter).
  *
  * Tampering (T-01-26-02..04): stored strings longer than 4096 characters are ignored before JSON.parse, the record must
- * be a plain object with v === 1, the count is clamped to 0..10 and every name goes through sanitizeNpcName.
+ * be a plain object with v === 1, the count is clamped to 0..15 and every name goes through sanitizeNpcName.
  */
 
-/** Player-selectable and benchmark ceiling (D-29, D-11 revised). */
-export const MAX_NPCS = 10;
+/** Player-selectable ceiling (D-01, plan 02-06); up to 15 coworkers can be in the office. */
+export const MAX_NPCS = 15;
+/** Benchmark and soak fixed count (D-11, plan 02-06): ?bench=1 and ?soak=1 always run 10 NPCs for device parity. */
+export const BENCH_NPCS = 10;
 /** Coworkers in normal play (D-11). */
 export const DEFAULT_NPCS = 3;
 /** Longest name, in code points after NFC normalisation (D-29). */

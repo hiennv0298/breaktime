@@ -10,6 +10,7 @@ import { createHitStop, type HitStop } from '../logic/hitStop';
 import { iconFor, pickNearest, type Candidate } from '../logic/nearest';
 import { parseNpcAt } from '../logic/npcAt';
 import {
+  BENCH_NPCS,
   DEFAULT_NPCS,
   MAX_NPCS,
   normalizeNpcSettings,
@@ -107,7 +108,7 @@ export interface Game {
 }
 
 export interface CreateGameOptions {
-  /** Replaces the ?npcs= count (clamped 0..10); the 01-17 bench and the 01-18 soak pass MAX_NPCS. */
+  /** Replaces the ?npcs= count (clamped 0..15); the 01-17 bench and the 01-18 soak pass BENCH_NPCS (10, D-11). */
   forcedNpcCount?: number;
   /**
    * Bench mode (plan 01-17): the autopilot owns the player's InputState. Keyboard and the touch pause button still
@@ -117,11 +118,11 @@ export interface CreateGameOptions {
 }
 
 /**
- * DEFAULT_NPCS (3, D-11) and MAX_NPCS (10, D-29 / D-11 revised) live in src/logic/npcSettings.ts; ?npcs and stored
- * counts are clamped to MAX_NPCS so neither a URL nor tampered storage can spawn unbounded bodies (T-01-14-01,
+ * DEFAULT_NPCS (3, D-11), MAX_NPCS (15, D-01 plan 02-06) and BENCH_NPCS (10, D-11 plan 02-06) live in src/logic/npcSettings.ts;
+ * ?npcs and stored counts are clamped to MAX_NPCS so neither a URL nor tampered storage can spawn unbounded bodies (T-01-14-01,
  * T-01-23-01, T-01-26-02). Re-exported for existing importers.
  */
-export { DEFAULT_NPCS, MAX_NPCS };
+export { BENCH_NPCS, DEFAULT_NPCS, MAX_NPCS };
 /** Name tag anchor above the floor point of a walking NPC, and above the torso of a ragdoll (plan 01-26). */
 const LABEL_HEAD_Y = 1.85;
 const LABEL_RAGDOLL_Y = 0.9;
@@ -343,7 +344,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   function activateNpc(i: number): void {
     const npc = pool[i];
     if (!npc || npc.active()) return;
-    npc.respawn(spawnPointFor(i));
+    npc.respawn(spawnPointFor(i), ROUTE_START_INDEX);
     if (npcShadow[i] < 0) addNpcShadow(i);
   }
 
@@ -678,7 +679,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         if (!npc.active()) continue;
         // despawn re-attaches a ragdoll's parts and resets the get-up FSM; respawn puts it on its route start, walking.
         npc.despawn();
-        npc.respawn(spawnPointFor(i));
+        npc.respawn(spawnPointFor(i), ROUTE_START_INDEX);
       }
       player.teleport(PLAYER_SPAWN.x, PLAYER_SPAWN.z);
       pickQueued = undefined;

@@ -161,4 +161,27 @@ test.describe('characters desktop', () => {
     expect(smash3.peakBodies).toBeLessThanOrEqual(MAX_BODIES);
     expectClean(problems3);
   });
+
+  // D-01, G3r: 15 NPCs idle and at the smash peak within the new draw budget (120 calls) and body budget (206 bodies).
+  // Budget: 95 base + 7 × 15 NPCs + 6 reserved for the player ragdoll (plan 02-11) = 206 bodies (RESEARCH C2).
+  test('cap: 15 NPCs idle and at the smash peak within the draw budget', async ({ page, baseURL }) => {
+    const MAX_BODIES_AT_CAP = 206; // 95 + 7 × 15 + 6 player ragdoll (plan 02-11), RESEARCH C2
+    const problems = await startPlaying(page, baseURL!, './?autoplay=1&npcs=15');
+    await page.waitForTimeout(1500);
+    const idle15 = (await bt(page, 'hud'))!;
+    measure('npcs=15 idle', idle15);
+    expect((await bt(page, 'characters'))!.skinnedMeshes).toBe(16); // player + 15 NPCs
+    expect(idle15.peakDrawCalls).toBeLessThanOrEqual(MAX_DRAW_CALLS);
+    expect(idle15.peakBodies).toBeLessThanOrEqual(MAX_BODIES_AT_CAP);
+    expectClean(problems);
+
+    const problemsSmash = await startPlaying(page, baseURL!, './?autoplay=1&npcs=15&scenario=smash');
+    await waitBroken(page, 10);
+    await page.waitForTimeout(1500);
+    const smash15 = (await bt(page, 'hud'))!;
+    measure('npcs=15 smash', smash15);
+    expect(smash15.peakDrawCalls).toBeLessThanOrEqual(MAX_DRAW_CALLS);
+    expect(smash15.peakBodies).toBeLessThanOrEqual(MAX_BODIES_AT_CAP);
+    expectClean(problemsSmash);
+  });
 });
