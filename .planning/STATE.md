@@ -193,7 +193,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [Phase 2] Operator đo 02-DEVICE-CHECK.md trên 2 máy chuẩn (bench 10 NPC + brawl 15 NPC, checklist cảm giác) rồi ghi NPC_DEVICE_VERDICT và CAP_DECISION
 
 ### Blockers/Concerns
 
