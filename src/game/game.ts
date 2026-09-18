@@ -24,7 +24,7 @@ import { maxOnFloor } from '../logic/roster';
 import { preloadCharacterLook } from '../render/characters';
 import { readRosterRaw, writeRoster } from './rosterStore';
 import { TIERS } from '../logic/quality';
-import { BENCH_SEED, mulberry32 } from '../logic/rng';
+import { BENCH_SEED, mulberry32, seedFor } from '../logic/rng';
 import { fightFromQuery } from '../logic/anger';
 import { createSwingGate, SWING_COOLDOWN_MS } from '../logic/swing';
 import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS } from '../physics/characterController';
@@ -43,6 +43,10 @@ import { createShardKit } from '../render/shardKit';
 import { createNpcLabels, setNpcLabelsEnabled } from '../ui/npcLabels';
 import { createCombat, ANGRY_TAG_TEXT, type Combat, type CombatDeps } from './combat';
 import { createCombatMarkers } from '../ui/combatMarkers';
+import { createHitFlash } from '../ui/hitFlash';
+import { shakeCamera } from '../render/cameraView';
+import { playSfx, sfxNames } from '../audio/sfx';
+import { pickVariant } from '../logic/sfxNames';
 import { createBreakables, type Breakables } from './breakables';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, ROOM, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
@@ -282,10 +286,18 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     player: { pos: () => player.pos() },
     npcs: () => npcs,
     memberOf: (slot: number) => (slot >= 0 && slot < npcs.length ? slotMember[slot] ?? null : null),
-    targetable: () => true, // Plan 02-11 will replace with player stun state
+    targetable: () => player.canBeHit(),
     onPlayerHit: (npc, nowMs) => {
       playerHitsTaken++;
-      // Plan 02-11 adds knockdown feedback here
+      // Knockdown feedback (D-09)
+      const t = npc.body.translation();
+      if (player.knockDown(t.x, t.z)) {
+        hitStop.trigger(nowMs, 80);
+        shakeCamera(0.22, 260);
+        const hurtName = pickVariant(sfxNames(), 'hurt', hurtRng) ?? 'hurt-0';
+        playSfx(hurtName, { rate: 0.95 + hurtRng() * 0.1 });
+        hitFlash.flash(nowMs);
+      }
     },
     onAngryChange: (slot, angry) => {
       angrySlot.set(slot, angry);
@@ -303,9 +315,9 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const shadows = createBlobShadows(ctx.scene);
   const playerFoot = { x: 0, y: 0, z: 0 };
   shadows.addCaster(() => {
-    const p = player.pos();
+    const p = player.foot();
     playerFoot.x = p.x;
-    playerFoot.y = p.y - CAPSULE_HALF_HEIGHT - CAPSULE_RADIUS;
+    playerFoot.y = p.y;
     playerFoot.z = p.z;
     return playerFoot;
   }, CAPSULE_RADIUS * 1.5);
@@ -371,6 +383,8 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     addNpcCandidate(pool[i]);
   };
   const hitStop = createHitStop();
+  const hitFlash = createHitFlash(document.body);
+  const hurtRng = mulberry32(seedFor(BENCH_SEED, 'player-hurt'));
   const centreWorld = new Vector3();
   const npcScreen = new Vector3();
   const playerQuery = { x: 0, z: 0, yawRad: 0 };
@@ -715,7 +729,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       const pressed = !bench && pressedRaw;
       const picked = bench ? undefined : pickQueued;
       pickQueued = undefined;
-      if (pressed || picked !== undefined) {
+      // Drop input while knocked down (input is locked, not queued; D-06 Pitfall 9)
+      if (player.inputLocked()) {
+        // Input dropped while locked (not queued); don't process it
+      } else if (pressed || picked !== undefined) {
         const nowMs = performance.now();
         if (!swingGate.tryStart(nowMs)) {
           swingDropped++; // inside the cooldown: the press is dropped, not queued (T-01-24-01)
@@ -863,6 +880,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         npc.respawn(spawnPointFor(i), ROUTE_START_INDEX);
       }
       player.teleport(PLAYER_SPAWN.x, PLAYER_SPAWN.z);
+      player.resetKnockdown();
       pickQueued = undefined;
       refreshTarget();
     },

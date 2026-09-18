@@ -6,8 +6,10 @@
 
 import { PerspectiveCamera } from 'three';
 import { createCombatDirector, type CombatCommand, type CombatNpcObs, type CombatPlayerObs } from '../logic/combatDirector';
-import { BENCH_SEED } from '../logic/rng';
+import { BENCH_SEED, mulberry32, seedFor } from '../logic/rng';
 import { fightFromQuery } from '../logic/anger';
+import { pickVariant } from '../logic/sfxNames';
+import { playSfx, sfxNames } from '../audio/sfx';
 import type { CharacterMotion } from '../render/characters';
 import { registerDebug } from '../debug/testHook';
 import type { CombatMarkers } from '../ui/combatMarkers';
@@ -106,6 +108,7 @@ export function createCombat(deps: CombatDeps): Combat {
   const kcc = deps.world.createCharacterController(0.02);
   kcc.setApplyImpulsesToDynamicBodies(false);
   kcc.setSlideEnabled(true);
+  const combatRng = mulberry32(seedFor(BENCH_SEED, 'combat-sfx'));
 
   const playerHitsTaken: number[] = [0]; // Mutable for metrics
   const lastAngry = new Map<number, boolean>(); // Track angry state per slot for change detection
@@ -196,6 +199,10 @@ export function createCombat(deps: CombatDeps): Combat {
             playerHitsTaken[0]++;
             deps.onPlayerHit(npc, nowMs);
           }
+        } else if (event.kind === 'windup') {
+          // Play alert sound (D-08 wind-up cue)
+          const variant = pickVariant(sfxNames(), 'alert', combatRng) ?? 'alert-0';
+          playSfx(variant, { gain: 0.8 });
         }
       }
 

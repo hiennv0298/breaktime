@@ -1,0 +1,13 @@
+#hit-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 120px 40px rgba(255, 236, 179, 0.85);
+  transition: opacity 220ms ease-out;
+}
+
+#hit-flash.on {
+  opacity: 1;
+}
