@@ -75,8 +75,8 @@ async function faceAndSlap(page: Page): Promise<void> {
 
 async function waitCombatState(page: Page, index: number, state: CombatState, timeout: number): Promise<void> {
   await page.waitForFunction(
-    () => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[index]?.state === state,
-    undefined,
+    ([idx, st]) => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[idx]?.state === st,
+    [index, state] as const,
     { timeout, polling: 16 },
   );
 }
@@ -334,18 +334,17 @@ test.describe('fightBack desktop', () => {
     const recordStart = Date.now();
     let secondSlapTime = 0;
 
-    // Poll for 100ms and slap when in range
-    const pollInterval = setInterval(async () => {
+    // Poll for 100ms and slap when in range, with 8s timeout
+    const pollStart = Date.now();
+    while (Date.now() - pollStart < 8000 && secondSlapTime === 0) {
       const highlight = (await bt(page, 'highlight'))?.kind;
-      if (highlight === 'npc' && !secondSlapTime) {
+      if (highlight === 'npc') {
         secondSlapTime = Date.now();
         await page.keyboard.press('Space');
-        clearInterval(pollInterval);
+        break;
       }
-    }, 100);
-
-    await page.waitForTimeout(8000);
-    clearInterval(pollInterval);
+      await page.waitForTimeout(100);
+    }
 
     if (secondSlapTime > 0) {
       const gap = secondSlapTime - recordStart;
