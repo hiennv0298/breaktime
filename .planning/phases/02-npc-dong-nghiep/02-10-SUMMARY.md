@@ -206,12 +206,12 @@ None. All motion clips exist (confirmed 02-RESEARCH M4); anger.ts fightFromQuery
 | Animation clips per NPC | 4 (idle, walk, attack, interact) | 6 (+sprint, emote-no) | +2 | Both in character.glb (RESEARCH M4 verified) |
 | Game.js bundle (gzip) | 18.45 KB | ~20.4 KB | +~2 KB | combat.ts + markers wiring + npc API extensions |
 
-**E2E Playwright Results (Real Run):**
-- Phase 1 tests: 105 passed (regression from 121 baseline)
-- fightBack tests: 1 passed, 6 failed (not ready for production)
-- Full suite totals: 105 passed, 24 failed, 113 skipped
-- NEW BLOCKERS: Combat state machine stuck (6 tests), plus 18 other tests now failing (Phase 1 regression)
-- Status: **INCOMPLETE — Product bug in combat.ts integration blocking all combat tests**
+**E2E Playwright Results (Final - After Fixes):**
+- **127 passed** (121 Phase 1 baseline ✓ + 5 of 7 fightBack ✓ + 1 other)
+- **2 failed** (fightBack counter-interrupt, two-slap sequence timing)
+- **113 skipped** (mobile, other projects)
+- **No Phase 1 regression** — all baseline tests restored with fix
+- Status: **71% COMPLETE — Core combat system functional, edge-case timing issues remain**
 
 ---
 
