@@ -7,8 +7,8 @@
 ## Thông tin deploy
 
 ```
-DEPLOY_SHA=82448797205b
-DEPLOY_POLLER=count=8 non200=0
+DEPLOY_SHA=d274a41eeb87
+DEPLOY_POLLER=count=5 non200=0
 HEADLESS_BRAWL=MEASURE brawl npcs=15 peakDrawCalls=99 peakBodies=206 maxPursuers=3 maxAttackers=1 strikes=6 knockdowns=3 simStepAvgMs=0.73 simStepP99Ms=2.30 simStepMaxMs=9.30
 NPC_DEVICE_VERDICT=PENDING
 CAP_DECISION=PENDING
@@ -20,10 +20,10 @@ CAP_DECISION=PENDING
 
 Mở những URL dưới đây trên 2 điện thoại chuẩn (1 Android, 1 iPhone):
 
-- **Chơi bình thường:** https://game.doibung.com/b/82448797205b/
-- **Benchmark 10 NPC (so sánh Phase 1):** https://game.doibung.com/b/82448797205b/?bench=1
-- **Benchmark 15 NPC với đánh trả:** https://game.doibung.com/b/82448797205b/?bench=1&brawl=1
-- **Đánh liên tục với 3 NPC:** https://game.doibung.com/b/82448797205b/?fight=always&npcs=3
+- **Chơi bình thường:** https://game.doibung.com/b/d274a41eeb87/
+- **Benchmark 10 NPC (so sánh Phase 1):** https://game.doibung.com/b/d274a41eeb87/?bench=1
+- **Benchmark 15 NPC với đánh trả:** https://game.doibung.com/b/d274a41eeb87/?bench=1&brawl=1
+- **Đánh liên tục với 3 NPC:** https://game.doibung.com/b/d274a41eeb87/?fight=always&npcs=3
 
 ---
 
