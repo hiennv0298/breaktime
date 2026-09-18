@@ -176,9 +176,9 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
         return;
       }
       if (checked) {
-        setMemberPresent(draft, member.id, true);
+        draft = setMemberPresent(draft, member.id, true);
       } else {
-        setMemberPresent(draft, member.id, false);
+        draft = setMemberPresent(draft, member.id, false);
       }
       render();
     });
@@ -192,7 +192,7 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
     lookSelect.addEventListener('change', () => {
       const letter = lookSelect.value;
       if (NPC_LOOKS.includes(letter)) {
-        setMemberLook(draft, member.id, letter);
+        draft = setMemberLook(draft, member.id, letter);
         opts.onLookPreview(letter);
       }
     });
@@ -200,12 +200,12 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
     temperSelect.addEventListener('change', () => {
       const temper = temperSelect.value;
       if (temper === 'hot' || temper === 'normal' || temper === 'calm') {
-        setMemberTemper(draft, member.id, temper as 'hot' | 'normal' | 'calm');
+        draft = setMemberTemper(draft, member.id, temper as 'hot' | 'normal' | 'calm');
       }
     });
 
     deleteBtn.addEventListener('click', () => {
-      removeMember(draft, member.id);
+      draft = removeMember(draft, member.id);
       render();
     });
 
@@ -229,9 +229,9 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
 
   addBtn.addEventListener('click', () => {
     if (draft.members.length >= 30) return;
-    const member = addMember(draft, uiRng);
-    if (member) {
-      draft = normalizeRoster(draft);
+    const result = addMember(draft, uiRng);
+    if (result.added) {
+      draft = result.roster;
       render();
     }
   });
@@ -307,12 +307,14 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
     disarmClear();
 
     // Sync field values into the draft
+    let current = draft;
     for (const [id, field] of fields) {
-      const member = draft.members.find((m) => m.id === id);
+      const member = current.members.find((m) => m.id === id);
       if (member) {
-        renameMember(draft, id, field.value);
+        current = renameMember(current, id, field.value);
       }
     }
+    draft = current;
 
     draft = normalizeRoster(draft);
 

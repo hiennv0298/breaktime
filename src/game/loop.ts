@@ -74,17 +74,25 @@ export function startLoop(ctx: GameCtx, game: Game): void {
       return null;
     }
   };
+  let npcLabelsStorageOk = true;
   const writePref = (key: string, value: string): boolean => {
     try {
       localStorage.setItem(key, value);
+      npcLabelsStorageOk = true;
       return true;
     } catch {
+      npcLabelsStorageOk = false;
       return false;
     }
   };
   const storedLabelsValue = readPref(NPC_LABELS_STORAGE_KEY);
   const labelsEnabled = parseNpcLabelsPref(storedLabelsValue as string | null);
   setNpcLabelsEnabled(labelsEnabled);
+
+  registerDebug('npcLabelsPref', () => ({
+    enabled: npcLabelsEnabled(),
+    storageOk: npcLabelsStorageOk,
+  }));
 
   // NPC roster editor (D-03, D-04, D-10, plan 02-09): saved on this device, then applied in place.
   const rosterSection = createRosterSection({

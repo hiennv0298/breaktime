@@ -547,12 +547,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     }),
   );
   registerDebug('roster', () => ({
+    ...roster,  // includes members: RosterMember[], present: string[], count: number
     source: rosterSource,
     storageOk: rosterStorageOk,
-    count: roster.count,
     max: MAX_NPCS,
-    members: roster.members.length,
-    present: roster.present,
     onFloor: onFloorMembers(roster).map((m) => m.id),
     looks: roster.members.map((m) => m.look),
     savePending: false, // TODO: track from rosterStore
