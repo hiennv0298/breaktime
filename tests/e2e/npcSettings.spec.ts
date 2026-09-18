@@ -130,13 +130,21 @@ test.describe('npc settings desktop', () => {
     await expect(value).toHaveText('3');
     for (let i = 0; i < 7; i++) await page.locator('#npc-count-inc').click();
     await expect(value).toHaveText('10');
+    // Stepper now stops at 15 (plan 02-06, D-01), not 10.
+    await expect(page.locator('#npc-count-inc')).not.toBeDisabled();
+    for (let i = 0; i < 5; i++) await page.locator('#npc-count-inc').click();
+    await expect(value).toHaveText('15');
     await expect(page.locator('#npc-count-inc')).toBeDisabled();
-    await page.locator('#npc-count-inc').click({ force: true });
-    await expect(value).toHaveText('10');
 
     const fields = page.locator('input.npc-name');
-    await expect(fields).toHaveCount(10);
-    for (let i = 0; i < 10; i++) await expect(fields.nth(i)).toBeVisible();
+    // 15 name fields at the new cap (plan 02-06, D-01).
+    await expect(fields).toHaveCount(15);
+    for (let i = 0; i < 15; i++) await expect(fields.nth(i)).toBeVisible();
+
+    // Set back to 10 for the rest of the test.
+    for (let i = 0; i < 5; i++) await page.locator('#npc-count-dec').click();
+    await expect(value).toHaveText('10');
+
     await page.locator('input.npc-name[data-index="0"]').fill('  Sếp   Tùng  ');
     await page.locator('input.npc-name[data-index="1"]').fill('ABCDEFGHIJKLMNOPQRSTUV');
 

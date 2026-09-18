@@ -181,15 +181,15 @@ test.describe('npc names desktop', () => {
     expect(labelAt(labels, 1)?.text).toBe('Lan');
     for (let i = 2; i < 7; i++) expect(labelAt(labels, i)?.visible ?? false).toBe(false);
 
-    // A tampered count (42) plus ?npcs=99: both clamp to 10.
+    // A tampered count (42) plus ?npcs=99: both clamp to 15 (plan 02-06, D-01).
     await page.evaluate((k) => localStorage.setItem(k, JSON.stringify({ v: 1, count: 42, names: [] })), KEY);
     await page.goto('./?autoplay=1&npcs=99');
     await waitForBtState(page, 'playing', 60_000);
     await page.waitForFunction(() => !!(window as unknown as { __bt: Bt }).__bt.npcSettings, undefined, {
       timeout: 10_000,
     });
-    expect((await bt(page, 'npcs'))!.length).toBe(10);
-    expect((await bt(page, 'npcSettings'))!.count).toBe(10);
+    expect((await bt(page, 'npcs'))!.length).toBe(15);
+    expect((await bt(page, 'npcSettings'))!.count).toBe(15);
     expectClean(problems);
   });
 
