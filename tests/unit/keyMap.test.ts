@@ -269,12 +269,13 @@ describe('npc-add / npc-remove (plan 02-04, D-02)', () => {
 });
 
 describe('KEY_HINTS (D-28 rows, rendered by plan 01-25)', () => {
-  it('is exactly the four rows in order', () => {
+  it('is exactly the five rows in order', () => {
     expect(KEY_HINTS).toEqual([
       { keys: '←↑→↓', label: 'đi' },
       { keys: 'Space', label: 'đánh' },
       { keys: 'Ctrl/Esc', label: 'settings' },
       { keys: 'Z/C', label: 'xoay' },
+      { keys: '+/−', label: 'thêm/bớt NPC' },
     ]);
   });
 });

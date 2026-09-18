@@ -89,8 +89,8 @@ test.describe('desktop key hints', () => {
     expect(startOpacity).toBeGreaterThanOrEqual(0.95);
 
     const text = (await panel.textContent()) ?? '';
-    for (const k of ['←↑→↓', 'Space', 'Ctrl/Esc', 'Z/C']) expect(text).toContain(k);
-    await expect(panel.locator('.row')).toHaveCount(4);
+    for (const k of ['←↑→↓', 'Space', 'Ctrl/Esc', 'Z/C', '+/−']) expect(text).toContain(k);
+    await expect(panel.locator('.row')).toHaveCount(5);
     expect(await panel.getAttribute('data-hud-panel')).not.toBeNull();
 
     const vh = page.viewportSize()!.height;

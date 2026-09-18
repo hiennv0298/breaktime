@@ -8,10 +8,12 @@ export interface InputState {
   interactQueued: boolean;
   /** Set on a pause toggle (Escape / lone Ctrl press-and-release / pause button, D-27); cleared by consumePauseToggle. */
   pauseToggleQueued: boolean;
+  /** NPC delta from +/− keys, clamped to -15..15 (plan 02-08, D-02); cleared by consumeNpcDelta. */
+  npcDelta: number;
 }
 
 export function createInputState(): InputState {
-  return { moveX: 0, moveY: 0, interactQueued: false, pauseToggleQueued: false };
+  return { moveX: 0, moveY: 0, interactQueued: false, pauseToggleQueued: false, npcDelta: 0 };
 }
 
 /** Returns true once per queued interact press and clears the flag. */
@@ -26,4 +28,11 @@ export function consumePauseToggle(s: InputState): boolean {
   const queued = s.pauseToggleQueued;
   s.pauseToggleQueued = false;
   return queued;
+}
+
+/** Returns the NPC delta and clears it. Clamped to -15..15. */
+export function consumeNpcDelta(s: InputState): number {
+  const delta = s.npcDelta;
+  s.npcDelta = 0;
+  return delta;
 }

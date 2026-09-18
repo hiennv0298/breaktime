@@ -52,6 +52,12 @@ export function attachKeyboard(s: InputState): () => void {
       case 'pause':
         if (!e.repeat) s.pauseToggleQueued = true;
         break;
+      case 'npc-add':
+        if (!e.repeat) s.npcDelta = Math.min(s.npcDelta + 1, 15);
+        break;
+      case 'npc-remove':
+        if (!e.repeat) s.npcDelta = Math.max(s.npcDelta - 1, -15);
+        break;
       default:
         // 'ctrl', rotate intents (cameraKeys.ts) and unbound or modified keys: untouched, never default-prevented.
         break;

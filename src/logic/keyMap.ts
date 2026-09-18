@@ -173,4 +173,5 @@ export const KEY_HINTS: ReadonlyArray<{ keys: string; label: string }> = [
   { keys: 'Space', label: 'đánh' },
   { keys: 'Ctrl/Esc', label: 'settings' },
   { keys: 'Z/C', label: 'xoay' },
+  { keys: '+/−', label: 'thêm/bớt NPC' },
 ];
