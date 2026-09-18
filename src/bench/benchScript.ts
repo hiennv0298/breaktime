@@ -3,10 +3,10 @@ import { registerDebug } from '../debug/testHook';
 import { createAutopilot } from '../game/autopilot';
 import type { Game } from '../game/game';
 import { PLAYER_SPAWN } from '../game/layout';
-import { getPauseState, onFrame, onStep } from '../game/loop';
+import { getPauseState, onFrame, onStep, onStepDone } from '../game/loop';
 import { getQuality } from '../game/qualityManager';
 import { NPC_ROUTES } from '../game/waypoints';
-import { looksThrottled, summarize } from '../logic/benchStats';
+import { looksThrottled, percentile, summarize } from '../logic/benchStats';
 import { buildTimeline, type BenchAction } from '../logic/benchTimeline';
 import { BENCH_SEED } from '../logic/rng';
 import { getCameraYaw } from '../render/cameraView';
@@ -39,6 +39,14 @@ export interface BenchResult {
   knockedOrBroken: number;
   broken: number;
   userAgent: string;
+  brawl?: boolean;
+  maxPursuers?: number;
+  maxAttackers?: number;
+  strikes?: number;
+  playerKnockdowns?: number;
+  simStepAvgMs?: number;
+  simStepP99Ms?: number;
+  simStepMaxMs?: number;
 }
 
 export interface BenchRun {
@@ -75,11 +83,12 @@ export function benchWaypoints(): { x: number; z: number }[] {
     });
 }
 
-export function startBench(game: Game, opts: { durationSec: number }): BenchRun {
+export function startBench(game: Game, opts: { durationSec: number; brawl?: boolean }): BenchRun {
   if (started) throw new Error('bench already started');
   started = true;
 
   const durationSec = opts.durationSec;
+  const brawl = opts.brawl === true;
   const actions: BenchAction[] = buildTimeline({ durationSec, seed: BENCH_SEED, waypoints: benchWaypoints() });
   const autopilot = createAutopilot();
   const quality = getQuality();
@@ -87,6 +96,7 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
 
   const intervals: number[] = [];
   const work: number[] = [];
+  const stepMs: number[] = [];
   let next = 0;
   let baseStep = -1;
   let localStep = 0;
@@ -111,7 +121,7 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
 
   const label = document.createElement('div');
   label.id = 'bench-label';
-  label.textContent = 'BENCH';
+  label.textContent = brawl ? 'BENCH BRAWL' : 'BENCH';
   document.body.appendChild(label);
 
   function run(a: BenchAction): void {
@@ -147,11 +157,13 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
     autopilot.apply(game.playerInput, game.player.pos(), getCameraYaw());
     unsubFrame();
     unsubStep();
+    unsubStepDone();
     unsubTier();
     label.remove();
 
     const summary = summarize(intervals);
     const s = game.stats();
+    const combat = game.combatStats();
     result = {
       sha: BUILD_SHA,
       durationSec,
@@ -172,9 +184,25 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
       knockedOrBroken: game.knockedOrBroken(),
       broken: game.brokenCount(),
       userAgent: navigator.userAgent,
+      ...(brawl && {
+        brawl: true,
+        maxPursuers: combat.maxPursuers,
+        maxAttackers: combat.maxAttackers,
+        strikes: combat.strikes,
+        playerKnockdowns: combat.knockdowns,
+        simStepAvgMs: stepMs.length > 0 ? stepMs.reduce((a, b) => a + b, 0) / stepMs.length : 0,
+        simStepP99Ms: percentile(stepMs, 0.99),
+        simStepMaxMs: stepMs.length > 0 ? Math.max(...stepMs) : 0,
+      }),
     };
     pause.pauseFor('user');
     showBenchResults(result);
+
+    // Log MEASURE line for brawl runs (D-11)
+    if (brawl) {
+      const measure = `MEASURE brawl npcs=${result.npcCount} peakDrawCalls=${result.peakDrawCalls} peakBodies=${result.peakBodies} maxPursuers=${result.maxPursuers} maxAttackers=${result.maxAttackers} strikes=${result.strikes} knockdowns=${result.playerKnockdowns} simStepAvgMs=${result.simStepAvgMs!.toFixed(2)} simStepP99Ms=${result.simStepP99Ms!.toFixed(2)} simStepMaxMs=${result.simStepMaxMs!.toFixed(2)}`;
+      console.log(measure);
+    }
   }
 
   const bench: BenchRun = {
@@ -220,6 +248,12 @@ export function startBench(game: Game, opts: { durationSec: number }): BenchRun 
 
   const unsubStep = onStep((step) => bench.onStep(step));
   const unsubFrame = onFrame((ts, workMs) => bench.onFrame(ts, workMs));
+  const unsubStepDone = onStepDone((step, ms) => {
+    // Collect step timing only after warm-up (D-11)
+    if (localStep >= BENCH_WARMUP_STEPS) {
+      stepMs.push(ms);
+    }
+  });
 
   registerDebug('bench', () => ({
     running,

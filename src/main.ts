@@ -71,8 +71,8 @@ async function boot(): Promise<void> {
     { startLoop },
     { attachCameraKeys },
     { attachCameraButtons },
-    { benchFromQuery, parseBenchDuration, soakFromQuery, soakOptionsFromQuery },
-    { BENCH_NPCS },
+    { benchFromQuery, brawlFromQuery, parseBenchDuration, soakFromQuery, soakOptionsFromQuery },
+    { BENCH_NPCS, MAX_NPCS },
   ] = await Promise.all([
     import('./render/renderer'),
     import('./physics/rapier'),
@@ -102,12 +102,17 @@ async function boot(): Promise<void> {
   const physics = createPhysics(rapier.R);
   const ctx = { ...renderCtx, physics, loaded };
   // ?bench=1 (plan 01-17, D-08, D-11 revised): always 10 NPCs; the saved 'bt.npcs' count is neither used nor written.
+  // ?bench=1&brawl=1 (plan 02-12 D-11): always 15 NPCs with fight-back on; only with bench=1.
   // ?soak=1 (plan 01-18, TECH-04) loops the same scene for 15 minutes and takes precedence over ?bench=1.
   // D-11, plan 02-06: benchmark and soak stay at BENCH_NPCS (10) for device parity, while normal play can reach MAX_NPCS (15).
   const soakOn = soakFromQuery(location.search);
   const benchOn = !soakOn && benchFromQuery(location.search);
+  const brawlOn = benchOn && brawlFromQuery(location.search);
   // Async since plan 01-10: the office GLBs fetched before Chơi are parsed here, after three.js has loaded.
-  const game = await createGame(ctx, soakOn || benchOn ? { forcedNpcCount: BENCH_NPCS, bench: true } : {});
+  const game = await createGame(
+    ctx,
+    soakOn || benchOn ? { forcedNpcCount: brawlOn ? MAX_NPCS : BENCH_NPCS, bench: true, brawl: brawlOn } : {},
+  );
   if (soakOn) {
     const [{ startSoak }, { suppressKeyHints }] = await Promise.all([import('./bench/soak'), import('./ui/keyHints')]);
     // Hidden for the whole soak, before the loop mounts the hint panels (D-28).
@@ -119,7 +124,7 @@ async function boot(): Promise<void> {
     // Before the loop mounts the hint panels, so the one-time touch hint is not spent on a scripted run (D-28).
     suppressKeyHints(true);
     startLoop(ctx, game);
-    startBench(game, { durationSec: parseBenchDuration(new URLSearchParams(location.search).get('dur')) });
+    startBench(game, { durationSec: parseBenchDuration(new URLSearchParams(location.search).get('dur')), brawl: brawlOn });
   } else {
     startLoop(ctx, game);
   }

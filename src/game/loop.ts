@@ -31,6 +31,8 @@ export function getPauseState(): PauseState {
 const frameHooks = new Set<(ts: number, workMs: number) => void>();
 /** Called once per fixed simulation step, before the game logic of that step, with the 0-based step index. */
 const stepHooks = new Set<(step: number) => void>();
+/** Called after fixedUpdate + physics.step() of each step, with the step index and time spent (D-11). */
+const stepDoneHooks = new Set<(step: number, stepMs: number) => void>();
 
 /** Subscribe to every rendered frame (paused frames included); returns an unsubscribe function. */
 export function onFrame(cb: (ts: number, workMs: number) => void): () => void {
@@ -42,6 +44,12 @@ export function onFrame(cb: (ts: number, workMs: number) => void): () => void {
 export function onStep(cb: (step: number) => void): () => void {
   stepHooks.add(cb);
   return () => stepHooks.delete(cb);
+}
+
+/** Subscribe after each fixed step's fixedUpdate and physics.step; returns an unsubscribe function (D-11 sim timing). */
+export function onStepDone(cb: (step: number, stepMs: number) => void): () => void {
+  stepDoneHooks.add(cb);
+  return () => stepDoneHooks.delete(cb);
 }
 
 /** Fixed-step sim + variable render (RESEARCH Pattern 3). Paused frames still render but run 0 sim steps. */
@@ -196,8 +204,11 @@ export function startLoop(ctx: GameCtx, game: Game): void {
     for (let i = 0; i < steps; i++) {
       // Scripted input (bench autopilot, timeline actions) lands before the step reads it.
       for (const cb of stepHooks) cb(simStep);
+      const t0 = performance.now();
       game.fixedUpdate(FIXED_DT);
       ctx.physics.step();
+      const stepMs = performance.now() - t0;
+      for (const cb of stepDoneHooks) cb(simStep, stepMs);
       simStep++;
       // A slap inside this step freezes the rest of the frame's catch-up steps too.
       if (game.timeScale(performance.now()) === 0) break;

@@ -108,6 +108,8 @@ export interface Game {
     geometries: number;
     textures: number;
   };
+  /** Combat metrics for benchmarking (D-11). */
+  combatStats(): { enabled: boolean; maxPursuers: number; maxAttackers: number; strikes: number; landed: number; knockdowns: number };
 
   // ---------- Soak hooks (plan 01-18, TECH-04) ----------
   /** Breakables of the office: the soak calls resetAll() between cycles. */
@@ -130,6 +132,8 @@ export interface CreateGameOptions {
    * pause (portal rule), but movement keys, the joystick, action presses and game-area clicks never reach the player.
    */
   bench?: boolean;
+  /** Brawl mode (plan 02-12 D-11): fight-back on even in bench mode; requires bench=true. */
+  brawl?: boolean;
 }
 
 /**
@@ -275,13 +279,14 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   for (let i = 0; i < npcs.length; i++) labels.setText(i, slotMember[i]?.name ?? '');
   const labelNdc = new Vector3();
   let hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name);
-  // Combat markers and director (plan 02-10, D-05..D-11)
+  // Combat markers and director (plan 02-10, D-05..D-11; D-11 revised: brawl flag enables combat in bench mode)
   const markers = createCombatMarkers(uiRoot, MAX_NPCS);
   let playerHitsTaken = 0;
   const angrySlot = new Map<number, boolean>();
+  const brawl = opts.brawl === true;
   const combat = createCombat({
-    enabled: !bench,
-    fight: fightFromQuery(location.search),
+    enabled: !bench || brawl,
+    fight: brawl ? 'always' : fightFromQuery(location.search),
     world: ctx.physics.world,
     player: { pos: () => player.pos() },
     npcs: () => npcs,
@@ -871,6 +876,17 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         flavor: rapierFlavor,
         geometries: ctx.renderer.info.memory.geometries,
         textures: ctx.renderer.info.memory.textures,
+      };
+    },
+    combatStats() {
+      const snapshot = combat.snapshot();
+      return {
+        enabled: combat.enabled,
+        maxPursuers: snapshot.maxPursuers,
+        maxAttackers: snapshot.maxAttackers,
+        strikes: snapshot.strikes,
+        landed: snapshot.landed,
+        knockdowns: playerHitsTaken,
       };
     },
     breakables,

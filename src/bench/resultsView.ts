@@ -35,13 +35,27 @@ export function showBenchResults(r: BenchResult): void {
     ['NPC', String(r.npcCount)],
     ['Ragdoll cùng lúc', String(r.maxSimultaneousRagdolls)],
     ['Đồ văng/vỡ', `${r.knockedOrBroken} (vỡ ${r.broken})`],
+  ];
+
+  // Add brawl-specific rows (D-11)
+  if (r.brawl) {
+    rows.push(
+      ['Kịch bản', 'Đánh trả (brawl)'],
+      ['NPC đuổi tối đa', `${r.maxPursuers}/3`],
+      ['Vung đòn tối đa', `${r.maxAttackers}/1`],
+      ['Người chơi bị hạ', String(r.playerKnockdowns)],
+      ['Sim ms/step TB · p99', `${fixed1(r.simStepAvgMs!)} · ${fixed1(r.simStepP99Ms!)}`],
+    );
+  }
+
+  rows.push(
     ['Tier', tier],
     ['Rapier', r.flavor],
     ['DPR / backbuffer', `${r.dpr} · ${r.backbuffer}`],
     ['Bị giới hạn 30 fps?', r.throttled ? 'Có' : 'Không'],
     ['Commit', r.sha],
     ['Thời lượng', `${r.durationSec} s · ${r.frames} khung`],
-  ];
+  );
 
   const grid = document.createElement('dl');
   grid.className = 'rows';

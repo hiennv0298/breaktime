@@ -62,6 +62,8 @@ export interface Combat {
   frameUpdate(): void;
   /** Reset FSMs and metrics but keep timestamps (soak cycle, plan 01-18). */
   reset(): void;
+  /** Snapshot of combat metrics for benchmarking (D-11). */
+  snapshot(): { maxPursuers: number; maxAttackers: number; strikes: number; landed: number };
 }
 
 /** World-to-NDC projection for screen-space marker placement (label copy, plan 02-09 math). */
@@ -101,6 +103,9 @@ export function createCombat(deps: CombatDeps): Combat {
       fixedUpdate() {},
       frameUpdate() {},
       reset() {},
+      snapshot() {
+        return { maxPursuers: 0, maxAttackers: 0, strikes: 0, landed: 0 };
+      },
     };
   }
 
@@ -269,6 +274,15 @@ export function createCombat(deps: CombatDeps): Combat {
       playerHitsTaken[0] = 0;
       lastAngry.clear();
       npcIdToSlot.clear();
+    },
+    snapshot() {
+      const snap = director.snapshot();
+      return {
+        maxPursuers: snap.maxPursuers,
+        maxAttackers: snap.maxAttackers,
+        strikes: snap.strikes,
+        landed: snap.landed,
+      };
     },
   };
 }
