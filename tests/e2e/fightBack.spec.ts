@@ -29,7 +29,7 @@ type Bt = {
     player?: { hitsTaken: number };
     npcs?: Array<{ id: string; mode?: string; state: CombatState; anger: number; token?: string | null }>;
   };
-  labels?: Array<{ index: number; visible: boolean; text: string; angry: boolean }>;
+  npcLabels?: Array<{ index: number; visible: boolean; text: string; angry: boolean }>;
   props?: { movedCount: number };
 };
 
@@ -45,7 +45,7 @@ async function startPlaying(page: Page, url: string, baseURL: string): Promise<P
   await page.waitForFunction(
     () => {
       const b = (window as unknown as { __bt: Bt }).__bt;
-      return !!b.combat && !!b.labels && !!b.props;
+      return !!b.combat && !!b.npcLabels && !!b.props;
     },
     undefined,
     { timeout: 10_000, polling: 100 },
@@ -198,7 +198,7 @@ test.describe('fightBack desktop', () => {
 
     // Check final state
     expect((await bt(page, 'combat'))?.npcs?.[0]?.state).toBe('routine');
-    const finalLabel = (await bt(page, 'labels'))?.find((l) => l.index === 0);
+    const finalLabel = (await bt(page, 'npcLabels'))?.find((l) => l.index === 0);
     expect(finalLabel?.angry).toBe(false);
 
     // Check token budget
@@ -328,7 +328,7 @@ test.describe('fightBack desktop', () => {
     expect(state1).toBe('routine');
     expect(anger1).toBeGreaterThanOrEqual(50);
     expect(anger1).toBeLessThanOrEqual(70);
-    expect((await bt(page, 'labels'))?.find((l) => l.index === 0)?.angry).toBe(false);
+    expect((await bt(page, 'npcLabels'))?.find((l) => l.index === 0)?.angry).toBe(false);
 
     // Wait and then slap again (followAndSlap within ~8s)
     const recordStart = Date.now();
@@ -384,7 +384,7 @@ test.describe('fightBack desktop', () => {
     );
 
     // Check for angry tag with text 'Giận!'
-    const labels = await bt(page, 'labels');
+    const labels = await bt(page, 'npcLabels');
     const angryLabel = labels?.find((l) => l.index === 0 && l.angry);
     expect(angryLabel).toBeDefined();
     expect(angryLabel?.text).toBe('Giận!');
@@ -397,7 +397,7 @@ test.describe('fightBack desktop', () => {
     );
 
     // Label should no longer be angry
-    const finalLabels = await bt(page, 'labels');
+    const finalLabels = await bt(page, 'npcLabels');
     const finalLabel = finalLabels?.find((l) => l.index === 0);
     expect(finalLabel?.angry).toBe(false);
   });
