@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-14)
 
 **Core value:** Một "ngày làm việc" 5–8 phút phải buồn cười và căng thẳng đúng lúc, chạy mượt trên điện thoại tầm trung.
-**Current focus:** Phase 1 — Spike kỹ thuật & đường deploy
+**Current focus:** Phase 2 — NPC đồng nghiệp (tên, số lượng, đánh trả)
 
 ## Current Position
 
-Phase: 1 (Spike kỹ thuật & đường deploy) — EXECUTING
-Plan: 26 of 27 (01-01..01-19, 01-22..01-27 complete; 01-20/01-21 KHÔNG cần chạy vì cổng PASS)
-Status: Cổng máy thật PASS — dừng theo yêu cầu operator, chưa execute Phase 2
-Last activity: 2026-09-16 -- Completed 01-19 (cổng máy thật): 01-GATE.md VERDICT=PASS trên sha 04c06b21c39a — Android Chrome 152 60.6 fps TB / 53.6 (1% thấp) / 33 đồ văng-vỡ, Safari iOS 26.6.1 60.0 / 49.2, Chrome iOS 60.0 / 46.2, desktop Chrome 153 59.9 / 53.6, soak iPhone 15 phút không crash không rò rỉ (geometries 44/44, textures 25/25, bodies 165/165), first load 3.364.381 byte. D-07 không kích hoạt; guard 02-06 chuyển sang GUARD_CONTINUE. Còn nợ (không chặn cổng): checklist D-19/D-27..D-30 chưa kiểm tay (CTRL_UI_CHECK 0/0), Edge+Firefox desktop chưa thử (TECH01_BROWSERS 3/5), cảm nhận joystick chưa ghi, 4 ảnh bằng chứng chưa lưu vào evidence/, model 2 máy chưa rõ
+Phase: 2 (NPC đồng nghiệp) — EXECUTING
+Plan: 6 of 13 (02-01..02-06 complete; 02-07..02-13 awaiting)
+Status: Entry guard 02-06 PASS; 15-NPC cap verified with measurement
+Last activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
 
 Previous activity: 2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)
 
