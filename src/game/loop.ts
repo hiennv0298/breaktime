@@ -4,12 +4,14 @@ import { consumePauseToggle } from '../input/inputState';
 import { createFpsMeter } from '../logic/benchStats';
 import { makeStepper } from '../logic/fixedStep';
 import { createPauseState, type PauseState } from '../logic/pauseState';
+import { NPC_LABELS_STORAGE_KEY, parseNpcLabelsPref, serializeNpcLabelsPref } from '../logic/uiPrefs';
 import { TIER_LABEL_VI } from '../logic/quality';
-import { withSlotEdits } from '../logic/roster';
 import { createDebugHud } from '../ui/debugHud';
 import { createKeyHints, createKeyHintsSection } from '../ui/keyHints';
-import { createNpcSettingsSection } from '../ui/npcSettingsSection';
+import { createRosterSection } from '../ui/rosterSection';
+import { npcLabelsEnabled, setNpcLabelsEnabled } from '../ui/npcLabels';
 import { createPauseMenu, createQualityControls } from '../ui/pauseMenu';
+import { preloadCharacterLook } from '../render/characters';
 import type { Game, GameCtx } from './game';
 import { writeRoster } from './rosterStore';
 import { createQualityManager } from './qualityManager';
@@ -63,20 +65,44 @@ export function startLoop(ctx: GameCtx, game: Game): void {
   // Key hint panel + touch hint (D-28, CTRL-06), toggled from the same menu.
   const hints = createKeyHints();
   menu.addSection(createKeyHintsSection(hints));
-  // NPC roster + names (D-03, CTRL-07, plan 02-07): saved on this device, then applied in place; a failed save still applies.
-  // Adapter: existing settings section maps count and names onto the roster until plan 02-09 replaces it.
-  menu.addSection(
-    createNpcSettingsSection({
-      initial: game.npcSettings().settings,
-      onApply: (s) => {
-        const current = game.roster().roster;
-        const edited = withSlotEdits(current, s.count, s.names);
-        const saved = writeRoster(edited);
-        game.applyRoster(edited, 'manual');
-        return { saved };
-      },
-    }),
-  );
+
+  // Read label preference (D-10) and apply on startup
+  const readPref = (key: string): unknown => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  };
+  const writePref = (key: string, value: string): boolean => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const storedLabelsValue = readPref(NPC_LABELS_STORAGE_KEY);
+  const labelsEnabled = parseNpcLabelsPref(storedLabelsValue as string | null);
+  setNpcLabelsEnabled(labelsEnabled);
+
+  // NPC roster editor (D-03, D-04, D-10, plan 02-09): saved on this device, then applied in place.
+  const rosterSection = createRosterSection({
+    initial: game.roster().roster,
+    onApply: (r) => {
+      const saved = writeRoster(r);
+      game.applyRoster(r, 'manual');
+      return { saved };
+    },
+    onLookPreview: (letter) => preloadCharacterLook(letter),
+    labelsEnabled: () => npcLabelsEnabled(),
+    onLabelsToggle: (on) => {
+      setNpcLabelsEnabled(on);
+      return { saved: writePref(NPC_LABELS_STORAGE_KEY, serializeNpcLabelsPref(on)) };
+    },
+  });
+  menu.addSection(rosterSection.el);
+  const roster = rosterSection; // Capture for refresh on menu open
   let menuShown = false;
 
   registerDebug('simStep', () => simStep);
@@ -147,7 +173,10 @@ export function startLoop(ctx: GameCtx, game: Game): void {
     const paused = pauseState.isPaused();
     if (paused !== menuShown) {
       menuShown = paused;
-      if (paused) menu.show();
+      if (paused) {
+        roster.refresh(game.roster().roster);
+        menu.show();
+      }
       else menu.hide();
     }
     // An interact pressed while paused must not fire on resume.

@@ -1,11 +1,15 @@
 /* NPC name labels (plan 01-26, D-29). Stack: labels (90) < #touch-zone (100) < key hints (150) < HUD buttons (200) < #pause-menu (400).
- * pointer-events none: a label never takes a click or a touch meant for the game view (plan 01-24 swing contract). */
+ * pointer-events none: a label never takes a click or a touch meant for the game view (plan 01-24 swing contract).
+ * Plan 02-09: hidden attribute hides the entire layer (D-10). */
 #npc-labels {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 90;
   overflow: hidden;
+}
+#npc-labels[hidden] {
+  display: none;
 }
 #npc-labels .npc-label {
   position: absolute;

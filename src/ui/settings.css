@@ -1,7 +1,8 @@
-/* NPC settings section (plan 01-27, D-29, CTRL-07) inside #pause-menu .panel (max-height 90dvh, overflow-y auto). */
+/* NPC settings section (plan 01-27, D-29, CTRL-07) and roster section (plan 02-09, D-03) inside #pause-menu .panel (max-height 90dvh, overflow-y auto). */
 
 /* A definite width lets the panel grow to fit two name columns on wide screens and stay inside narrow ones. */
-#pause-menu .npc-section {
+#pause-menu .npc-section,
+#pause-menu .roster-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -9,7 +10,15 @@
   width: min(520px, calc(100vw - 96px));
   margin: 0 auto;
 }
-#pause-menu .npc-section .label { font-size: 15px; opacity: 0.85; }
+#pause-menu .npc-section .label,
+#pause-menu .roster-section .label { font-size: 15px; opacity: 0.85; }
+
+/* Roster warning line (D-04): privacy notice. */
+#roster-warning {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
 
 #pause-menu .npc-stepper {
   display: flex;
@@ -64,6 +73,123 @@
 }
 #pause-menu label.npc-name-row { display: block; }
 #pause-menu label.npc-name-row[hidden] { display: none; }
+
+/* Roster list (plan 02-09): one column, flex rows with checkbox, name, selects and buttons. */
+#pause-menu .roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#pause-menu .roster-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+#pause-menu .roster-row[hidden] { display: none; }
+
+#pause-menu input.roster-present {
+  min-width: 28px;
+  min-height: 28px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+#pause-menu input.npc-name {
+  flex: 1 1 10em;
+  min-height: 44px;
+  min-width: 60px;
+}
+
+#pause-menu .roster-random,
+#pause-menu .roster-delete,
+#pause-menu select.roster-look,
+#pause-menu select.roster-temper {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid #4a4f5a;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #f2f2f2;
+  background: #1d1f24;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+#pause-menu .roster-random,
+#pause-menu .roster-delete {
+  padding: 0 12px;
+  min-width: 44px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+#pause-menu select.roster-look,
+#pause-menu select.roster-temper {
+  flex: 0 0 auto;
+  min-width: 90px;
+}
+
+#pause-menu .roster-random:disabled,
+#pause-menu .roster-delete:disabled,
+#pause-menu select.roster-look:disabled,
+#pause-menu select.roster-temper:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#roster-add {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f2f2f2;
+  background: #3a3e47;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+#roster-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#roster-clear {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f2f2f2;
+  background: #3a3e47;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+#roster-clear[data-armed] {
+  background: #b4572e;
+}
+
+#roster-labels-toggle {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f2f2f2;
+  background: #3a3e47;
+  touch-action: manipulation;
+  cursor: pointer;
+}
 
 /*
  * iOS Safari: body inherits -webkit-user-select none from hud.css (typing and paste break without an override), and it

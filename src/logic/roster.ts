@@ -352,25 +352,3 @@ export function setMemberPresent(r: Roster, id: string, on: boolean): Roster {
   return normalizeRoster({ members: base.members.map(copyMember), present, count: base.count });
 }
 
-/**
- * Adapter that lets the existing 01-27 settings section (count stepper + one name field per slot) edit the roster
- * until plan 02-09 replaces that section and deletes this function. names[i] renames the i-th present member (roster
- * order); members without a slot entry keep their names. A finite count is truncated and clamped to maxOnFloor;
- * a non-finite count keeps the current one.
- */
-export function withSlotEdits(r: Roster, count: number, names: readonly unknown[]): Roster {
-  const base = normalizeRoster(r);
-  const slots = presentMembers(base);
-  const renamed = new Map<string, string>();
-  const n = Math.min(Array.isArray(names) ? names.length : 0, slots.length);
-  for (let i = 0; i < n; i++) renamed.set(slots[i].id, sanitizeNpcName(names[i]));
-  const members = base.members.map((m) => {
-    const name = renamed.get(m.id);
-    return { id: m.id, name: name === undefined ? m.name : name, look: m.look, temper: m.temper };
-  });
-  const next =
-    typeof count === 'number' && Number.isFinite(count)
-      ? Math.max(0, Math.min(maxOnFloor(base), Math.trunc(count)))
-      : base.count;
-  return normalizeRoster({ members, present: base.present.slice(), count: next });
-}

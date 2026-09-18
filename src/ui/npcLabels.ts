@@ -4,6 +4,7 @@ import './npcLabels.css';
  * Name tags over NPC heads (plan 01-26, D-29): plain DOM, so they cost 0 draw calls and stay crisp at any DPR.
  * Text is written with textContent only (T-01-26-01) — a stored "<img onerror>" shows as literal characters. The layer
  * is aria-hidden and pointer-events none, so it never steals a click or touch from the game view.
+ * Plan 02-09 adds global setNpcLabelsEnabled(on) to hide/show all layers via the hidden attribute (D-10).
  */
 export interface NpcLabels {
   /** Sets the label text of NPC i; an empty text hides the label. */
@@ -21,10 +22,35 @@ interface LabelSlot {
   y: number;
 }
 
+// Module-level tracking for setNpcLabelsEnabled (plan 02-09, D-10)
+const allLayers = new Set<HTMLElement>();
+let labelsEnabledFlag = true;
+
+/** Hides or shows every #npc-labels layer by setting the hidden attribute (D-10). */
+export function setNpcLabelsEnabled(on: boolean): void {
+  labelsEnabledFlag = on;
+  for (const layer of allLayers) {
+    if (on) {
+      layer.removeAttribute('hidden');
+    } else {
+      layer.setAttribute('hidden', '');
+    }
+  }
+}
+
+/** Returns whether labels are currently enabled (D-10). */
+export function npcLabelsEnabled(): boolean {
+  return labelsEnabledFlag;
+}
+
 export function createNpcLabels(root: HTMLElement, capacity: number): NpcLabels {
   const layer = document.createElement('div');
   layer.id = 'npc-labels';
   layer.setAttribute('aria-hidden', 'true');
+  if (!labelsEnabledFlag) {
+    layer.setAttribute('hidden', '');
+  }
+  allLayers.add(layer);
   root.appendChild(layer);
 
   const slots: Array<LabelSlot | undefined> = [];

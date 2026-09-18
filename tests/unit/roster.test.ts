@@ -9,7 +9,6 @@ import {
   setMemberLook,
   setMemberPresent,
   setMemberTemper,
-  withSlotEdits,
   maxOnFloor,
   migrateLegacyNpcs,
   normalizeRoster,
@@ -567,40 +566,5 @@ describe('setMemberPresent', () => {
 describe('resetRoster', () => {
   it('deep-equals defaultRoster()', () => {
     expect(resetRoster()).toEqual(defaultRoster());
-  });
-});
-
-describe('withSlotEdits (01-27 adapter until plan 02-09)', () => {
-  it('sets the count and names the on-floor slots in order', () => {
-    const out = withSlotEdits(frozenDefault(), 5, ['An', 'Bình']);
-    expect(out.count).toBe(5);
-    expect(onFloorMembers(out).map((m) => m.id)).toEqual(range(5));
-    expect(onFloorMembers(out).map((m) => m.name)).toEqual(['An', 'Bình', '', '', '']);
-  });
-
-  it('clamps the count to maxOnFloor and keeps names of members off the floor', () => {
-    const named = deepFreeze(renameMember(renameMember(frozenDefault(), 'm12', 'Xa'), 'm20', 'none'));
-    const out = withSlotEdits(named, 99, []);
-    expect(out.count).toBe(maxOnFloor(named));
-    const low = withSlotEdits(named, 2, []);
-    expect(low.count).toBe(2);
-    expect(low.members[11].name).toBe('Xa');
-  });
-
-  it('sanitises slot names, ignores non-finite counts', () => {
-    const rlo = String.fromCodePoint(0x202e);
-    const out = withSlotEdits(frozenDefault(), Number.NaN, [`${rlo}Lan`, 7]);
-    expect(out.count).toBe(3);
-    expect(out.members[0].name).toBe('Lan');
-    expect(out.members[1].name).toBe('');
-    expect(withSlotEdits(frozenDefault(), -4, []).count).toBe(0);
-    expect(withSlotEdits(frozenDefault(), 6.8, []).count).toBe(6);
-  });
-
-  it('names follow present members, skipping unticked ones', () => {
-    const r = deepFreeze(setMemberPresent(frozenDefault(), 'm2', false));
-    const out = withSlotEdits(r, 3, ['A', 'B', 'C']);
-    expect(onFloorMembers(out).map((m) => `${m.id}:${m.name}`)).toEqual(['m1:A', 'm3:B', 'm4:C']);
-    expect(out.members[1].name).toBe('');
   });
 });
