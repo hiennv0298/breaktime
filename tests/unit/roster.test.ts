@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addMember,
+  DEFAULT_NAMES,
   defaultRoster,
   LEGACY_SLOTS,
   removeMember,
@@ -58,10 +59,10 @@ describe('constants', () => {
 });
 
 describe('defaultRoster', () => {
-  it('has m1..m15 with empty names, looks b..p, normal temper, all present, count 3', () => {
+  it('has m1..m15 with the default job titles, looks b..p, normal temper, all present, count 3', () => {
     const r = defaultRoster();
     expect(ids(r)).toEqual(range(15));
-    expect(r.members.map((m) => m.name)).toEqual(Array.from({ length: 15 }, () => ''));
+    expect(r.members.map((m) => m.name)).toEqual([...DEFAULT_NAMES]);
     expect(r.members.map((m) => m.look).join('')).toBe('bcdefghijklmnop');
     expect(r.members.every((m) => m.temper === 'normal')).toBe(true);
     expect(r.present).toEqual(range(15));
@@ -263,7 +264,7 @@ describe('serializeRoster', () => {
   it('writes keys in the order v, members, present, count', () => {
     const s = serializeRoster(defaultRoster());
     expect(Object.keys(JSON.parse(s))).toEqual(['v', 'members', 'present', 'count']);
-    expect(s.startsWith('{"v":1,"members":[{"id":"m1","name":"","look":"b","temper":"normal"}')).toBe(true);
+    expect(s.startsWith('{"v":1,"members":[{"id":"m1","name":"BOSS","look":"b","temper":"normal"}')).toBe(true);
   });
 
   it('30 members with 16-emoji names and 15 present fit in ROSTER_MAX_RAW', () => {
@@ -294,17 +295,18 @@ describe('migrateLegacyNpcs (bt.npcs v1, one way)', () => {
     expect(r).not.toBeNull();
     const m = r as Roster;
     expect(ids(m)).toEqual(range(15));
-    expect(m.members.map((x) => x.name)).toEqual(['Minh', 'Lan', ...Array.from({ length: 13 }, () => '')]);
+    // Slots the player never named fall back to their job title instead of showing a blank tag.
+    expect(m.members.map((x) => x.name)).toEqual(['Minh', 'Lan', ...DEFAULT_NAMES.slice(2)]);
     expect(m.members.map((x) => x.look).join('')).toBe('bcdefghijklmnop');
     expect(m.members.every((x) => x.temper === 'normal')).toBe(true);
     expect(m.present).toEqual(range(15));
     expect(m.count).toBe(5);
   });
 
-  it('ignores legacy names beyond LEGACY_SLOTS', () => {
+  it('ignores legacy names beyond LEGACY_SLOTS and keeps the default titles there', () => {
     const list = Array.from({ length: 14 }, (_, i) => `N${i + 1}`);
     const m = migrateLegacyNpcs(JSON.stringify({ v: 1, count: 10, names: list })) as Roster;
-    expect(m.members.map((x) => x.name)).toEqual([...list.slice(0, 10), '', '', '', '', '']);
+    expect(m.members.map((x) => x.name)).toEqual([...list.slice(0, 10), ...DEFAULT_NAMES.slice(10)]);
     expect(m.count).toBe(10);
   });
 

@@ -37,6 +37,30 @@ export const ROSTER_DEFAULT_COUNT = 3;
 /** Name slots of the Phase 1 bt.npcs v1 record. */
 export const LEGACY_SLOTS = 10;
 
+/**
+ * Default coworker names: office job titles, so a fresh office is populated instead of showing
+ * blank name tags (operator request, 18/09/2026). The first ten are the operator's own list in
+ * their order; the rest continue the same style for slots 11-15 (D-01 raised the cap to 15).
+ * Job titles, never real people — the D-31 name-content risk stays with what the player types.
+ */
+export const DEFAULT_NAMES = Object.freeze([
+  'BOSS',
+  'HR',
+  'DEV',
+  'IT',
+  'LEAD',
+  'MANAGER',
+  'CLIENT',
+  'CTO',
+  'CEO',
+  'CFO',
+  'QA',
+  'SALES',
+  'INTERN',
+  'ADMIN',
+  'DESIGNER',
+]);
+
 /** Array entries scanned per list; the rest are ignored (T-02-04-02). */
 const SCAN_LIMIT = 200;
 const ID_PATTERN = /^m[0-9]{1,3}$/;
@@ -73,13 +97,14 @@ function isLook(v: unknown): v is string {
   return typeof v === 'string' && v.length === 1 && NPC_LOOKS.includes(v);
 }
 
-/** m1..m15, names '', looks b..p, temper normal, all present, count 3. */
+/** m1..m15, names from DEFAULT_NAMES, looks b..p, temper normal, all present, count 3. */
 export function defaultRoster(): Roster {
   const members: RosterMember[] = [];
   const present: string[] = [];
   for (let i = 0; i < NPC_CAP; i++) {
     const id = `m${i + 1}`;
-    members.push({ id, name: '', look: NPC_LOOKS[i], temper: DEFAULT_TEMPER });
+    // Sanitised like any other name so the default can never bypass the length/character rules.
+    members.push({ id, name: sanitizeNpcName(DEFAULT_NAMES[i] ?? ''), look: NPC_LOOKS[i], temper: DEFAULT_TEMPER });
     present.push(id);
   }
   return { members, present, count: ROSTER_DEFAULT_COUNT };
@@ -163,7 +188,8 @@ export function serializeRoster(r: Roster): string {
 /**
  * One-way migration of a Phase 1 bt.npcs v1 record: the default roster with the 10 legacy names on m1..m10 (NPC k kept
  * texture 'b'+k, so the office looks exactly as before the upgrade), count kept, 15 present. null when invalid.
- * Never writes anything back to bt.npcs.
+ * A slot the player never named — and slots 11-15, which did not exist in Phase 1 — falls back to its DEFAULT_NAMES
+ * job title rather than to a blank tag. Never writes anything back to bt.npcs.
  */
 export function migrateLegacyNpcs(legacyRaw: string | null): Roster | null {
   const legacy = parseNpcSettings(legacyRaw);
@@ -171,7 +197,7 @@ export function migrateLegacyNpcs(legacyRaw: string | null): Roster | null {
   const base = defaultRoster();
   const members: RosterMember[] = base.members.map((m, i) => ({
     id: m.id,
-    name: i < LEGACY_SLOTS ? sanitizeNpcName(legacy.settings.names[i]) : '',
+    name: (i < LEGACY_SLOTS ? sanitizeNpcName(legacy.settings.names[i]) : '') || m.name,
     look: m.look,
     temper: m.temper,
   }));
