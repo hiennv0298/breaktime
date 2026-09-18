@@ -73,6 +73,63 @@ async function faceAndSlap(page: Page): Promise<void> {
   await page.keyboard.press('Space');
 }
 
+/**
+ * Walks the player to the coworker and slaps it. Returns the timestamp of the slap, or 0.
+ *
+ * Standing still and waiting for the coworker to wander back into range does not work: since the
+ * per-NPC seeded routes each coworker walks its own path, so whether it ever crosses the crosshair
+ * again is a coin flip, and a passive loop makes the test fail at random. WASD is world movement
+ * (not turning) and which key maps to which world axis depends on the camera yaw, so the mapping is
+ * measured once here instead of assumed.
+ */
+async function approachAndSlap(page: Page, npcIndex: number, budgetMs: number): Promise<number> {
+  type Vec = { x: number; z: number };
+  const posOf = async (): Promise<{ player: Vec; npc: Vec }> =>
+    page.evaluate((i) => {
+      const b = (window as unknown as { __bt: { player?: { pos: number[] }; npcs?: Array<{ pos: number[] }> } }).__bt;
+      const p = b.player!.pos;
+      const n = b.npcs![i]!.pos;
+      return { player: { x: p[0]!, z: p[2]! }, npc: { x: n[0]!, z: n[2]! } };
+    }, npcIndex);
+
+  // Calibrate: tap a key and see which way the world moves.
+  const probe = async (key: string): Promise<Vec> => {
+    const a = (await posOf()).player;
+    await page.keyboard.down(key);
+    await page.waitForTimeout(120);
+    await page.keyboard.up(key);
+    await page.waitForTimeout(60);
+    const b = (await posOf()).player;
+    return { x: b.x - a.x, z: b.z - a.z };
+  };
+  const dVec = await probe('KeyD');
+  const wVec = await probe('KeyW');
+
+  const dot = (a: Vec, b: Vec): number => a.x * b.x + a.z * b.z;
+  const start = Date.now();
+  while (Date.now() - start < budgetMs) {
+    if ((await bt(page, 'highlight'))?.kind === 'npc') break;
+    const { player, npc } = await posOf();
+    const want: Vec = { x: npc.x - player.x, z: npc.z - player.z };
+    if (Math.hypot(want.x, want.z) < 0.2) break; // already on top of it
+    // Press whichever axis carries us further along `want`; sign picks the opposite key.
+    const alongD = dot(want, dVec);
+    const alongW = dot(want, wVec);
+    const key =
+      Math.abs(alongD) >= Math.abs(alongW) ? (alongD >= 0 ? 'KeyD' : 'KeyA') : alongW >= 0 ? 'KeyW' : 'KeyS';
+    await page.keyboard.down(key);
+    await page.waitForTimeout(90);
+    await page.keyboard.up(key);
+  }
+
+  if ((await bt(page, 'highlight'))?.kind !== 'npc') return 0;
+  const before = (await bt(page, 'slap'))?.count ?? 0;
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(300);
+  const after = (await bt(page, 'slap'))?.count ?? 0;
+  return after > before ? Date.now() : 0;
+}
+
 async function waitCombatState(page: Page, index: number, state: CombatState, timeout: number): Promise<void> {
   await page.waitForFunction(
     ([idx, st]) => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[idx]?.state === st,
@@ -177,11 +234,23 @@ test.describe('fightBack desktop', () => {
     expect(states).toContain('windup');
 
     // Check that a windup happened
-    const windupEntries = timeline.filter((t) => t.state === 'windup');
-    expect(windupEntries.length).toBeGreaterThan(0);
-    const windupDuration = windupEntries[windupEntries.length - 1]!.time - windupEntries[0]!.time;
-    expect(windupDuration).toBeGreaterThanOrEqual(550);
-    expect(windupDuration).toBeLessThanOrEqual(900);
+    // The wind-up is 0.6 s (D-07). It is sampled from the page's own main thread, the same thread
+    // running physics and rendering, so the sampler drifts well past its nominal 16 ms and the span
+    // between the first and last 'windup' sample can only ever UNDERSTATE the real duration (539 ms
+    // was measured for a true 600 ms). Rather than slacken the bound and stop testing anything,
+    // bracket the truth: it cannot be shorter than the sampled span, and cannot be longer than the
+    // gap between the last sample before and the first sample after. Then assert 0.6 s sits inside.
+    const first = timeline.findIndex((t) => t.state === 'windup');
+    const last = timeline.length - 1 - [...timeline].reverse().findIndex((t) => t.state === 'windup');
+    expect(first).toBeGreaterThanOrEqual(0);
+    const atLeast = timeline[last]!.time - timeline[first]!.time;
+    const atMost = (timeline[last + 1]?.time ?? timeline[last]!.time) - (timeline[first - 1]?.time ?? timeline[first]!.time);
+    const WINDUP_MS = 600;
+    expect(atLeast).toBeLessThanOrEqual(WINDUP_MS);
+    expect(atMost).toBeGreaterThanOrEqual(WINDUP_MS);
+    // And it is genuinely a telegraph the player can react to, not a frame or a second and a half.
+    expect(atLeast).toBeGreaterThanOrEqual(400);
+    expect(atMost).toBeLessThanOrEqual(900);
 
     // Marker and label should have been visible
     const markerSeen = timeline.some((t) => t.markerVisible);
@@ -273,43 +342,22 @@ test.describe('fightBack desktop', () => {
     const slapCountAfterFirst = (await bt(page, 'slap'))?.count || 0;
     expect(slapCountAfterFirst).toBeGreaterThan(slapCountAfterFace);
 
-    // Wait for windup state to be reached (with generous timeout for ?fight=always progression)
-    // With hot temper (auto-achieved on first slap with fight=always), should reach windup within ~6s
-    await page.waitForFunction(
-      () => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[0]?.state === 'windup',
-      undefined,
-      { timeout: 10_000, polling: 100 },
-    );
-
-    // Verify we actually reached windup
-    const stateBeforeCounter = (await bt(page, 'combat'))?.npcs?.[0]?.state;
-    expect(stateBeforeCounter).toBe('windup');
-
-    // Get NPC position to move toward it
-    const npcPos = (await page.evaluate(() => {
-      const pos = (window as unknown as { __bt: Bt }).__bt.npcs?.[0]?.pos;
-      return pos as Vec3 | null;
-    })) || [0, 0, 0];
-
-    const playerPos = (await page.evaluate(() => {
-      return [0, 0, 0]; // Player spawn at (0, 2)
-    }));
-
-    // Move toward the NPC to get in range for the counter-slap
-    const isEastWest = Math.abs(npcPos[0] - playerPos[0]) > Math.abs(npcPos[2] - playerPos[2]);
-    const moveKey = isEastWest ? 'KeyD' : 'KeyW'; // Move toward
-
-    await page.keyboard.down(moveKey);
-    await page.waitForTimeout(30);
-    await page.keyboard.up(moveKey);
-
-    // Record state before counter-slap
+    // Read the baselines BEFORE waiting for the wind-up. The wind-up lasts 0.6 s (D-07) and every
+    // __bt round trip costs tens of milliseconds, so gathering them after the wind-up is detected
+    // burns the whole window and the strike resolves before the counter-slap is even pressed.
     const slapCountBefore = (await bt(page, 'slap'))?.count || 0;
     const interruptedBefore = (await bt(page, 'combat'))?.interrupted || 0;
     const landedBefore = (await bt(page, 'combat'))?.landed || 0;
-    const npcModeBefore = (await bt(page, 'npcs'))?.[0]?.mode;
 
-    // Slap during wind-up (counter-slap) - should interrupt and cancel the strike
+    // The coworker walks to us during 'pursue', so no repositioning is needed: by the time it winds
+    // up it is already within reach.
+    await page.waitForFunction(
+      () => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[0]?.state === 'windup',
+      undefined,
+      { timeout: 15_000, polling: 16 },
+    );
+
+    // Counter-slap immediately — this is the player's only answer to the "!" telegraph.
     await page.keyboard.press('Space');
 
     // Verify the counter-slap actually landed
@@ -355,42 +403,10 @@ test.describe('fightBack desktop', () => {
     // Record time of first slap
     const firstSlapTime = Date.now();
 
-    // Try to land second slap with at least 3.5s gap
-    let secondSlapTime = 0;
-
-    // Wait ~3.5s+ for the gap requirement
+    // Leave a realistic gap, then walk over and slap again. The gap matters: it proves the two
+    // slaps add up rather than needing to be mashed, and that the meter has not decayed away.
     await page.waitForTimeout(3500);
-
-    // Now try to acquire and slap
-    const slapStart = Date.now();
-    while (Date.now() - slapStart < 5000 && secondSlapTime === 0) {
-      // Turn right to try to acquire the NPC (matching faceAndSlap logic exactly)
-      for (let i = 0; i < 40; i++) {
-        const highlight = (await bt(page, 'highlight'))?.kind;
-        if (highlight === 'npc') break;
-        await page.keyboard.down('KeyD');
-        await page.waitForTimeout(60);
-        await page.keyboard.up('KeyD');
-        await page.waitForTimeout(60);
-      }
-
-      // If acquired, slap
-      const highlight = (await bt(page, 'highlight'))?.kind;
-      if (highlight === 'npc') {
-        const countBefore = (await bt(page, 'slap'))?.count || 0;
-        await page.keyboard.press('Space');
-        await page.waitForTimeout(300);
-        const countAfter = (await bt(page, 'slap'))?.count || 0;
-
-        if (countAfter > countBefore) {
-          secondSlapTime = Date.now();
-          break;
-        }
-      }
-
-      // Retry turn-and-slap
-      await page.waitForTimeout(100);
-    }
+    const secondSlapTime = await approachAndSlap(page, 0, 20_000);
 
     // Verify second slap landed with proper gap
     expect(secondSlapTime).toBeGreaterThan(0);
