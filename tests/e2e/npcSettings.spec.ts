@@ -26,7 +26,7 @@ type Bt = {
   swing?: { count: number };
 };
 
-const KEY = 'bt.npcs';
+const ROSTER_KEY = 'bt.roster';
 
 function bt<K extends keyof Bt>(page: Page, key: K): Promise<Bt[K]> {
   return page.evaluate((k) => (window as unknown as { __bt: Bt }).__bt[k as keyof Bt], key) as Promise<Bt[K]>;
@@ -96,8 +96,16 @@ async function waitNpcCount(page: Page, n: number, timeout = 1000): Promise<void
 async function storedRecord(page: Page): Promise<{ count: number; names: string[] } | null> {
   return page.evaluate((k) => {
     const raw = localStorage.getItem(k);
-    return raw ? (JSON.parse(raw) as { count: number; names: string[] }) : null;
-  }, KEY);
+    if (!raw) return null;
+    const roster = JSON.parse(raw) as { count: number; members: Array<{ name: string; id: string }> };
+    const names: string[] = [];
+    // Derive names from the first `count` present members (on-floor members)
+    for (let i = 0; i < 15; i++) {
+      const member = roster.members[i];
+      names.push(i < roster.count && member ? member.name : '');
+    }
+    return { count: roster.count, names };
+  }, ROSTER_KEY);
 }
 
 function labelText(labels: LabelSnap[] | undefined, index: number): string | undefined {

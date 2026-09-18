@@ -70,8 +70,9 @@ test.describe('npc desktop', () => {
     expectInsideRoom(first);
 
     const texturesLoaded = (await bt(page, 'characters'))!.texturesLoaded;
+    // Player + 3 NPCs + preloaded next quick-add look (RESEARCH Pitfall 10, plan 02-07)
     expect(texturesLoaded).toBeGreaterThanOrEqual(1);
-    expect(texturesLoaded).toBeLessThanOrEqual(4);
+    expect(texturesLoaded).toBeLessThanOrEqual(5);
 
     // Blob shadows for every dynamic prop, the player and each NPC (D-14).
     const dynamicCount = (await bt(page, 'props'))!.dynamicCount;

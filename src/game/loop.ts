@@ -5,12 +5,13 @@ import { createFpsMeter } from '../logic/benchStats';
 import { makeStepper } from '../logic/fixedStep';
 import { createPauseState, type PauseState } from '../logic/pauseState';
 import { TIER_LABEL_VI } from '../logic/quality';
+import { withSlotEdits } from '../logic/roster';
 import { createDebugHud } from '../ui/debugHud';
 import { createKeyHints, createKeyHintsSection } from '../ui/keyHints';
 import { createNpcSettingsSection } from '../ui/npcSettingsSection';
 import { createPauseMenu, createQualityControls } from '../ui/pauseMenu';
 import type { Game, GameCtx } from './game';
-import { writeNpcSettings } from './npcSettingsStore';
+import { writeRoster } from './rosterStore';
 import { createQualityManager } from './qualityManager';
 
 const FIXED_DT = 1 / 60;
@@ -62,13 +63,16 @@ export function startLoop(ctx: GameCtx, game: Game): void {
   // Key hint panel + touch hint (D-28, CTRL-06), toggled from the same menu.
   const hints = createKeyHints();
   menu.addSection(createKeyHintsSection(hints));
-  // NPC count + names (D-29, CTRL-07): saved on this device, then applied in place; a failed save still applies.
+  // NPC roster + names (D-03, CTRL-07, plan 02-07): saved on this device, then applied in place; a failed save still applies.
+  // Adapter: existing settings section maps count and names onto the roster until plan 02-09 replaces it.
   menu.addSection(
     createNpcSettingsSection({
       initial: game.npcSettings().settings,
       onApply: (s) => {
-        const saved = writeNpcSettings(s);
-        game.applyNpcSettings(s);
+        const current = game.roster().roster;
+        const edited = withSlotEdits(current, s.count, s.names);
+        const saved = writeRoster(edited);
+        game.applyRoster(edited, 'manual');
         return { saved };
       },
     }),

@@ -14,10 +14,13 @@ import {
   DEFAULT_NPCS,
   MAX_NPCS,
   normalizeNpcSettings,
-  resolveStartNpcSettings,
   type NpcSettings,
   type NpcSettingsSource,
 } from '../logic/npcSettings';
+import { onFloorMembers, resolveStartRoster, type Roster, type RosterMember, type RosterSource } from '../logic/roster';
+import { nextQuickCandidate } from '../logic/quickNpc';
+import { preloadCharacterLook } from '../render/characters';
+import { readRosterRaw, writeRoster } from './rosterStore';
 import { TIERS } from '../logic/quality';
 import { BENCH_SEED, mulberry32 } from '../logic/rng';
 import { createSwingGate, SWING_COOLDOWN_MS } from '../logic/swing';
@@ -58,14 +61,16 @@ export interface Game {
   timeScale(nowMs: number): number;
   readonly hitStop: HitStop;
   readonly player: Player;
-  /** Settings the office started with (plan 01-26): count, sanitised names, where the count came from, storage health. */
-  npcSettings(): { settings: NpcSettings; source: NpcSettingsSource; storageOk: boolean };
+  /** The roster and its source (plan 02-07). */
+  roster(): { roster: Roster; source: RosterSource; storageOk: boolean };
   /**
-   * Applies a count and names chosen in the settings menu at once (plan 01-27, D-29): normalises again, despawns NPCs
-   * above the count, respawns or creates the missing ones (grow-only pool, never more than MAX_NPCS), renames the rest
-   * in place and reports source 'manual'. Storage is the caller's job (writeNpcSettings).
+   * Applies a roster chosen in the settings menu (plan 02-07, D-03): in-place respawn with new members, looks, names
+   * and tempers; normalises again, despawns NPCs above the count, respawns or creates the missing ones (grow-only pool,
+   * never more than MAX_NPCS). Storage is the caller's job (writeRoster).
    */
-  applyNpcSettings(s: NpcSettings): void;
+  applyRoster(r: Roster, source?: RosterSource): void;
+  /** Derived view for tests: the roster mapped to the legacy NpcSettings format (plan 02-07). */
+  npcSettings(): { settings: NpcSettings; source: NpcSettingsSource; storageOk: boolean };
 
   // ---------- Benchmark hooks (plan 01-17, D-08) ----------
   /** The InputState the player moves with: `input` in play, a separate autopilot-owned state in bench mode. */
@@ -123,6 +128,7 @@ export interface CreateGameOptions {
  * T-01-23-01, T-01-26-02). Re-exported for existing importers.
  */
 export { BENCH_NPCS, DEFAULT_NPCS, MAX_NPCS };
+export type { Roster, RosterMember, RosterSource } from '../logic/roster';
 /** Name tag anchor above the floor point of a walking NPC, and above the torso of a ragdoll (plan 01-26). */
 const LABEL_HEAD_Y = 1.85;
 const LABEL_RAGDOLL_Y = 0.9;
@@ -180,23 +186,29 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
   const cameraView = createCameraView(ctx.camera);
 
-  // Coworkers, each on its own seeded route (D-11, quick fix 16/09/2026). Texture letters follow the player's: b, c, d, …
+  // Coworkers, each on its own seeded route (D-11, quick fix 16/09/2026). Looks come from the roster, not the slot index (D-03).
   // Grow-only pool (plan 01-27, D-29, T-01-27-02): slot i is created the first time the count reaches it; afterwards it
   // is only despawned / respawned, so Apply never creates or removes Rapier bodies beyond MAX_NPCS NPCs.
   const pool: Npc[] = [];
   /** Active NPCs, always slots 0..count-1 in order (what the loops, name tags and __bt.npcs see). */
   let npcs: Npc[] = [];
   const npcTexture = new Map<Npc, string>();
+  const slotMember: (RosterMember | null)[] = [];
   /** Blob shadow handle per pool slot; -1 while the NPC is despawned (or before shadows exist). */
   const npcShadow: number[] = [];
-  const storedNpcSettings = readNpcSettingsRaw();
-  const startNpcSettings = resolveStartNpcSettings(location.search, storedNpcSettings.raw, opts.forcedNpcCount);
-  let npcCount = startNpcSettings.settings.count;
-  let npcNames: string[] = [...startNpcSettings.settings.names];
-  let npcSource: NpcSettingsSource = startNpcSettings.source;
+  const stored = readRosterRaw();
+  const startRoster = resolveStartRoster({
+    search: location.search,
+    rosterRaw: stored.rosterRaw,
+    legacyRaw: stored.legacyRaw,
+    forcedCount: opts.forcedNpcCount,
+    bench,
+  });
+  let roster = startRoster.roster;
+  let rosterSource = startRoster.source;
+  const rosterStorageOk = stored.storageOk;
   // ?npcAt=x,z pins NPC 0, frozen until slapped, for the slap e2e and the benchmark (T-01-15-01: parsed and clamped).
   const npcAt = parseNpcAt(location.search, { halfX: ROOM.width / 2, halfZ: ROOM.depth / 2, margin: 0.5 });
-  const firstNpcLetter = PLAYER_TEXTURE.charCodeAt(0) + 1;
   /** The ?npcAt pin applies only while the office is first built; an NPC 0 created by a later Apply walks its route. */
   let pinAllowed = true;
   /** Set once shadows and targeting exist: NPCs created later by Apply register their blob and candidate through it. */
@@ -208,13 +220,14 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   }
 
   /** Creates pool slots up to and including i (capped at MAX_NPCS); a created NPC starts active. */
-  function ensureNpc(i: number): void {
+  function ensureNpc(i: number, member: RosterMember | null): void {
     while (pool.length <= i && pool.length < MAX_NPCS) {
       const k = pool.length;
       // Own loop, own walk speed, own dwell times: a newly added coworker no longer retraces an older one.
       const route = routeForNpc(k);
       const pinned = pinAllowed && k === 0 && npcAt !== null;
-      const texture = String.fromCharCode(firstNpcLetter + k);
+      const m = member || roster.members[k] || roster.members[0];
+      const texture = m.look;
       const npc = createNpc(ctx, {
         id: 'npc-' + k,
         asset: characterAsset,
@@ -228,18 +241,20 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       });
       pool.push(npc);
       npcTexture.set(npc, texture);
+      slotMember[k] = m;
       npcShadow.push(-1);
       wireNpc?.(k);
     }
   }
-  for (let i = 0; i < npcCount; i++) ensureNpc(i);
+  const floor = onFloorMembers(roster);
+  for (let i = 0; i < roster.count; i++) ensureNpc(i, floor[i] ?? null);
   pinAllowed = false;
   npcs = pool.slice();
   // Name tags (D-29): one DOM layer, textContent only; unnamed NPCs never show a tag.
   const labels = createNpcLabels(uiRoot, MAX_NPCS);
-  for (let i = 0; i < npcs.length; i++) labels.setText(i, npcNames[i] ?? '');
+  for (let i = 0; i < npcs.length; i++) labels.setText(i, slotMember[i]?.name ?? '');
   const labelNdc = new Vector3();
-  let hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
+  let hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name);
 
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
   const shadows = createBlobShadows(ctx.scene);
@@ -358,25 +373,39 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   }
 
   /**
-   * In-place respawn (D-29, T-01-27-02/03): NPCs that stay keep their state (a flying ragdoll keeps flying) and only get
-   * the new name; props, broken objects, shards and the other blob shadows are untouched.
+   * In-place apply roster (D-03, plan 02-07): NPCs that stay keep their state (a flying ragdoll keeps flying) and only get
+   * the new look, name and temper; props, broken objects, shards and the other blob shadows are untouched.
    */
-  function applySettings(input: NpcSettings, source: NpcSettingsSource): void {
-    const s = normalizeNpcSettings(input);
+  function applyRosterInternal(r: Roster, source: RosterSource): void {
+    const floor = onFloorMembers(r);
     for (let i = 0; i < MAX_NPCS; i++) {
-      if (i >= s.count) deactivateNpc(i);
+      if (i >= floor.length) deactivateNpc(i);
       else if (i < pool.length) activateNpc(i);
-      else ensureNpc(i);
+      else ensureNpc(i, floor[i]);
     }
     npcs = pool.filter((n) => n.active());
-    npcCount = s.count;
-    npcNames = s.names;
-    npcSource = source;
-    for (let i = 0; i < MAX_NPCS; i++) {
-      if (i < npcs.length) labels.setText(i, npcNames[i] ?? '');
-      else labels.hide(i);
+    roster = r;
+    rosterSource = source;
+
+    // Update looks and names for active NPCs (D-03: setLook only when the look changed)
+    for (let i = 0; i < npcs.length; i++) {
+      const npc = npcs[i];
+      const member = floor[i];
+      if (!member) continue;
+      const oldTexture = npcTexture.get(npc);
+      if (oldTexture !== member.look) {
+        npc.character.setLook(member.look);
+        npcTexture.set(npc, member.look);
+      }
+      labels.setText(i, member.name);
+      slotMember[i] = member;
     }
-    hasNamedNpc = npcs.some((_, i) => !!npcNames[i]);
+
+    // Preload the next quick add candidate's look (RESEARCH Pitfall 10)
+    const nextCandidate = nextQuickCandidate(r);
+    if (nextCandidate) preloadCharacterLook(nextCandidate.look);
+
+    hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name);
     // A despawned NPC that was glowing stops glowing at once, even while the game is paused.
     refreshTarget();
   }
@@ -389,7 +418,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     // cameraView.update moved the camera this frame; refresh its inverse so tags do not trail by one frame.
     ctx.camera.updateMatrixWorld();
     for (let i = 0; i < npcs.length; i++) {
-      if (!npcNames[i]) continue;
+      if (!slotMember[i]?.name) continue;
       const npc = npcs[i];
       if (npc.mode === 'ragdoll') {
         const p = npc.pos();
@@ -487,12 +516,15 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     npcs.map((n, i) => {
       const p = n.pos();
       const size = viewport();
+      const member = slotMember[i];
       return {
         id: n.id,
         pos: [p.x, p.y, p.z],
         mode: n.mode,
         texture: npcTexture.get(n),
-        name: npcNames[i] ?? '',
+        name: member?.name ?? '',
+        memberId: member?.id ?? '',
+        temper: member?.temper ?? 'normal',
         // Projected lazily when read (same maths as the highlight getter).
         get screen() {
           npcScreen.set(p.x, p.y, p.z).project(ctx.camera);
@@ -501,12 +533,38 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       };
     }),
   );
-  registerDebug('npcSettings', () => ({
-    count: npcCount,
-    names: [...npcNames],
-    source: npcSource,
-    storageOk: storedNpcSettings.storageOk,
+  registerDebug('roster', () => ({
+    source: rosterSource,
+    storageOk: rosterStorageOk,
+    count: roster.count,
+    max: MAX_NPCS,
+    members: roster.members.length,
+    present: roster.present,
+    onFloor: onFloorMembers(roster).map((m) => m.id),
+    looks: roster.members.map((m) => m.look),
+    savePending: false, // TODO: track from rosterStore
+    lastSaveOk: null, // TODO: track from rosterStore
   }));
+  registerDebug('npcSettings', () => {
+    // Derived view for compatibility with existing tests: maps roster to the old NpcSettings format
+    const floor = onFloorMembers(roster);
+    const names: string[] = [];
+    for (let i = 0; i < MAX_NPCS; i++) {
+      names.push(i < floor.length ? floor[i].name : '');
+    }
+    // Map RosterSource to NpcSettingsSource for compatibility
+    let npcSource: NpcSettingsSource = 'default';
+    if (rosterSource === 'migrated') npcSource = 'stored'; // Legacy bt.npcs migration
+    else if (rosterSource === 'stored') npcSource = 'stored'; // bt.roster stored
+    else if (rosterSource === 'query') npcSource = 'query'; // ?npcs= or forced
+    else if (rosterSource === 'manual') npcSource = 'manual'; // Applied in settings
+    return {
+      count: roster.count,
+      names,
+      source: npcSource,
+      storageOk: rosterStorageOk,
+    };
+  });
   registerDebug('npcLabels', () => labels.snapshot());
   registerDebug('highlight', () => {
     const size = viewport();
@@ -592,15 +650,30 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     timeScale(nowMs) {
       return hitStop.active(nowMs) ? 0 : 1;
     },
-    npcSettings() {
-      return {
-        settings: { count: npcCount, names: [...npcNames] },
-        source: npcSource,
-        storageOk: storedNpcSettings.storageOk,
-      };
+    roster() {
+      return { roster, source: rosterSource, storageOk: rosterStorageOk };
     },
-    applyNpcSettings(input) {
-      applySettings(input, 'manual');
+    applyRoster(r, source = 'manual') {
+      applyRosterInternal(r, source);
+    },
+    npcSettings() {
+      // Derived view for compatibility with existing loop.ts and tests
+      const floor = onFloorMembers(roster);
+      const names: string[] = [];
+      for (let i = 0; i < MAX_NPCS; i++) {
+        names.push(i < floor.length ? floor[i].name : '');
+      }
+      // Map RosterSource to NpcSettingsSource for compatibility
+      let npcSource: NpcSettingsSource = 'default';
+      if (rosterSource === 'migrated') npcSource = 'stored'; // Legacy bt.npcs migration
+      else if (rosterSource === 'stored') npcSource = 'stored'; // bt.roster stored
+      else if (rosterSource === 'query') npcSource = 'query'; // ?npcs= or forced
+      else if (rosterSource === 'manual') npcSource = 'manual'; // Applied in settings
+      return {
+        settings: { count: roster.count, names },
+        source: npcSource,
+        storageOk: rosterStorageOk,
+      };
     },
     playerInput,
     slapNearestNpc() {
