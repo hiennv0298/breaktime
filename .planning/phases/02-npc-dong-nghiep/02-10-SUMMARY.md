@@ -164,18 +164,24 @@ Callback onAngryChange(slot, angry) updates label text: `member.name || (angry ?
 7. **'combat is off in the bench'**
    - ?bench=1 → __bt.combat.enabled = false
 
-**Verification Pending:** Full Playwright run to confirm all 7 tests pass + Phase 1 regression (121 total).
+**Real Results:** 1 passed, 6 failed (stuck in combat state). Full suite: 105 passed, 24 failed, 113 skipped (9.3m).
 
 ## Deviations
 
-**None** — Plan executed as written.
+**Test bugs found and fixed (2):**
+1. **waitCombatState missing args** — passed `undefined` to `page.waitForFunction`, making `index` and `state` ReferenceErrors inside the browser. Fixed: pass `[index, state] as const`.
+2. **Broken setInterval+async in test 4** — polling for second slap used `setInterval(async () => { await ... }, 100)` which doesn't await before firing again. Fixed: replaced with while loop + proper await.
 
-- Entry guard passed (D-12)
-- Typecheck + unit tests green (no Rule 1 bugs found)
-- Build green (no blocking issues)
-- E2E coverage matches spec (7 fightBack tests)
-- No stubs in combat.ts / markers / labels (all control paths wired)
-- No gore/blood/red imagery (threat T-02-10-07 mitigated)
+**Product bugs found (6 of 7 tests failing):**
+- **Combat state stuck, never returns to 'routine'** — After NPC gets angry and engages in combat (windup, strike), it never transitions back to 'routine' state. Times out after 20s waiting for routine.
+- **Test "combat is off in the bench" PASSES** (confirms basic wiring works).
+- All ?fight=always tests fail on getting stuck in combat mid-fight, suggesting issue in FSM transitions or command application, not anger logic.
+- Likely root causes: director.step() not advancing state properly, give-up condition never triggered, or NPC control not applied correctly to effect state changes.
+
+**Action taken:**
+- Verified wiring is correct (combat.onSlapped called, fixedUpdate called, memberOf returns proper member)
+- Issue appears to be in interaction between combatDirector.ts FSM and game.ts movement application
+- Product bug, not test setup issue
 
 ## Known Stubs
 
@@ -205,10 +211,12 @@ None. All motion clips exist (confirmed 02-RESEARCH M4); anger.ts fightFromQuery
 | Animation clips per NPC | 4 (idle, walk, attack, interact) | 6 (+sprint, emote-no) | +2 | Both in character.glb (RESEARCH M4 verified) |
 | Game.js bundle (gzip) | 18.45 KB | ~20.4 KB | +~2 KB | combat.ts + markers wiring + npc API extensions |
 
-**E2E Playwright Counts (Pending Full Run):**
-- Phase 1 baseline: 121 passed, 1 known flake ("mashing E")
-- Phase 2 new: fightBack.spec.ts 7 tests (RED→GREEN)
-- Expected total: 128 passed, 1 known flake
+**E2E Playwright Results (Real Run):**
+- Phase 1 tests: 105 passed (regression from 121 baseline)
+- fightBack tests: 1 passed, 6 failed (not ready for production)
+- Full suite totals: 105 passed, 24 failed, 113 skipped
+- NEW BLOCKERS: Combat state machine stuck (6 tests), plus 18 other tests now failing (Phase 1 regression)
+- Status: **INCOMPLETE — Product bug in combat.ts integration blocking all combat tests**
 
 ---
 
