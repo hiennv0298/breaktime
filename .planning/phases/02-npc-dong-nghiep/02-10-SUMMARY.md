@@ -172,16 +172,11 @@ Callback onAngryChange(slot, angry) updates label text: `member.name || (angry ?
 1. **waitCombatState missing args** — passed `undefined` to `page.waitForFunction`, making `index` and `state` ReferenceErrors inside the browser. Fixed: pass `[index, state] as const`.
 2. **Broken setInterval+async in test 4** — polling for second slap used `setInterval(async () => { await ... }, 100)` which doesn't await before firing again. Fixed: replaced with while loop + proper await.
 
-**Product bugs found (6 of 7 tests failing):**
-- **Combat state stuck, never returns to 'routine'** — After NPC gets angry and engages in combat (windup, strike), it never transitions back to 'routine' state. Times out after 20s waiting for routine.
-- **Test "combat is off in the bench" PASSES** (confirms basic wiring works).
-- All ?fight=always tests fail on getting stuck in combat mid-fight, suggesting issue in FSM transitions or command application, not anger logic.
-- Likely root causes: director.step() not advancing state properly, give-up condition never triggered, or NPC control not applied correctly to effect state changes.
-
-**Action taken:**
-- Verified wiring is correct (combat.onSlapped called, fixedUpdate called, memberOf returns proper member)
-- Issue appears to be in interaction between combatDirector.ts FSM and game.ts movement application
-- Product bug, not test setup issue
+**Product bug found and FIXED (5 of 7 tests now pass):**
+- **Critical bug: Walker position not updated after kinematic movement** (npc.ts fixedUpdate) — NPC was moving via character controller but walker state remained stale. Observations to director showed pre-movement position, so director never saw NPC progress toward route point. Give-up logic never triggered because routeDist calculation was based on old position.
+- **Fix applied:** Update `walker.x` and `walker.z` after applying kinematic delta so observations reflect current NPC location.
+- **Result:** 5 of 7 tests now pass. Remaining 2 failures: test 3 (interrupt not triggering on counter-slap) and test 4 (second slap detection timing).
+- **Status:** Core combat system works; edge case timing issues remain in counter-interrupt and multi-slap sequencing.
 
 ## Known Stubs
 
