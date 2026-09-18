@@ -105,6 +105,7 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
 
   let isActive = false;
   let recoverPose: { pos: Vector3; quat: Quaternion; yaw: number } | null = null;
+  let fromPose: Array<{ pos: Vector3; quat: Quaternion }> | null = null;
   let recoverT = 0; // 0..1 blend factor
 
   const rig: KnockdownRig = {
@@ -165,10 +166,18 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
       // Deactivate ragdoll
       ragdoll.deactivate();
 
-      // Re-attach parts
+      // Re-attach parts. `attach()` preserves each part's current WORLD transform and recomputes its
+      // LOCAL transform relative to its bone parent, so right after this loop every part is already
+      // sitting correctly attached to its parent (e.g. legs under torso) in the crumpled ragdoll pose.
+      // Capture that per-part local pose now — it is the true "from" state for the recover blend.
+      // (Bug fixed here: blend() used to lerp every part, including limbs, from the single torso
+      // WORLD position/yaw in `recoverPose`. Interpreted as a LOCAL offset from the torso, that value
+      // is close to zero, so every limb snapped to the torso's origin — legs visibly stuck in the
+      // middle of the body — before blending out to the idle pose.)
       for (const { part, parent } of reattachOrder) {
         if (parent) parent.attach(part);
       }
+      fromPose = parts.map((part) => ({ pos: part.position.clone(), quat: part.quaternion.clone() }));
 
       isActive = false;
       recoverT = 0;
@@ -177,15 +186,15 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
     },
 
     blend(t) {
-      if (!recoverPose) return;
+      if (!recoverPose || !fromPose) return;
       recoverT = Math.max(0, Math.min(1, t));
 
-      // Smoothstep lerp/slerp from recoverPose to idlePose
+      // Smoothstep lerp/slerp from each part's own post-reattach pose to its idle pose.
       const s = recoverT * recoverT * (3 - 2 * recoverT);
 
       parts.forEach((part, i) => {
         const idle = idlePose[i];
-        const from = recoverPose!;
+        const from = fromPose![i];
 
         // Position: lerp
         part.position.lerpVectors(from.pos, idle.pos, s);
@@ -202,6 +211,7 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
         part.quaternion.copy(idle.quat);
       });
       recoverPose = null;
+      fromPose = null;
       recoverT = 0;
     },
 
@@ -224,6 +234,7 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
       });
 
       recoverPose = null;
+      fromPose = null;
       recoverT = 0;
     },
 
