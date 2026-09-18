@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-07-PLAN.md
+stopped_at: Completed 02-08-PLAN.md
 last_updated: "2026-09-18T15:00:00.000Z"
-last_activity: "2026-09-18 -- Completed 02-07 (roster-driven office): Entry guard GUARD_CONTINUE (D-12 passed); Task 2 RED rosterStart.spec 7 tests, rosterStore.ts storage wrapper, characters.ts setLook/preload; Task 3 GREEN game.ts roster integration, applyRoster binding, look swap, loop.ts adapter; 6/7 rosterStart e2e pass (1 minor flake); 825/825 unit tests pass; NPC-02 persistence satisfied (bt.roster only, never write bt.npcs); TDD gates PASSED"
+last_activity: "2026-09-18 -- Completed 02-08 (quick add/remove in-play): guard GUARD_CONTINUE; phim +/- va pill HUD doi so dong nghiep 0-15 khong can mo settings, nguoi moi spawn xa nguoi choi, luu vao bt.roster. Do doc lap sau plan: tsc rc 0, vitest 825/825, playwright 112 passed / 0 failed."
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 27
-  completed_plans: 27
-  percent: 100
+  total_plans: 40
+  completed_plans: 33
+  percent: 83
 ---
 
 # Project State
@@ -32,7 +32,7 @@ Last activity: 2026-09-18 -- Completed 02-08 (quick add/remove in-play): Guard G
 
 Previous activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
 
-Progress: [████████████] 100%
+Progress: [██████████░░] 83%
 
 ## Performance Metrics
 
