@@ -1,10 +1,11 @@
 import { Vector3, type Object3D } from 'three';
 import { registerDebug } from '../debug/testHook';
-import { consumeInteract, createInputState, type InputState } from '../input/inputState';
+import { consumeInteract, consumeNpcDelta, createInputState, type InputState } from '../input/inputState';
 import { attachJoystick } from '../input/joystick';
 import { attachKeyboard } from '../input/keyboard';
 import { attachPointerPick } from '../input/pointerPick';
 import { attachTouchButtons, setContextIcon } from '../input/touchButtons';
+import { createQuickNpcPill, type QuickNpcPill } from '../ui/quickNpcPill';
 import { createDebrisBudget, DEFAULT_DEBRIS_CAPACITY } from '../logic/debrisBudget';
 import { createHitStop, type HitStop } from '../logic/hitStop';
 import { iconFor, pickNearest, type Candidate } from '../logic/nearest';
@@ -18,7 +19,8 @@ import {
   type NpcSettingsSource,
 } from '../logic/npcSettings';
 import { onFloorMembers, resolveStartRoster, type Roster, type RosterMember, type RosterSource } from '../logic/roster';
-import { nextQuickCandidate } from '../logic/quickNpc';
+import { nextQuickCandidate, quickAdd, quickRemove } from '../logic/quickNpc';
+import { maxOnFloor } from '../logic/roster';
 import { preloadCharacterLook } from '../render/characters';
 import { readRosterRaw, writeRoster } from './rosterStore';
 import { TIERS } from '../logic/quality';
@@ -45,7 +47,8 @@ import { createNpc, type Npc } from './npc';
 import { createPlayer, PLAYER_TEXTURE, type Player } from './player';
 import { readNpcSettingsRaw } from './npcSettingsStore';
 import { performSlap, slapCount } from './slap';
-import { ROUTE_START_INDEX, routeForNpc, spawnPointForNpc, walkSpeedForNpc } from './waypoints';
+import { ROUTE_START_INDEX, farthestRouteIndex, routeForNpc, spawnPointForNpc, walkSpeedForNpc } from './waypoints';
+import { scheduleWriteRoster } from './rosterStore';
 
 export interface GameCtx extends RenderCtx {
   physics: Physics;
@@ -182,6 +185,16 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   const uiRoot = document.getElementById('app') ?? document.body;
   if (!bench) attachJoystick(uiRoot, input);
   attachTouchButtons(uiRoot, input);
+
+  // Plan 02-08 (D-02): quick NPC pill for +/− in play.
+  let pill: QuickNpcPill | null = null;
+  if (!bench) {
+    pill = createQuickNpcPill(uiRoot, {
+      onDelta(delta) {
+        input.npcDelta = Math.min(Math.max(input.npcDelta + delta, -15), 15);
+      },
+    });
+  }
 
   const player = createPlayer(ctx, PLAYER_SPAWN, characterAsset);
   const cameraView = createCameraView(ctx.camera);
@@ -607,6 +620,43 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       fixedSteps++;
       if (scenario === 'smash' && fixedSteps === SMASH_STEP) breakables.smashAll(mulberry32(BENCH_SEED));
 
+      // Plan 02-08 (D-02, D-01): apply quick NPC add/remove from npcDelta keys and pill.
+      if (!bench) {
+        const delta = consumeNpcDelta(input);
+        if (delta !== 0) {
+          let working = roster;
+          const playerPos = player.pos();
+          for (let i = 0; i < Math.abs(delta); i++) {
+            if (delta > 0) {
+              const result = quickAdd(working);
+              working = result.roster;
+              if (result.changed && result.member) {
+                // Spawn at the farthest point of the route for this newly added slot.
+                const newSlotIndex = working.count - 1;
+                const route = routeForNpc(newSlotIndex);
+                const startIdx = farthestRouteIndex(route, playerPos.x, playerPos.z);
+                if (newSlotIndex < pool.length && pool[newSlotIndex].active()) {
+                  pool[newSlotIndex].respawn(route[startIdx], startIdx);
+                } else if (newSlotIndex < pool.length) {
+                  activateNpc(newSlotIndex);
+                  pool[newSlotIndex].respawn(route[startIdx], startIdx);
+                } else {
+                  ensureNpc(newSlotIndex, result.member);
+                  pool[newSlotIndex].respawn(route[startIdx], startIdx);
+                }
+              }
+            } else {
+              const result = quickRemove(working);
+              working = result.roster;
+            }
+          }
+          if (working.count !== roster.count) {
+            applyRosterInternal(working, 'quick');
+            scheduleWriteRoster(working);
+          }
+        }
+      }
+
       player.fixedUpdate(dt, playerInput);
       for (const npc of npcs) npc.fixedUpdate(dt);
       refreshTarget();
@@ -636,6 +686,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       // Animations stand still while paused (the loop still renders paused frames) and during a hit-stop freeze.
       const paused = getPauseState().isPaused();
       const animDt = paused || hitStop.active(nowMs) ? 0 : dt;
+
+      // Plan 02-08 (D-02): drop npcDelta while paused (menu is open).
+      if (paused && !bench) input.npcDelta = 0;
+
       player.frameUpdate(animDt);
       for (const npc of npcs) npc.frameUpdate(animDt);
       props.sync();
@@ -644,6 +698,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       // The shake keeps running through the hit-stop (that is the point) but waits while paused.
       cameraView.update(dt, player.pos(), paused ? 0 : dt);
       updateLabels();
+
+      // Plan 02-08 (D-02): update the pill with live count and max.
+      if (pill) pill.update(roster.count, maxOnFloor(roster));
+
       room.update(getCameraYaw());
       shadows.update();
     },

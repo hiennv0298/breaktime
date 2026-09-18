@@ -290,7 +290,7 @@ test.describe('quickNpc', () => {
         await page.waitForTimeout(50);
       }
       expect(await value.textContent()).toBe('15');
-      expect(await inc.getAttribute('disabled')).toBe('');
+      expect(await inc.getAttribute('disabled')).not.toBeNull();
 
       // Drop to 0 and check dec is disabled
       for (let i = 0; i < 15; i++) {
@@ -298,7 +298,7 @@ test.describe('quickNpc', () => {
         await page.waitForTimeout(50);
       }
       expect(await value.textContent()).toBe('0');
-      expect(await dec.getAttribute('disabled')).toBe('');
+      expect(await dec.getAttribute('disabled')).not.toBeNull();
 
       expectClean(problems);
     });
