@@ -260,6 +260,8 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
         next.z = walker.z + kinematicDelta.z;
         kinematicDelta = { x: 0, z: 0 };
         body.setNextKinematicTranslation(next);
+        // Update walker position to match actual movement so observations reflect current NPC location
+        walker = { ...walker, x: next.x, z: next.z };
       } else {
         const r = stepWalker(walker, opts.route, dt, speed);
         walker = r.state;
