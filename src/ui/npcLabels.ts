@@ -12,7 +12,9 @@ export interface NpcLabels {
   /** Places the bottom-centre of label i at CSS pixel (x, y) and shows it (when it has text). */
   place(i: number, x: number, y: number): void;
   hide(i: number): void;
-  snapshot(): Array<{ index: number; text: string; visible: boolean; x: number; y: number }>;
+  /** Toggles the 'angry' class on label i (orange colour, plan 02-10, D-10). */
+  setAngry(i: number, on: boolean): void;
+  snapshot(): Array<{ index: number; text: string; visible: boolean; x: number; y: number; angry: boolean }>;
 }
 
 interface LabelSlot {
@@ -20,6 +22,7 @@ interface LabelSlot {
   text: string;
   x: number;
   y: number;
+  angry: boolean;
 }
 
 // Module-level tracking for setNpcLabelsEnabled (plan 02-09, D-10)
@@ -64,7 +67,7 @@ export function createNpcLabels(root: HTMLElement, capacity: number): NpcLabels 
       el.setAttribute('data-npc', String(i));
       el.hidden = true;
       layer.appendChild(el);
-      s = { el, text: '', x: Number.NaN, y: Number.NaN };
+      s = { el, text: '', x: Number.NaN, y: Number.NaN, angry: false };
       slots[i] = s;
     }
     return s;
@@ -99,10 +102,21 @@ export function createNpcLabels(root: HTMLElement, capacity: number): NpcLabels 
       const s = slots[i];
       if (s && !s.el.hidden) s.el.hidden = true;
     },
+    setAngry(i, on) {
+      if (!inRange(i)) return;
+      const s = slot(i);
+      if (s.angry === on) return; // No change
+      s.angry = on;
+      if (on) {
+        s.el.classList.add('angry');
+      } else {
+        s.el.classList.remove('angry');
+      }
+    },
     snapshot() {
-      const out: Array<{ index: number; text: string; visible: boolean; x: number; y: number }> = [];
+      const out: Array<{ index: number; text: string; visible: boolean; x: number; y: number; angry: boolean }> = [];
       slots.forEach((s, index) => {
-        if (s) out.push({ index, text: s.text, visible: !s.el.hidden, x: s.x, y: s.y });
+        if (s) out.push({ index, text: s.text, visible: !s.el.hidden, x: s.x, y: s.y, angry: s.angry });
       });
       return out;
     },

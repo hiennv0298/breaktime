@@ -25,6 +25,7 @@ import { preloadCharacterLook } from '../render/characters';
 import { readRosterRaw, writeRoster } from './rosterStore';
 import { TIERS } from '../logic/quality';
 import { BENCH_SEED, mulberry32 } from '../logic/rng';
+import { fightFromQuery } from '../logic/anger';
 import { createSwingGate, SWING_COOLDOWN_MS } from '../logic/swing';
 import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS } from '../physics/characterController';
 import { createProps, projectToScreen, type PropRecord } from '../physics/props';
@@ -39,7 +40,9 @@ import type { RenderCtx } from '../render/renderer';
 import { parseCharacterAsset } from '../render/characters';
 import { buildRoom } from '../render/room';
 import { createShardKit } from '../render/shardKit';
-import { createNpcLabels } from '../ui/npcLabels';
+import { createNpcLabels, setNpcLabelsEnabled } from '../ui/npcLabels';
+import { createCombat, ANGRY_TAG_TEXT, type Combat, type CombatDeps } from './combat';
+import { createCombatMarkers } from '../ui/combatMarkers';
 import { createBreakables, type Breakables } from './breakables';
 import { PLAYER_SPAWN, PROP_PLACEMENTS, ROOM, TEST_BOX_ID } from './layout';
 import { getPauseState } from './loop';
@@ -268,6 +271,33 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   for (let i = 0; i < npcs.length; i++) labels.setText(i, slotMember[i]?.name ?? '');
   const labelNdc = new Vector3();
   let hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name);
+  // Combat markers and director (plan 02-10, D-05..D-11)
+  const markers = createCombatMarkers(uiRoot, MAX_NPCS);
+  let playerHitsTaken = 0;
+  const angrySlot = new Map<number, boolean>();
+  const combat = createCombat({
+    enabled: !bench,
+    fight: fightFromQuery(location.search),
+    world: ctx.physics.world,
+    player: { pos: () => player.pos() },
+    npcs: () => npcs,
+    memberOf: (slot: number) => (slot >= 0 && slot < npcs.length ? slotMember[slot] ?? null : null),
+    targetable: () => true, // Plan 02-11 will replace with player stun state
+    onPlayerHit: (npc, nowMs) => {
+      playerHitsTaken++;
+      // Plan 02-11 adds knockdown feedback here
+    },
+    onAngryChange: (slot, angry) => {
+      angrySlot.set(slot, angry);
+      const member = slotMember[slot];
+      labels.setText(slot, member?.name || (angry ? ANGRY_TAG_TEXT : ''));
+      labels.setAngry(slot, angry);
+      hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name || (angrySlot.get(i) ?? false));
+    },
+    markers,
+    camera: ctx.camera,
+    canvas: ctx.renderer.domElement,
+  });
 
   // D-14: one InstancedMesh of blobs for the player and every dynamic prop.
   const shadows = createBlobShadows(ctx.scene);
@@ -392,8 +422,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
   function applyRosterInternal(r: Roster, source: RosterSource): void {
     const floor = onFloorMembers(r);
     for (let i = 0; i < MAX_NPCS; i++) {
-      if (i >= floor.length) deactivateNpc(i);
-      else if (i < pool.length) activateNpc(i);
+      if (i >= floor.length) {
+        deactivateNpc(i);
+        combat.forgetSlot(i); // Clear combat state on deactivate (plan 02-10)
+      } else if (i < pool.length) activateNpc(i);
       else ensureNpc(i, floor[i]);
     }
     npcs = pool.filter((n) => n.active());
@@ -410,7 +442,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         npc.character.setLook(member.look);
         npcTexture.set(npc, member.look);
       }
-      labels.setText(i, member.name);
+      // Update label: name or angry tag (plan 02-10)
+      const isAngry = angrySlot.get(i) ?? false;
+      labels.setText(i, member.name || (isAngry ? ANGRY_TAG_TEXT : ''));
+      labels.setAngry(i, isAngry);
       slotMember[i] = member;
     }
 
@@ -418,12 +453,12 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     const nextCandidate = nextQuickCandidate(r);
     if (nextCandidate) preloadCharacterLook(nextCandidate.look);
 
-    hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name);
+    hasNamedNpc = npcs.some((_, i) => !!slotMember[i]?.name || (angrySlot.get(i) ?? false));
     // A despawned NPC that was glowing stops glowing at once, even while the game is paused.
     refreshTarget();
   }
 
-  /** Projects every named NPC's head anchor and moves its tag; tags outside the view hide (runs every rendered frame). */
+  /** Projects every labeled NPC's head anchor and moves its tag; tags outside the view hide (runs every rendered frame). */
   function updateLabels(): void {
     if (!hasNamedNpc) return;
     const w = canvas.clientWidth;
@@ -431,7 +466,10 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     // cameraView.update moved the camera this frame; refresh its inverse so tags do not trail by one frame.
     ctx.camera.updateMatrixWorld();
     for (let i = 0; i < npcs.length; i++) {
-      if (!slotMember[i]?.name) continue;
+      // Show label if NPC has a name or is angry (plan 02-10)
+      const hasName = !!slotMember[i]?.name;
+      const isAngry = angrySlot.get(i) ?? false;
+      if (!hasName && !isAngry) continue;
       const npc = npcs[i];
       if (npc.mode === 'ragdoll') {
         const p = npc.pos();
@@ -487,12 +525,23 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     }
   }
 
+  /** Slap NPC and notify combat director (plan 02-10). */
+  function slapNpc(npc: Npc, nowMs: number): void {
+    const before = slapCount();
+    performSlap(game, npc, nowMs);
+    if (slapCount() > before) {
+      // Find the slot for this NPC
+      const slot = npcs.indexOf(npc);
+      if (slot >= 0) combat.onSlapped(slot);
+    }
+  }
+
   /** Swing (already let through the gate) and hit `hit` when it is a target in range (D-30). */
   function swingAt(hit: Candidate | null, nowMs: number): void {
     const entry = hit ? entryOf.get(hit) : undefined;
     if (hit && entry?.npc) {
       const before = slapCount();
-      performSlap(game, entry.npc, nowMs); // swings toward the NPC through player.slapAt
+      slapNpc(entry.npc, nowMs); // swings toward the NPC through player.slapAt, notify combat (plan 02-10)
       if (slapCount() > before) {
         swingHits++;
         // Drop the glow right away: the hit-stop runs no fixed step for 60 ms.
@@ -657,6 +706,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
 
       player.fixedUpdate(dt, playerInput);
       for (const npc of npcs) npc.fixedUpdate(dt);
+      combat.fixedUpdate(dt, performance.now()); // Combat FSM, anger, tokens, movement (plan 02-10)
       refreshTarget();
 
       // D-30: any action press or game-area click swings at once (cooldown permitting); only a target in range is hit.
@@ -696,6 +746,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
       // The shake keeps running through the hit-stop (that is the point) but waits while paused.
       cameraView.update(dt, player.pos(), paused ? 0 : dt);
       updateLabels();
+      combat.frameUpdate(); // Position markers for winding-up NPCs (plan 02-10)
 
       // Plan 02-08 (D-02): update the pill with live count and max.
       if (pill) pill.update(roster.count, maxOnFloor(roster));
@@ -753,20 +804,20 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
         return false;
       }
       const before = slapCount();
-      performSlap(game, best, nowMs);
+      slapNpc(best, nowMs);
       if (slapCount() === before) return false;
       swingHits++;
       refreshTarget();
       return true;
     },
     massRagdoll() {
-      // Every NPC in the same step, outside the swing gate (01-24 decision: the bench calls performSlap directly).
+      // Every NPC in the same step, outside the swing gate (01-24 decision: the bench calls slapNpc directly).
       const nowMs = performance.now();
       let slapped = 0;
       for (const npc of npcs) {
         if (!npc.slappable()) continue;
         const before = slapCount();
-        performSlap(game, npc, nowMs);
+        slapNpc(npc, nowMs);
         if (slapCount() > before) slapped++;
       }
       if (slapped > 0) refreshTarget();
@@ -803,6 +854,7 @@ export async function createGame(ctx: GameCtx, opts: CreateGameOptions = {}): Pr
     },
     breakables,
     resetForSoak() {
+      combat.reset(); // Reset FSMs and metrics (plan 02-10)
       for (let i = 0; i < pool.length; i++) {
         const npc = pool[i];
         if (!npc.active()) continue;

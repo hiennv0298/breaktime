@@ -30,3 +30,6 @@
 #npc-labels .npc-label[hidden] {
   display: none;
 }
+#npc-labels .npc-label.angry {
+  background: rgba(214, 120, 20, 0.9);
+}

@@ -1,0 +1,23 @@
+/* Combat markers: '!' over winding-up NPCs (plan 02-10, D-08) */
+
+#combat-markers {
+  position: fixed;
+  inset: 0;
+  z-index: 91;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.combat-mark {
+  position: fixed;
+  font: 800 22px system-ui;
+  color: #1d1f24;
+  background-color: rgba(255, 200, 61, 0.9);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+}
