@@ -32,7 +32,7 @@ import { buildRigidSkin } from './rigidSkin';
 /** Named part nodes. Under meshopt quantization each mesh sits on an unnamed child of these nodes (01-05). */
 export const CHARACTER_PARTS = ['leg-left', 'leg-right', 'torso', 'arm-left', 'arm-right', 'head'] as const;
 
-export type CharacterMotion = 'idle' | 'walk' | 'attack-melee-right' | 'interact-right';
+export type CharacterMotion = 'idle' | 'walk' | 'sprint' | 'emote-no' | 'attack-melee-right' | 'interact-right';
 
 export interface CharacterAsset {
   scene: Object3D;
@@ -55,8 +55,9 @@ export interface CharacterInstance {
   /**
    * Crossfade to `name`. Setting the current motion again does nothing, unless `opts.restart` is true: then the clip
    * jumps back to time 0 and plays again (plan 01-24, D-30: a new swing during a swing starts over at once).
+   * `timeScale` controls the speed of this motion (default 1); other motions play at normal speed.
    */
-  setMotion(name: CharacterMotion, fadeSec?: number, opts?: { restart?: boolean }): void;
+  setMotion(name: CharacterMotion, fadeSec?: number, opts?: { restart?: boolean; timeScale?: number }): void;
   /** The motion last set (__bt.player.motion). */
   motion(): CharacterMotion;
   /** Change the character's texture letter (D-03); validates the letter and applies it to all meshes without rebuild. */
@@ -69,7 +70,7 @@ export interface CharacterInstance {
 /** Rendered height in metres; matches the 1.5 m player capsule (2 × (0.45 + 0.3)). */
 export const CHARACTER_HEIGHT = 1.5;
 const DEFAULT_FADE = 0.15;
-const REQUIRED_CLIPS: readonly CharacterMotion[] = ['idle', 'walk', 'attack-melee-right', 'interact-right'];
+const REQUIRED_CLIPS: readonly CharacterMotion[] = ['idle', 'walk', 'sprint', 'emote-no', 'attack-melee-right', 'interact-right'];
 
 const textures = new Map<string, Texture>();
 const materials = new Map<string, MeshLambertMaterial>();
@@ -233,6 +234,10 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
           // reset() also cancels a fade-in still running on this action.
           action(name).reset().setEffectiveWeight(1).play();
         }
+        // Apply timeScale if provided
+        const nextAction = action(name);
+        const ts = opts && Number.isFinite(opts.timeScale) && (opts.timeScale as number) > 0 ? (opts.timeScale as number) : 1;
+        nextAction.setEffectiveTimeScale(ts);
         return;
       }
       const prev = action(current);
@@ -242,6 +247,9 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
       if (fade > 0) next.crossFadeFrom(prev, fade, false);
       else prev.stop();
       current = name;
+      // Apply timeScale if provided
+      const ts = opts && Number.isFinite(opts.timeScale) && (opts.timeScale as number) > 0 ? (opts.timeScale as number) : 1;
+      next.setEffectiveTimeScale(ts);
     },
     motion() {
       return current;

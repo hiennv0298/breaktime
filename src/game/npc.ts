@@ -1,4 +1,4 @@
-import type { RigidBody } from '@dimforge/rapier3d-compat';
+import type { Collider, RigidBody } from '@dimforge/rapier3d-compat';
 import { Quaternion, Vector3, type Object3D } from 'three';
 import { createGetUp, slapGetUp, updateGetUp, type GetUpState } from '../logic/getUpFsm';
 import {
@@ -29,6 +29,8 @@ export interface Npc {
   /** Kinematic capsule used while animated; disabled while the NPC is a ragdoll or getting up. */
   body: RigidBody;
   ragdoll: Ragdoll;
+  /** Capsule collider for character controller movement (plan 02-10). */
+  collider: import('@dimforge/rapier3d-compat').Collider;
   /** Current walker state (replaced every fixed step). */
   readonly walker: WalkerState;
   /** 'ragdoll' | 'recover' while slapped, otherwise the walker mode. */
@@ -52,6 +54,18 @@ export interface Npc {
   despawn(): void;
   /** Brings an inactive NPC back, standing idle at `spawn` and walking its route again from `startIndex` (or its original start point). */
   respawn(spawn: { x: number; z: number }, startIndex?: number): void;
+  /** Current heading in walker convention (atan2(x, z)); used for combat control (plan 02-10). */
+  yaw(): number;
+  /** Current physics mode (animated, ragdoll or recovering); used by combat to know when to apply decay (plan 02-10). */
+  physicsMode(): 'animated' | 'ragdoll' | 'recover';
+  /** Route point at the nearest index to the current position; used as a return-home waypoint (plan 02-10). */
+  routeNearest(): { x: number; z: number };
+  /** Enable combat control; null to disable and resume walking (plan 02-10). */
+  setCombatControl(c: { faceX: number; faceZ: number; motion: import('../render/characters').CharacterMotion; timeScale?: number } | null): void;
+  /** Apply kinematic translation (dx, 0, dz) at CENTRE_Y and store for this step (plan 02-10). */
+  moveKinematic(dx: number, dz: number): void;
+  /** Resume walker from the nearest route point at the current position (plan 02-10). */
+  resumeWalkerHere(): void;
 }
 
 export interface NpcOptions {
@@ -106,7 +120,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
   const body = world.createRigidBody(
     R.RigidBodyDesc.kinematicPositionBased().setTranslation(spawn.x, CENTRE_Y, spawn.z),
   );
-  world.createCollider(R.ColliderDesc.capsule(NPC_HALF_HEIGHT, NPC_RADIUS), body);
+  const collider = world.createCollider(R.ColliderDesc.capsule(NPC_HALF_HEIGHT, NPC_RADIUS), body);
 
   const character = spawnCharacter(opts.asset, opts.texture);
   character.root.position.set(spawn.x, 0, spawn.z);
@@ -147,6 +161,9 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
   const next = { x: spawn.x, y: CENTRE_Y, z: spawn.z };
   const limX = ROOM.width / 2 - WALL_MARGIN;
   const limZ = ROOM.depth / 2 - WALL_MARGIN;
+  // Combat control (plan 02-10)
+  let combatControl: { faceX: number; faceZ: number; motion: import('../render/characters').CharacterMotion; timeScale?: number } | null = null;
+  let kinematicDelta = { x: 0, z: 0 };
 
   function beginRecover(): void {
     const torso = ragdoll.torso();
@@ -195,6 +212,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
     character,
     body,
     ragdoll,
+    collider,
     get walker() {
       return walker;
     },
@@ -208,6 +226,7 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
     slap() {
       getUp = slapGetUp(getUp);
       walker = { ...walker, frozen: true };
+      combatControl = null; // Clear combat control on slap (plan 02-10)
     },
     fixedUpdate(dt) {
       if (!isActive) return;
@@ -232,12 +251,23 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
         if (r.event === 'resumed') resume();
         return;
       }
-      const r = stepWalker(walker, opts.route, dt, speed);
-      walker = r.state;
-      if (r.vx !== 0 || r.vz !== 0) targetYaw = r.facingYaw;
-      next.x = walker.x;
-      next.z = walker.z;
-      body.setNextKinematicTranslation(next);
+      // Combat control: skip walker when controlled (plan 02-10)
+      if (combatControl) {
+        const dx = combatControl.faceX - walker.x;
+        const dz = combatControl.faceZ - walker.z;
+        targetYaw = Math.atan2(dx, dz);
+        next.x = walker.x + kinematicDelta.x;
+        next.z = walker.z + kinematicDelta.z;
+        kinematicDelta = { x: 0, z: 0 };
+        body.setNextKinematicTranslation(next);
+      } else {
+        const r = stepWalker(walker, opts.route, dt, speed);
+        walker = r.state;
+        if (r.vx !== 0 || r.vz !== 0) targetYaw = r.facingYaw;
+        next.x = walker.x;
+        next.z = walker.z;
+        body.setNextKinematicTranslation(next);
+      }
     },
     frameUpdate(dt) {
       if (!isActive) return;
@@ -260,7 +290,12 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       const k = dt > 0 ? 1 - Math.exp(-TURN_RATE * dt) : 0;
       yaw += angleDelta(yaw, targetYaw) * k;
       character.root.rotation.y = yaw; // the Blocky model faces +Z, the walker's facingYaw convention
-      character.setMotion(walker.mode === 'walk' && !walker.frozen ? 'walk' : 'idle');
+      // Combat control: use combat motion (plan 02-10)
+      if (combatControl) {
+        character.setMotion(combatControl.motion, 0.15, { restart: character.motion() !== combatControl.motion, timeScale: combatControl.timeScale });
+      } else {
+        character.setMotion(walker.mode === 'walk' && !walker.frozen ? 'walk' : 'idle');
+      }
       if (dt > 0) character.mixer.update(dt);
     },
     pos() {
@@ -307,6 +342,8 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       getUp = createGetUp();
       recoverT = 0;
       walker = { ...walker, frozen: true };
+      combatControl = null; // Clear combat control on despawn (plan 02-10)
+      kinematicDelta = { x: 0, z: 0 };
       body.setEnabled(false);
       character.root.visible = false;
       isActive = false;
@@ -321,6 +358,8 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       walker = createWalker(opts.route, { x, z }, wrappedIndex);
       yaw = 0;
       targetYaw = 0;
+      combatControl = null; // Clear combat control on respawn (plan 02-10)
+      kinematicDelta = { x: 0, z: 0 };
       next.x = x;
       next.z = z;
       body.setTranslation(next, true);
@@ -331,6 +370,33 @@ export function createNpc(ctx: GameCtx, opts: NpcOptions): Npc {
       character.root.visible = true;
       character.setMotion('idle', 0);
       isActive = true;
+    },
+    yaw(): number {
+      return yaw;
+    },
+    physicsMode(): 'animated' | 'ragdoll' | 'recover' {
+      return getUp.mode;
+    },
+    routeNearest(): { x: number; z: number } {
+      const x = character.root.position.x;
+      const z = character.root.position.z;
+      const index = nearestIndex(opts.route, x, z);
+      const pointIndex = index < 0 ? 0 : index;
+      return opts.route[pointIndex];
+    },
+    setCombatControl(c) {
+      combatControl = c;
+    },
+    moveKinematic(dx, dz) {
+      kinematicDelta.x = Number.isFinite(dx) ? dx : 0;
+      kinematicDelta.z = Number.isFinite(dz) ? dz : 0;
+    },
+    resumeWalkerHere(): void {
+      const x = character.root.position.x;
+      const z = character.root.position.z;
+      const index = nearestIndex(opts.route, x, z);
+      walker = { ...walker, x, z, index: index < 0 ? 0 : index, mode: 'walk', dwellLeft: 0, frozen: false };
+      combatControl = null;
     },
   };
 }
