@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { collectPageProblems, touchTap, waitForBtState, type PageProblems } from './helpers';
 import { PRESET_NAMES } from '../../src/logic/presetNames';
+import { DEFAULT_NAMES } from '../../src/logic/roster';
 
 /*
  * Plan 02-09: Roster editor (D-03, D-04, D-10, G4, NPC-02): up to 30 coworkers with names ≤16 chars,
@@ -274,7 +275,7 @@ test.describe('roster editor desktop', () => {
     expectClean(problems);
   });
 
-  test('clear all needs two presses', async ({ page, baseURL }) => {
+  test('reset needs two presses', async ({ page, baseURL }) => {
     const problems = await startPlaying(page, baseURL!);
     await openMenuWithEscape(page);
 
@@ -297,19 +298,18 @@ test.describe('roster editor desktop', () => {
     await clearButton.click();
     roster = await bt(page, 'roster');
     expect(roster!.members).toHaveLength(15);
-    for (const m of roster!.members) {
-      expect(m.name).toBe('');
-    }
+    // Reset restores the default job titles, it does not blank every tag.
+    expect(roster!.members.map((m) => m.name)).toEqual([...DEFAULT_NAMES]);
     expect(roster!.count).toBe(3);
 
-    // Name fields are now empty
+    // Name fields show the default job titles again
     for (let i = 0; i < 3; i++) {
       const field = page.locator(`.roster-row[data-member-id="m${i + 1}"] input.npc-name`);
-      await expect(field).toHaveValue('');
+      await expect(field).toHaveValue(DEFAULT_NAMES[i]!);
     }
 
     const stored = await storedRecord(page);
-    expect(stored!.names[0]).toBe('');
+    expect(stored!.names[0]).toBe(DEFAULT_NAMES[0]);
 
     expectClean(problems);
   });
@@ -414,6 +414,9 @@ test.describe('roster editor desktop', () => {
     const swings = (await bt(page, 'swing'))!.count;
 
     const field = page.locator('input.npc-name').first();
+    // The field now starts with a default job title, so clear it before typing; this test is about the
+    // keystrokes not reaching the game, not about what was already in the box.
+    await field.fill('');
     await field.focus();
     await page.keyboard.type('Zz Cc` WASD');
     await expect(field).toHaveValue('Zz Cc` WASD');

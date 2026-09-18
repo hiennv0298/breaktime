@@ -424,9 +424,21 @@ test.describe('fightBack desktop', () => {
   });
 
   test('an unnamed hot coworker shows a visible angry tag', async ({ page, baseURL }) => {
+    // The default roster now carries job titles, so clear m1's name explicitly: this test is about
+    // what an angry coworker with NO name shows, which a player can still produce in the editor.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem(
+          'bt.roster',
+          JSON.stringify({ v: 1, members: [{ id: 'm1', name: '', look: 'b', temper: 'normal' }], present: ['m1'], count: 1 }),
+        );
+      } catch {
+        /* storage disabled */
+      }
+    });
     const problems = await startPlaying(
       page,
-      './?autoplay=1&npcs=1&npcAt=1.3,1.6&fight=always', // Default roster, no names
+      './?autoplay=1&npcs=1&npcAt=1.3,1.6&fight=always',
       baseURL!,
     );
     expectClean(problems);

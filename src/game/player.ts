@@ -99,6 +99,9 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
     return {
       pos: [p.x, p.y, p.z],
       yaw: facing,
+      // `motion` is a Phase 1 contract (swing.spec reads it); 02-11 dropped it when it added `stun`,
+      // which silently broke five swing tests. Keep both.
+      motion: character.motion(),
       stun: { ...stun, moveIgnored, recoverSpot, lastLockMs: lockStartMs },
     };
   });

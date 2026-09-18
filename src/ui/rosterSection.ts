@@ -242,7 +242,9 @@ export function createRosterSection(opts: RosterSectionOptions): RosterSection {
   const clearBtn = document.createElement('button');
   clearBtn.id = 'roster-clear';
   clearBtn.type = 'button';
-  clearBtn.textContent = 'Xoá hết';
+  // Resets the roster to the default job titles rather than blanking every name: blank tags are the
+  // thing the defaults exist to avoid, so the label says what it actually does.
+  clearBtn.textContent = 'Đặt lại';
 
   let clearArmed = false;
   let clearTimer: number | null = null;

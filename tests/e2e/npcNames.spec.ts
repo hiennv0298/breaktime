@@ -136,17 +136,22 @@ test.describe('npc names desktop', () => {
     expectClean(problems);
   });
 
-  test('corrupt storage falls back to three unnamed NPCs', async ({ page, baseURL }) => {
+  test('corrupt storage falls back to the three default coworkers', async ({ page, baseURL }) => {
     await seedStorage(page, '{not json');
     const problems = await startPlaying(page, baseURL!);
     expect((await bt(page, 'npcs'))!.length).toBe(3);
     const settings = (await bt(page, 'npcSettings'))!;
     expect(settings.source).toBe('default');
     expect(settings.count).toBe(3);
-    expect(settings.names.every((n) => n === '')).toBe(true);
-    await page.waitForTimeout(500);
-    expect((await bt(page, 'npcLabels'))!.filter((l) => l.visible)).toEqual([]);
-    await expect(page.locator('#npc-labels .npc-label:not([hidden])')).toHaveCount(0);
+    // A fresh office is populated with job titles rather than blank tags (operator request 18/09).
+    expect(settings.names.slice(0, 3)).toEqual(['BOSS', 'HR', 'DEV']);
+    await page.waitForFunction(
+      () => ((window as unknown as { __bt: Bt }).__bt.npcLabels ?? []).filter((l) => l.visible).length === 3,
+      undefined,
+      { timeout: 5000, polling: 50 },
+    );
+    const labels = (await bt(page, 'npcLabels'))!;
+    expect([0, 1, 2].map((i) => labelAt(labels, i)?.text)).toEqual(['BOSS', 'HR', 'DEV']);
     expectClean(problems);
   });
 

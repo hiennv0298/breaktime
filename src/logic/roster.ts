@@ -188,8 +188,9 @@ export function serializeRoster(r: Roster): string {
 /**
  * One-way migration of a Phase 1 bt.npcs v1 record: the default roster with the 10 legacy names on m1..m10 (NPC k kept
  * texture 'b'+k, so the office looks exactly as before the upgrade), count kept, 15 present. null when invalid.
- * A slot the player never named — and slots 11-15, which did not exist in Phase 1 — falls back to its DEFAULT_NAMES
- * job title rather than to a blank tag. Never writes anything back to bt.npcs.
+ * The 10 legacy slots keep exactly what was stored, blank included: a slot the player deliberately left unnamed is
+ * their choice, not a gap to fill. Slots 11-15 did not exist in Phase 1, so they take their DEFAULT_NAMES job title.
+ * Never writes anything back to bt.npcs.
  */
 export function migrateLegacyNpcs(legacyRaw: string | null): Roster | null {
   const legacy = parseNpcSettings(legacyRaw);
@@ -197,7 +198,7 @@ export function migrateLegacyNpcs(legacyRaw: string | null): Roster | null {
   const base = defaultRoster();
   const members: RosterMember[] = base.members.map((m, i) => ({
     id: m.id,
-    name: (i < LEGACY_SLOTS ? sanitizeNpcName(legacy.settings.names[i]) : '') || m.name,
+    name: i < LEGACY_SLOTS ? sanitizeNpcName(legacy.settings.names[i]) : m.name,
     look: m.look,
     temper: m.temper,
   }));

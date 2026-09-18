@@ -295,8 +295,8 @@ describe('migrateLegacyNpcs (bt.npcs v1, one way)', () => {
     expect(r).not.toBeNull();
     const m = r as Roster;
     expect(ids(m)).toEqual(range(15));
-    // Slots the player never named fall back to their job title instead of showing a blank tag.
-    expect(m.members.map((x) => x.name)).toEqual(['Minh', 'Lan', ...DEFAULT_NAMES.slice(2)]);
+    // Legacy slots keep what was stored, blank included; only the 5 new slots take a default title.
+    expect(m.members.map((x) => x.name)).toEqual(['Minh', 'Lan', ...Array.from({ length: 8 }, () => ''), ...DEFAULT_NAMES.slice(10)]);
     expect(m.members.map((x) => x.look).join('')).toBe('bcdefghijklmnop');
     expect(m.members.every((x) => x.temper === 'normal')).toBe(true);
     expect(m.present).toEqual(range(15));
