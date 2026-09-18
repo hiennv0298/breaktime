@@ -1,12 +1,13 @@
 import type { RigidBody } from '@dimforge/rapier3d-compat';
-import { Quaternion, Vector3 } from 'three';
+import { Object3D, Quaternion, Vector3 } from 'three';
 import { FREE_SPOT_DIRS, FREE_SPOT_MAX_M, FREE_SPOT_STEP_M, freeSpotCandidates } from '../logic/freeSpot';
-import { CHARACTER_PARTS } from '../render/characters';
+import { CHARACTER_PARTS, type CharacterInstance } from '../render/characters';
 import type { GameCtx } from './game';
 import type { Ragdoll } from '../physics/ragdoll';
 import { createRagdoll } from '../physics/ragdoll';
 
 const TORSO = CHARACTER_PARTS.indexOf('torso');
+const PART_NAMES: ReadonlySet<string> = new Set(CHARACTER_PARTS);
 const CAPSULE_HALF_HEIGHT = 0.45;
 const CAPSULE_RADIUS = 0.3;
 
@@ -78,8 +79,11 @@ export function findFreeSpot(
 }
 
 /** Create a player knockdown rig. */
-export function createKnockdownRig(ctx: GameCtx, character: any): KnockdownRig {
-  const parts = CHARACTER_PARTS.map((name) => character.parts[name]);
+export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): KnockdownRig {
+  // CharacterInstance.parts is already an Object3D[] in CHARACTER_PARTS order (same as npc.ts passes
+  // to createRagdoll). Indexing it by part NAME yields undefined for every entry, which killed boot
+  // with "Cannot read properties of undefined (reading 'parent')" — `character: any` hid it from tsc.
+  const parts = character.parts;
   const ragdoll = createRagdoll(ctx, parts, 0, { player: true });
 
   // Sample idle pose after mixer.update(0)
@@ -90,11 +94,11 @@ export function createKnockdownRig(ctx: GameCtx, character: any): KnockdownRig {
   }));
 
   // Build re-attach order by depth (torso first, then children)
-  const reattachOrder: Array<{ part: any; parent: any }> = [];
-  const visit = (part: any) => {
+  const reattachOrder: Array<{ part: Object3D; parent: Object3D | null }> = [];
+  const visit = (part: Object3D): void => {
     reattachOrder.push({ part, parent: part.parent });
     for (const child of part.children) {
-      if (CHARACTER_PARTS.includes(child.name)) visit(child);
+      if (PART_NAMES.has(child.name)) visit(child);
     }
   };
   visit(parts[TORSO]);
@@ -162,7 +166,6 @@ export function createKnockdownRig(ctx: GameCtx, character: any): KnockdownRig {
       ragdoll.deactivate();
 
       // Re-attach parts
-      const root = character.model;
       for (const { part, parent } of reattachOrder) {
         if (parent) parent.attach(part);
       }
@@ -209,7 +212,6 @@ export function createKnockdownRig(ctx: GameCtx, character: any): KnockdownRig {
       }
 
       // Re-attach parts if not attached
-      const root = character.model;
       for (const { part, parent } of reattachOrder) {
         if (parent && part.parent !== parent) parent.attach(part);
       }
