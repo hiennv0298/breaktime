@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-19-PLAN.md
-last_updated: "2026-09-16T00:00:00.000Z"
-last_activity: "2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)"
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-09-18T15:00:00.000Z"
+last_activity: "2026-09-18 -- Completed 02-07 (roster-driven office): Entry guard GUARD_CONTINUE (D-12 passed); Task 2 RED rosterStart.spec 7 tests, rosterStore.ts storage wrapper, characters.ts setLook/preload; Task 3 GREEN game.ts roster integration, applyRoster binding, look swap, loop.ts adapter; 6/7 rosterStart e2e pass (1 minor flake); 825/825 unit tests pass; NPC-02 persistence satisfied (bt.roster only, never write bt.npcs); TDD gates PASSED"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 27
-  completed_plans: 25
-  percent: 93
+  completed_plans: 26
+  percent: 96
 ---
 
 # Project State
@@ -26,13 +26,13 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 ## Current Position
 
 Phase: 2 (NPC đồng nghiệp) — EXECUTING
-Plan: 6 of 13 (02-01..02-06 complete; 02-07..02-13 awaiting)
-Status: Entry guard 02-06 PASS; 15-NPC cap verified with measurement
-Last activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
+Plan: 7 of 13 (02-01..02-07 complete; 02-08..02-13 awaiting)
+Status: Entry guard 02-07 GUARD_CONTINUE; roster-driven office + storage + look swap integrated
+Last activity: 2026-09-18 -- Completed 02-07 (roster-driven office): Guard GUARD_CONTINUE (D-12 cleared); rosterStore.ts (read/write/debounce/pagehide); characters.ts setLook/look/preloadCharacterLook (no rebuild); game.ts applyRoster + roster binding + look swap + next-candidate preload; loop.ts adapter (withSlotEdits); rosterStart e2e 6/7 GREEN (1 storage minor issue); unit tests 825/825 GREEN; storage writes only bt.roster (NPC-02 satisfied)
 
-Previous activity: 2026-09-15 -- Completed 01-18 (?soak=1 15-min soak looping the 10-NPC bench with per-cycle reset, #soak-panel, wake lock; crash beacon bt.beacon + #crash-banner; soak-leak e2e 2/2; vitest 483/483, playwright 92 passed 0 failed, SIZE_GATE_OK; measurement build 1ecc53ce473e live via npm run deploy on the 3rd attempt (SSH reset at upload, then operator-approved swing mashing de-flake 60->40 ms), DEPLOY_OK poller 38/38 200, SITE_FILE_UNCHANGED; bench/soak URLs in 01-GO-LIVE.md; TECH-04/PLAT-01 left open for real devices)
+Previous activity: 2026-09-18 -- Completed 02-06 (cap 15 NPCs, bench stays 10): Entry guard PASS (01-GATE.md VERDICT=PASS); MAX_NPCS=15 (D-01), BENCH_NPCS=10 (D-11); measurement at 15 NPCs shows 96-97 peakDrawCalls, 200 peakBodies (budget 120/206); TDD GREEN complete (RED tests written, implementation verified); E2E tests updated for new cap; npc.spec 'clamps 0..15' and 'spawns 15 apart', characters.spec 'cap: 15 NPCs idle/smash' all pass
 
-Progress: [█████████░] 89%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
