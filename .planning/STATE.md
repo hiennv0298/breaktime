@@ -10,8 +10,8 @@ progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 40
-  completed_plans: 40
-  percent: 100
+  completed_plans: 38
+  percent: 95
 ---
 
 # Project State
@@ -24,6 +24,8 @@ See: .planning/PROJECT.md (updated 2026-09-14)
 **Current focus:** Phase 2 — NPC đồng nghiệp (tên, số lượng, đánh trả)
 
 ## Current Position
+
+01-20 va 01-21 (vong toi uu D-07) KHONG chay va khong can chay: cong may that Phase 1 da PASS. 38/40 la so plan thuc su da chay, khong phai viec con thieu.
 
 Phase: 2 (NPC đồng nghiệp) — COMPLETE
 Plan: 13 of 13 (02-01..02-13 complete; Phase 2 awaiting operator device run)
