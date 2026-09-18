@@ -45,7 +45,7 @@ export interface CharacterInstance {
   mixer: AnimationMixer;
   /** CHARACTER_PARTS resolved by name, same order. */
   parts: Object3D[];
-  /** Shared by every character using the same texture letter. */
+  /** Shared by every character using the same texture letter (getter; can change via setLook). */
   material: MeshLambertMaterial;
   /**
    * The one rendered mesh (plan 01-23, RESEARCH A6): the 6 part meshes merged with one rigid bone per part, so a
@@ -59,6 +59,10 @@ export interface CharacterInstance {
   setMotion(name: CharacterMotion, fadeSec?: number, opts?: { restart?: boolean }): void;
   /** The motion last set (__bt.player.motion). */
   motion(): CharacterMotion;
+  /** Change the character's texture letter (D-03); validates the letter and applies it to all meshes without rebuild. */
+  setLook(letter: string): void;
+  /** The current texture letter of this character. */
+  look(): string;
   dispose(): void;
 }
 
@@ -161,6 +165,12 @@ function materialFor(letter: string): MeshLambertMaterial {
   return material;
 }
 
+/** Preload a character texture by letter (D-03, RESEARCH Pitfall 10: texture budget). No-op for invalid letters. */
+export function preloadCharacterLook(letter: string): void {
+  if (!/^[a-r]$/.test(letter)) return;
+  materialFor(letter); // Loads and caches the texture and material
+}
+
 /** Spawns a character using texture `textureLetter` ('a'..'r'); plays 'idle'. */
 export function spawnCharacter(asset: CharacterAsset, textureLetter: string): CharacterInstance {
   if (!/^[a-r]$/.test(textureLetter)) throw new Error('bad character texture letter ' + textureLetter);
@@ -171,10 +181,11 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
   model.scale.setScalar(f.scale);
   model.position.y = f.offsetY;
 
-  const material = materialFor(textureLetter);
+  let currentLetter = textureLetter;
+  let currentMaterial = materialFor(textureLetter);
   model.traverse((o) => {
     const mesh = o as Mesh;
-    if (mesh.isMesh) mesh.material = material;
+    if (mesh.isMesh) mesh.material = currentMaterial;
   });
 
   const parts = CHARACTER_PARTS.map((name) => {
@@ -184,8 +195,8 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
   });
 
   // One draw call per character (plan 01-23). Built in the bind pose, before the mixer touches the parts.
-  const skinned = buildRigidSkin(model, CHARACTER_PARTS, material, asset.scene).mesh;
-  const liveEntry = { letter: textureLetter, skinned };
+  const skinned = buildRigidSkin(model, CHARACTER_PARTS, currentMaterial, asset.scene).mesh;
+  const liveEntry = { letter: currentLetter, skinned };
   live.add(liveEntry);
 
   const root = new Group();
@@ -211,7 +222,9 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
     root,
     mixer,
     parts,
-    material,
+    get material(): MeshLambertMaterial {
+      return currentMaterial;
+    },
     skinned,
     setMotion(name, fadeSec = DEFAULT_FADE, opts) {
       if (name === current) {
@@ -232,6 +245,29 @@ export function spawnCharacter(asset: CharacterAsset, textureLetter: string): Ch
     },
     motion() {
       return current;
+    },
+    setLook(letter: string) {
+      if (!/^[a-r]$/.test(letter)) return; // Invalid letter, no-op
+      if (letter === currentLetter) return; // Already using this look
+
+      currentLetter = letter;
+      const newMaterial = materialFor(letter);
+      currentMaterial = newMaterial;
+
+      // Update the skinned mesh material
+      skinned.material = newMaterial;
+
+      // Update all part meshes (hidden children of parts)
+      model.traverse((o) => {
+        const mesh = o as Mesh;
+        if (mesh.isMesh && mesh !== skinned) mesh.material = newMaterial;
+      });
+
+      // Update the live entry
+      liveEntry.letter = letter;
+    },
+    look() {
+      return currentLetter;
     },
     dispose() {
       mixer.stopAllAction();
