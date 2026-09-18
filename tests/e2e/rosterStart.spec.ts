@@ -86,7 +86,7 @@ test.describe('roster start desktop', () => {
     expect(npcs?.map((n) => n.memberId)).toEqual(['m1', 'm2', 'm3']);
     expect(roster?.count).toBe(3);
     expect(roster?.present).toHaveLength(15);
-    expect(roster?.members).toBe(15);
+    expect(roster?.members).toHaveLength(15);
 
     // After 2 seconds of play, localStorage should not have been written (G4)
     await page.waitForTimeout(2000);

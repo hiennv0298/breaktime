@@ -173,14 +173,17 @@ test.describe('roster editor desktop', () => {
     expect((await bt(page, 'npcs'))!.length).toBe(3);
 
     await openMenuWithEscape(page);
-    const row = page.locator('.roster-row[data-member-id="m1"]');
-    await row.locator('input.roster-present').uncheck();
+    // Initially count=3 with m1, m2, m3 on floor. Uncheck m2 (not on floor) to isolate.
+    // Or uncheck m1 and m2 to reduce on-floor from 3 to 1
+    await page.locator('.roster-row[data-member-id="m1"] input.roster-present').uncheck();
+    await page.locator('.roster-row[data-member-id="m2"] input.roster-present').uncheck();
     await page.locator('#npc-apply').click();
-    await waitNpcCount(page, 2);
+    await waitNpcCount(page, 1);
 
     const roster = await bt(page, 'roster');
     expect(roster!.present).not.toContain('m1');
-    expect(roster!.present.length).toBe(2);
+    expect(roster!.present).not.toContain('m2');
+    expect((await bt(page, 'npcs'))!.length).toBe(1);
 
     // When 15 are present, unticked boxes should be disabled
     await setCount(page, 15);
@@ -226,31 +229,27 @@ test.describe('roster editor desktop', () => {
     const problems = await startPlaying(page, baseURL!);
     await openMenuWithEscape(page);
 
-    // Start with 3, uncheck one, should become 2 on floor
-    const row = page.locator('.roster-row[data-member-id="m1"]');
-    await row.locator('input.roster-present').uncheck();
-    await page.locator('#npc-apply').click();
-    await waitNpcCount(page, 2);
-
-    // Add a new member: should be the first unchecked one
-    await expect(page.locator('#roster-add')).not.toBeDisabled();
-    await page.locator('#roster-add').click();
+    // Add a new member: roster has 15 default, add makes 16
+    const addBtn = page.locator('#roster-add');
+    await expect(addBtn).not.toBeDisabled();
+    await addBtn.click();
     const newRow = page.locator('.roster-row[data-member-id="m16"]');
     await expect(newRow).toBeVisible();
     await expect(newRow.locator('input.roster-present')).toBeChecked();
 
     await page.locator('#npc-apply').click();
-    const roster = await bt(page, 'roster');
-    expect(roster!.members.length).toBe(4);
+    let roster = await bt(page, 'roster');
+    expect(roster!.members).toHaveLength(16);
     expect(roster!.present).toContain('m16');
 
-    // Delete the new member
+    // Delete the new member: back to 15
     await newRow.locator('button.roster-delete').click();
     await expect(newRow).not.toBeVisible();
 
     await page.locator('#npc-apply').click();
-    const rosterAfterDelete = await bt(page, 'roster');
-    expect(rosterAfterDelete!.members.length).toBe(3);
+    roster = await bt(page, 'roster');
+    expect(roster!.members).toHaveLength(15);
+    expect(roster!.present).not.toContain('m16');
 
     // At 30 members, add should be disabled
     await setCount(page, 30);
@@ -345,7 +344,7 @@ test.describe('roster editor desktop', () => {
     await expect(labels).toHaveCount(0);
 
     // The label shows it as text
-    const label = page.locator('.npc-label[data-index="0"]');
+    const label = page.locator('.npc-label[data-npc="0"]');
     const text = await label.textContent();
     expect(text).toContain('<img src=x onerr');
 
@@ -587,7 +586,7 @@ test.describe('roster editor mobile-emu', () => {
     await page.waitForTimeout(300);
     await tapPause(page);
 
-    for (const sel of ['input.npc-name[data-index="0"]', '#npc-apply']) {
+    for (const sel of ['.roster-row[data-member-id="m1"] input.npc-name', '#npc-apply']) {
       const el = page.locator(sel).first();
       await expect(el).toBeVisible();
       await el.scrollIntoViewIfNeeded();
@@ -602,7 +601,7 @@ test.describe('roster editor mobile-emu', () => {
     await page.keyboard.press('Escape');
     await tapPause(page);
 
-    for (const sel of ['input.npc-name[data-index="2"]', '#npc-apply']) {
+    for (const sel of ['.roster-row[data-member-id="m3"] input.npc-name', '#npc-apply']) {
       const el = page.locator(sel).first();
       await expect(el).toBeVisible();
       await el.scrollIntoViewIfNeeded();
