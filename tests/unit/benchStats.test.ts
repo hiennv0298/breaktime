@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createFpsMeter, looksThrottled, median, summarize } from '../../src/logic/benchStats';
+import { createFpsMeter, looksThrottled, median, percentile, summarize } from '../../src/logic/benchStats';
 
 describe('summarize (D-08)', () => {
   it('100 frames of 16.667 ms are 60 fps average and 60 fps 1% low', () => {
@@ -41,6 +41,35 @@ describe('median', () => {
 
   it('is 0 for an empty list', () => {
     expect(median([])).toBe(0);
+  });
+});
+
+describe('percentile (D-11 sim step timing)', () => {
+  it('empty list returns 0', () => {
+    expect(percentile([], 0.99)).toBe(0);
+  });
+
+  it('single value returns itself for any percentile', () => {
+    expect(percentile([5], 0.99)).toBe(5);
+    expect(percentile([5], 0.5)).toBe(5);
+    expect(percentile([5], 0)).toBe(5);
+  });
+
+  it('percentile on sorted list uses nearest-rank method', () => {
+    expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100], 0.99)).toBe(99);
+    expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100], 1)).toBe(100);
+    expect(percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100], 0)).toBe(1);
+  });
+
+  it('ignores NaN and Infinity entries', () => {
+    expect(percentile([1, 2, 3, Number.NaN, Number.POSITIVE_INFINITY], 0.5)).toBe(2);
+  });
+
+  it('does not mutate the input array', () => {
+    const a = [5, 1, 3, 4, 2];
+    const original = [...a];
+    percentile(a, 0.99);
+    expect(a).toEqual(original);
   });
 });
 

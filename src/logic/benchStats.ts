@@ -1,5 +1,17 @@
 /** Pure frame statistics for the HUD, auto-tier and the benchmark (D-08, RESEARCH Pattern 7). No DOM, no three. */
 
+/** Percentile with nearest-rank method: values must be sorted. p clamped 0..1; NaN/Infinity entries ignored; input not mutated. */
+export function percentile(values: readonly number[], p: number): number {
+  const clampedP = Math.max(0, Math.min(1, p));
+  const finite = [...values].filter((x) => Number.isFinite(x));
+  if (finite.length === 0) return 0;
+  if (clampedP === 0) return finite[0];
+  if (clampedP === 1) return finite[finite.length - 1];
+  finite.sort((a, b) => a - b);
+  const index = Math.ceil(clampedP * finite.length) - 1;
+  return finite[Math.max(0, index)];
+}
+
 /** Median of `a` without mutating it; the mean of the two middle values for even lengths; 0 for an empty list. */
 export function median(a: number[]): number {
   const n = a.length;

@@ -31,6 +31,7 @@ type Bt = {
   debris?: { active: number };
   beacon?: { prevCrash: { crashedAfterSec: number; sha: string } | null };
   keyHints?: { visible: boolean; touchHintVisible: boolean };
+  combat?: { enabled: boolean; npcs: Array<{ state: string }>; player: { mode: string } };
 };
 
 const SOAK_URL = './?soak=1&soakCycles=3&dur=6&autoplay=1';
@@ -96,6 +97,14 @@ test.describe('soak leak proxy and crash beacon (desktop)', () => {
     expect(Array.isArray(soak.minFpsPerMinute)).toBe(true);
     expect(soak.minFpsPerMinute.length).toBeGreaterThanOrEqual(1);
     expect(soak.contextLost).toBe(0);
+
+    // Verify combat is disabled in soak and NPCs are reset to routine, player is free
+    const combat = await bt(page, 'combat');
+    expect(combat!.enabled).toBe(false);
+    expect(combat!.player.mode).toBe('free');
+    for (const npc of combat!.npcs) {
+      expect(npc.state).toBe('routine');
+    }
 
     const panel = page.locator('#soak-panel');
     await expect(panel).toBeVisible();

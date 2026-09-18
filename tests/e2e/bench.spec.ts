@@ -27,6 +27,14 @@ type BenchResult = {
   knockedOrBroken: number;
   broken: number;
   userAgent: string;
+  brawl?: boolean;
+  maxPursuers?: number;
+  maxAttackers?: number;
+  strikes?: number;
+  playerKnockdowns?: number;
+  simStepAvgMs?: number;
+  simStepP99Ms?: number;
+  simStepMaxMs?: number;
 };
 
 type Bt = {
@@ -100,12 +108,19 @@ test.describe('bench desktop', () => {
     expect(r.avgFps).toBeGreaterThan(0);
     expect(r.low1Fps).toBeGreaterThan(0);
     expect(r.userAgent.length).toBeGreaterThan(0);
+    // Default bench: brawl off, combat disabled
+    expect(r.brawl).toBe(false);
+    expect(r.maxPursuers).toBe(0);
+    expect(r.strikes).toBe(0);
 
     const results = page.locator('#bench-results');
     await expect(results).toBeVisible();
     for (const text of ['FPS TB', '1% thấp', 'NPC', r.sha, 'Tier', 'Draw call đỉnh', 'Physics body đỉnh', 'Bị giới hạn 30 fps?']) {
       await expect(results).toContainText(text);
     }
+    // Brawl rows should NOT appear in default bench
+    const resultsText = await results.textContent();
+    expect(resultsText).not.toContain('Đánh trả');
     // One phone screenshot: the overlay never scrolls at the desktop viewport either.
     const fits = await results.evaluate((el) => el.scrollHeight <= el.clientHeight + 1);
     expect(fits).toBe(true);
@@ -147,6 +162,44 @@ test.describe('bench desktop', () => {
     expect(r.tierSource).toBe('forced');
     expect(r.tierChanges).toEqual([]);
     expect(r.npcCount).toBe(10);
+
+    expectClean(problems);
+  });
+
+  test('brawl: ?bench=1&brawl=1 runs 15 fighting NPCs inside the budget', async ({ page, baseURL }) => {
+    test.setTimeout(180000); // 3 minutes
+    const { result: r, problems } = await runBench(page, baseURL!, './?bench=1&brawl=1&dur=40&autoplay=1');
+
+    // Brawl-specific fields
+    expect(r.brawl).toBe(true);
+    expect(r.npcCount).toBe(15);
+    expect(r.maxSimultaneousRagdolls).toBe(15);
+    expect(r.maxPursuers).toBeGreaterThanOrEqual(1);
+    expect(r.maxPursuers).toBeLessThanOrEqual(3);
+    expect(r.maxAttackers).toBeLessThanOrEqual(1);
+    expect(r.strikes).toBeGreaterThanOrEqual(1);
+    expect(r.playerKnockdowns).toBeGreaterThanOrEqual(20);
+    expect(r.simStepAvgMs).toBeGreaterThan(0);
+    expect(Number.isFinite(r.simStepP99Ms)).toBe(true);
+    expect(r.simStepP99Ms).toBeGreaterThan(0);
+    expect(r.simStepMaxMs).toBeGreaterThanOrEqual(r.simStepP99Ms!);
+    expect(r.simStepP99Ms).toBeGreaterThanOrEqual(r.simStepAvgMs!);
+    // Budget checks
+    expect(r.peakDrawCalls).toBeLessThanOrEqual(120);
+    expect(r.peakBodies).toBeLessThanOrEqual(206);
+
+    const results = page.locator('#bench-results');
+    await expect(results).toBeVisible();
+    for (const text of ['Đánh trả (brawl)', 'NPC đuổi tối đa', 'Sim ms/step', r.sha]) {
+      await expect(results).toContainText(text);
+    }
+    const fits = await results.evaluate((el) => el.scrollHeight <= el.clientHeight + 1);
+    expect(fits).toBe(true);
+
+    // Check console for the MEASURE line
+    const logs = await page.evaluate(() => (window as unknown as { __bt_logs?: string[] }).__bt_logs || []);
+    const measureLine = logs.find((l) => l.includes('MEASURE brawl'));
+    expect(measureLine).toBeDefined();
 
     expectClean(problems);
   });

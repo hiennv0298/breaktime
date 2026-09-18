@@ -58,6 +58,12 @@ export function benchFromQuery(search: string): boolean {
   return new URLSearchParams(search).get('bench') === '1';
 }
 
+/** Only the literal values '1' for both bench and brawl turn the brawl on; requires bench=1&brawl=1. */
+export function brawlFromQuery(search: string): boolean {
+  const q = new URLSearchParams(search);
+  return q.get('bench') === '1' && q.get('brawl') === '1';
+}
+
 /** Only the literal value '1' turns the 15-minute soak on (plan 01-18); it takes precedence over ?bench=1. */
 export function soakFromQuery(search: string): boolean {
   return new URLSearchParams(search).get('soak') === '1';

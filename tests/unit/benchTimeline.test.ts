@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   benchFromQuery,
+  brawlFromQuery,
   buildTimeline,
   parseBenchDuration,
   soakFromQuery,
   soakOptionsFromQuery,
   type BenchAction,
 } from '../../src/logic/benchTimeline';
+import { BENCH_SEED } from '../../src/logic/rng';
 
 /*
  * Plan 01-17 (D-08, D-11 revised, D-29): the ?bench=1 scenario is pure data driven by the simulation-step index, so a
@@ -164,6 +166,44 @@ describe('benchFromQuery', () => {
     expect(benchFromQuery('?bench=true')).toBe(false);
     expect(benchFromQuery('?bench=0')).toBe(false);
     expect(benchFromQuery('')).toBe(false);
+  });
+});
+
+describe('brawlFromQuery (D-11 brawl variant)', () => {
+  it('requires both bench=1 and brawl=1', () => {
+    expect(brawlFromQuery('?bench=1&brawl=1')).toBe(true);
+    expect(brawlFromQuery('?bench=1&brawl=1&dur=40')).toBe(true);
+    expect(brawlFromQuery('?brawl=1')).toBe(false);
+    expect(brawlFromQuery('?bench=1')).toBe(false);
+    expect(brawlFromQuery('?bench=1&brawl=true')).toBe(false);
+    expect(brawlFromQuery('?bench=1&brawl=0')).toBe(false);
+    expect(brawlFromQuery('')).toBe(false);
+  });
+});
+
+// Fingerprint test: default bench timeline must not change (D-11 baseline)
+describe('buildTimeline fingerprint', () => {
+  function fnv1a32(data: string): string {
+    let hash = 2166136261; // FNV offset basis
+    for (const char of data) {
+      hash = hash ^ char.charCodeAt(0);
+      hash = ((hash * 16777619) >>> 0) & 0xffffffff;
+    }
+    return hash.toString(16).padStart(8, '0');
+  }
+
+  it('60 s timeline with BENCH_SEED and default waypoints (WAYPOINTS) matches fingerprint', () => {
+    const t60 = timeline(60, BENCH_SEED);
+    const hash60 = fnv1a32(JSON.stringify(t60));
+    // This hash was computed on 2026-09-18 before brawlFromQuery was added; it must not change
+    expect(hash60).toBe('146b6d24');
+  });
+
+  it('8 s timeline with BENCH_SEED and default waypoints (WAYPOINTS) matches fingerprint', () => {
+    const t8 = timeline(8, BENCH_SEED);
+    const hash8 = fnv1a32(JSON.stringify(t8));
+    // This hash was computed on 2026-09-18 before brawlFromQuery was added; it must not change
+    expect(hash8).toBe('10d78a00');
   });
 });
 
