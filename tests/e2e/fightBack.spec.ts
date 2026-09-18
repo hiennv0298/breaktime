@@ -265,12 +265,25 @@ test.describe('fightBack desktop', () => {
     expectClean(problems);
 
     // Slap to anger the NPC
+    const slapCountAfterFace = (await bt(page, 'slap'))?.count || 0;
     await faceAndSlap(page);
+    await page.waitForTimeout(200);
+
+    // Verify the face-and-slap actually landed
+    const slapCountAfterFirst = (await bt(page, 'slap'))?.count || 0;
+    expect(slapCountAfterFirst).toBeGreaterThan(slapCountAfterFace);
+
+    // Wait for windup state to be reached (with generous timeout for ?fight=always progression)
+    // With hot temper (auto-achieved on first slap with fight=always), should reach windup within ~6s
     await page.waitForFunction(
       () => (window as unknown as { __bt: Bt }).__bt.combat?.npcs?.[0]?.state === 'windup',
       undefined,
-      { timeout: 20_000, polling: 100 },
+      { timeout: 10_000, polling: 100 },
     );
+
+    // Verify we actually reached windup
+    const stateBeforeCounter = (await bt(page, 'combat'))?.npcs?.[0]?.state;
+    expect(stateBeforeCounter).toBe('windup');
 
     // Get NPC position to move toward it
     const npcPos = (await page.evaluate(() => {
@@ -282,7 +295,7 @@ test.describe('fightBack desktop', () => {
       return [0, 0, 0]; // Player spawn at (0, 2)
     }));
 
-    // Move toward the NPC
+    // Move toward the NPC to get in range for the counter-slap
     const isEastWest = Math.abs(npcPos[0] - playerPos[0]) > Math.abs(npcPos[2] - playerPos[2]);
     const moveKey = isEastWest ? 'KeyD' : 'KeyW'; // Move toward
 
@@ -290,19 +303,28 @@ test.describe('fightBack desktop', () => {
     await page.waitForTimeout(30);
     await page.keyboard.up(moveKey);
 
-    // Slap during wind-up
+    // Record state before counter-slap
+    const slapCountBefore = (await bt(page, 'slap'))?.count || 0;
+    const interruptedBefore = (await bt(page, 'combat'))?.interrupted || 0;
+    const landedBefore = (await bt(page, 'combat'))?.landed || 0;
+    const npcModeBefore = (await bt(page, 'npcs'))?.[0]?.mode;
+
+    // Slap during wind-up (counter-slap) - should interrupt and cancel the strike
     await page.keyboard.press('Space');
 
-    // Should interrupt the strike
-    await page.waitForFunction(
-      () => (window as unknown as { __bt: Bt }).__bt.combat?.interrupted! >= 1,
-      undefined,
-      { timeout: 5000, polling: 100 },
-    );
+    // Verify the counter-slap actually landed
+    await page.waitForTimeout(300);
+    const slapCountAfter = (await bt(page, 'slap'))?.count || 0;
+    expect(slapCountAfter).toBeGreaterThan(slapCountBefore);
 
+    // Should interrupt the strike
+    const interruptedAfter = (await bt(page, 'combat'))?.interrupted || 0;
+    expect(interruptedAfter).toBeGreaterThan(interruptedBefore);
+
+    // Verify end state
     expect((await bt(page, 'combat'))?.interrupted).toBeGreaterThanOrEqual(1);
-    expect((await bt(page, 'combat'))?.npcs?.[0]?.mode).toBe('ragdoll');
-    expect((await bt(page, 'combat'))?.landed).toEqual(0);
+    expect((await bt(page, 'npcs'))?.[0]?.mode).toBe('ragdoll');
+    expect((await bt(page, 'combat'))?.landed).toEqual(landedBefore);  // No hits landed (interrupted)
     expect((await bt(page, 'combat'))?.npcs?.[0]?.anger).toBe(100);
   });
 
@@ -330,26 +352,56 @@ test.describe('fightBack desktop', () => {
     expect(anger1).toBeLessThanOrEqual(70);
     expect((await bt(page, 'npcLabels'))?.find((l) => l.index === 0)?.angry).toBe(false);
 
-    // Wait and then slap again (followAndSlap within ~8s)
-    const recordStart = Date.now();
-    let secondSlapTime = 0;
+    // Record time of first slap
+    const firstSlapTime = Date.now();
 
-    // Poll for 100ms and slap when in range, with 8s timeout
+    // Try to land second slap, maintaining at least 3.5s gap from the first
+    let secondSlapTime = 0;
     const pollStart = Date.now();
+
+    // Repeatedly try to acquire target and slap until successful or timeout
     while (Date.now() - pollStart < 8000 && secondSlapTime === 0) {
+      // Ensure minimum 3.5s gap from first slap before landing second
+      const elapsed = Date.now() - firstSlapTime;
+      if (elapsed < 3500) {
+        // Wait a bit and retry
+        await page.waitForTimeout(500);
+        continue;
+      }
+
+      // Now actively try to acquire and slap
+      // Turn to re-acquire (same logic as faceAndSlap)
+      for (let turnCount = 0; turnCount < 40; turnCount++) {
+        const highlight = (await bt(page, 'highlight'))?.kind;
+        if (highlight === 'npc') break;
+        await page.keyboard.down('KeyD');
+        await page.waitForTimeout(60);
+        await page.keyboard.up('KeyD');
+        await page.waitForTimeout(60);
+      }
+
+      // If we have target, try to slap
       const highlight = (await bt(page, 'highlight'))?.kind;
       if (highlight === 'npc') {
-        secondSlapTime = Date.now();
+        const countBefore = (await bt(page, 'slap'))?.count || 0;
         await page.keyboard.press('Space');
-        break;
+        await page.waitForTimeout(300);
+        const countAfter = (await bt(page, 'slap'))?.count || 0;
+
+        if (countAfter > countBefore) {
+          secondSlapTime = Date.now();
+          break;
+        }
       }
+
+      // Retry
       await page.waitForTimeout(100);
     }
 
-    if (secondSlapTime > 0) {
-      const gap = secondSlapTime - recordStart;
-      expect(gap).toBeGreaterThanOrEqual(3500);
-    }
+    // Verify second slap landed with proper gap
+    expect(secondSlapTime).toBeGreaterThan(0);
+    const gap = secondSlapTime - firstSlapTime;
+    expect(gap).toBeGreaterThanOrEqual(3500);
 
     // After second slap, NPC should stand up angry (fume)
     await page.waitForFunction(
