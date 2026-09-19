@@ -8,7 +8,12 @@ type Screen = { x: number; y: number };
 type PlayerMode = 'free' | 'ragdoll' | 'recover' | 'invulnerable';
 type Bt = {
   state?: string;
-  player?: { pos: Vec3; yaw: number; stun?: { mode: PlayerMode; invulnLeft: number; hitsTaken: number; knockdowns: number; moveIgnored: number; recoverSpot: 'none' | 'free' | 'searched' | 'spawn'; lastLockMs: number } };
+  player?: {
+    pos: Vec3;
+    yaw: number;
+    stun?: { mode: PlayerMode; invulnLeft: number; hitsTaken: number; knockdowns: number; moveIgnored: number; recoverSpot: 'none' | 'free' | 'searched' | 'spawn'; lastLockMs: number };
+    parts?: Array<{ name: string; parent: string | null }>;
+  };
   npcs?: Array<{ id: string; pos: Vec3 }>;
   combat?: { landed: number; player?: { mode?: PlayerMode; hitsTaken?: number; knockdowns?: number; moveIgnored?: number; recoverSpot?: 'none' | 'free' | 'searched' | 'spawn' } };
   ragdolls?: { bodies: number; player?: { active: boolean; bodies: number } };
@@ -339,5 +344,66 @@ test.describe('Player knockdown', () => {
     const ragdolls = await bt(page, 'ragdolls');
     expect((ragdolls as any)?.player?.bodies).toBe(6);
     expect((ragdolls as any)?.bodies).toBe(6); // 1 NPC ragdoll at rest
+  });
+
+  /*
+   * Real bug found by the operator on a device build: after standing up, the legs appeared "stuck in
+   * the middle of the body" instead of attached. Root cause was in knockdown.ts's re-attach walk,
+   * which only ever recursed into TORSO's own children ('arm-left', 'arm-right', 'head'). In the
+   * authored rig ('character.glb'), 'leg-left'/'leg-right' are NOT torso's children — both legs and
+   * torso are siblings under a 'root' bone — so the walk silently never reached them, and
+   * beginRecover() never re-parented the legs back from the flat physics group. This test asserts the
+   * true parent-child shape (legs and torso -> 'root'; arms and head -> 'torso') at every stage of a
+   * knockdown, so a regression here fails loudly instead of only being visible in a screenshot.
+   */
+  test('every body part re-attaches to its correct parent through a full knockdown cycle', async ({ page, baseURL }) => {
+    const url = `${baseURL || 'http://localhost:4173'}/?autoplay=1&npcs=1&npcAt=1.3,1.6&fight=always`;
+    await startPlaying(page, url, baseURL || 'http://localhost:4173');
+
+    const expectedParents: Record<string, string | null> = {
+      'leg-left': 'root',
+      'leg-right': 'root',
+      torso: 'root',
+      'arm-left': 'torso',
+      'arm-right': 'torso',
+      head: 'torso',
+    };
+    const assertAttached = (parts: Array<{ name: string; parent: string | null }> | undefined, label: string): void => {
+      expect(parts, label).toBeTruthy();
+      for (const p of parts ?? []) {
+        expect(p.parent, `${label}: ${p.name}`).toBe(expectedParents[p.name]);
+      }
+    };
+
+    // Idle, before any knockdown.
+    assertAttached((await bt(page, 'player'))?.parts, 'before knockdown');
+
+    await approachAndSlap(page, 0, 20_000);
+
+    await page.waitForFunction(
+      () => (window as unknown as { __bt: Bt }).__bt.player?.stun?.mode === 'ragdoll',
+      undefined,
+      { timeout: 20_000, polling: 50 },
+    );
+    // During active ragdoll every part is physics-driven: all six are detached to the one shared,
+    // identity-transform 'ragdoll-root' group (see ragdollRoot() in physics/ragdoll.ts), not to their
+    // authored bone parent.
+    const duringRagdoll = (await bt(page, 'player'))?.parts;
+    expect(duringRagdoll, 'during ragdoll').toBeTruthy();
+    for (const p of duringRagdoll ?? []) {
+      expect(p.parent, `during ragdoll: ${p.name}`).toBe('ragdoll-root');
+    }
+
+    await page.waitForFunction(
+      () => {
+        const b = (window as unknown as { __bt: Bt }).__bt;
+        return b.player?.stun?.mode === 'free' && b.player?.stun?.recoverSpot !== 'none';
+      },
+      undefined,
+      { timeout: 20_000, polling: 50 },
+    );
+
+    // Standing back up: every part — legs included — must be back on its authored parent.
+    assertAttached((await bt(page, 'player'))?.parts, 'after stand-up');
   });
 });

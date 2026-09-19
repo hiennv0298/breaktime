@@ -13,7 +13,7 @@ import {
 import { mulberry32, seedFor } from '../logic/rng';
 import { SLAP_HORIZONTAL, SLAP_UP } from './slap';
 import { getCameraYaw } from '../render/cameraView';
-import { spawnCharacter, type CharacterAsset } from '../render/characters';
+import { CHARACTER_PARTS, spawnCharacter, type CharacterAsset } from '../render/characters';
 import { createKnockdownRig, findFreeSpot, type KnockdownRig } from './knockdown';
 import type { GameCtx } from './game';
 
@@ -103,6 +103,10 @@ export function createPlayer(ctx: GameCtx, spawn: { x: number; z: number }, asse
       // which silently broke five swing tests. Keep both.
       motion: character.motion(),
       stun: { ...stun, moveIgnored, recoverSpot, lastLockMs: lockStartMs },
+      // Which bone each body part is currently parented to. Ragdoll knockdown re-parents parts to a
+      // flat physics group and back; this is the cheapest way for a test (or a human) to catch a part
+      // left behind unattached (e.g. legs orphaned by knockdown.ts's stale 'reattachOrder' walk).
+      parts: CHARACTER_PARTS.map((name, i) => ({ name, parent: character.parts[i]?.parent?.name ?? null })),
     };
   });
 

@@ -1,13 +1,11 @@
 import type { RigidBody } from '@dimforge/rapier3d-compat';
 import { Object3D, Quaternion, Vector3 } from 'three';
 import { FREE_SPOT_DIRS, FREE_SPOT_MAX_M, FREE_SPOT_STEP_M, freeSpotCandidates } from '../logic/freeSpot';
-import { CHARACTER_PARTS, type CharacterInstance } from '../render/characters';
+import type { CharacterInstance } from '../render/characters';
 import type { GameCtx } from './game';
 import type { Ragdoll } from '../physics/ragdoll';
 import { createRagdoll } from '../physics/ragdoll';
 
-const TORSO = CHARACTER_PARTS.indexOf('torso');
-const PART_NAMES: ReadonlySet<string> = new Set(CHARACTER_PARTS);
 const CAPSULE_HALF_HEIGHT = 0.45;
 const CAPSULE_RADIUS = 0.3;
 
@@ -93,15 +91,22 @@ export function createKnockdownRig(ctx: GameCtx, character: CharacterInstance): 
     quat: part.quaternion.clone(),
   }));
 
-  // Build re-attach order by depth (torso first, then children)
-  const reattachOrder: Array<{ part: Object3D; parent: Object3D | null }> = [];
-  const visit = (part: Object3D): void => {
-    reattachOrder.push({ part, parent: part.parent });
-    for (const child of part.children) {
-      if (PART_NAMES.has(child.name)) visit(child);
-    }
-  };
-  visit(parts[TORSO]);
+  // Capture each part's ORIGINAL parent, once, before any ragdoll ever detaches anything.
+  // Bug fixed here: this used to walk the hierarchy starting at TORSO and only recurse into
+  // torso's own children whose name is a known part ('arm-left', 'arm-right', 'head'). But in the
+  // authored rig ('character.glb'), 'leg-left' and 'leg-right' are NOT children of torso — both legs
+  // and torso are siblings, direct children of the model's 'root' bone (verified by reading the GLB's
+  // node graph). So the walk never reached the legs at all: `reattachOrder` silently had 4 entries
+  // instead of 6, `beginRecover()` never re-parented the legs, and they were left behind wherever
+  // ragdoll physics last dropped them — a pair of disembodied legs sitting on the floor while the
+  // rest of the character (with the operator's screenshot showing exactly this) stood up without
+  // them. Attach order does not matter here: `Object3D.attach()` recomputes each part's local
+  // transform from its LIVE world matrix at call time, so it is safe to attach all 6 in one flat pass
+  // regardless of whether their captured parent has been re-attached yet.
+  const reattachOrder: Array<{ part: Object3D; parent: Object3D | null }> = parts.map((part) => ({
+    part,
+    parent: part.parent,
+  }));
 
   let isActive = false;
   let recoverPose: { pos: Vector3; quat: Quaternion; yaw: number } | null = null;
