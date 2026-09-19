@@ -261,21 +261,23 @@ test.describe('Player knockdown', () => {
       { timeout: 20_000, polling: 50 },
     );
 
-    // Now walk and verify position changes
-    const posBeforeWalk = await posAt();
-    // 800 ms, not 400: the player stands up right next to the coworker who just floored them, so the
-    // first moments of the walk can be blocked by that body before they get clear.
-    await page.keyboard.down('KeyA');
-    await page.waitForTimeout(800);
-    await page.keyboard.up('KeyA');
-
-    const posAfterWalk = await posAt();
-    // Distance, not the X component: WASD is camera-relative world movement, so KeyA does not have to
-    // change X at all depending on the camera yaw. What this test is about is that the player can
-    // move again at all once they are back on their feet.
-    const walkDx = (posAfterWalk?.[0] ?? 0) - (posBeforeWalk?.[0] ?? 0);
-    const walkDz = (posAfterWalk?.[2] ?? 0) - (posBeforeWalk?.[2] ?? 0);
-    expect(Math.hypot(walkDx, walkDz)).toBeGreaterThanOrEqual(0.5);
+    // Now walk and verify the player can move again. The player stands up wherever the ragdoll came
+    // to rest — often against the coworker who just floored them, or against a wall — so any ONE
+    // direction can be blocked (measured 0.20-0.47 m for KeyA alone across full-suite runs, while a
+    // solo run walked fine). WASD is also camera-relative, so which key goes where is not fixed. Try
+    // all four and require that at least one gets clear: what this test is about is that movement
+    // input works again once they are back on their feet, not that a particular direction is open.
+    let bestWalk = 0;
+    for (const key of ['KeyA', 'KeyD', 'KeyW', 'KeyS']) {
+      const before = await posAt();
+      await page.keyboard.down(key);
+      await page.waitForTimeout(600);
+      await page.keyboard.up(key);
+      const after = await posAt();
+      bestWalk = Math.max(bestWalk, Math.hypot((after?.[0] ?? 0) - (before?.[0] ?? 0), (after?.[2] ?? 0) - (before?.[2] ?? 0)));
+      if (bestWalk >= 0.5) break;
+    }
+    expect(bestWalk).toBeGreaterThanOrEqual(0.5);
 
     // Verify recover spot is reasonable
     const player = await bt(page, 'player');
